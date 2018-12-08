@@ -19,6 +19,11 @@
     user: "{{ admin_username }}"
     key: "{{ admin_ssh_pubkey }}"
 
+- name: install sudo
+  package:
+    name: sudo
+    state: present
+
 - name: configure core sudo
   template:
     owner: root

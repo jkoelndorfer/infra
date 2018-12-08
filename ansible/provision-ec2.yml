@@ -1,17 +1,33 @@
 ---
 
 - name: gather ec2 facts
-  hosts: localhost
-  connection: local
+  hosts: all
   tasks:
+    - name: set facts (local testing)
+      set_fact:
+        admin_username:        localtestadmin
+        admin_ssh_pubkey:      "{{ local_testing_admin_ssh_pubkey }}"
+        ec2_availability_zone: us-east-1a
+        ec2_region:            us-east-1
+        ec2_tags:              {}
+        instance_category:     "{{ instance_category | default('testing') }}"
+        instance_class:        "{{ instance_category | default('localtesting') }}"
+        instance_env:          "{{ instance_env | default('dev') }}"
+        # randomly generated (real looking) ec2 instance ID
+        instance_id:           i-0febee66103987423
+        instance_name:         dev-local-test
+      when: local_testing
+
     - name: gather ec2 metadata facts
       ec2_metadata_facts:
+      when: not local_testing
 
     - name: gather ec2 instance tags
       ec2_tag:
         state: list
         resource: "{{ ansible_ec2_instance_identity_document_instanceid }}"
         region: "{{ ansible_ec2_placement_region }}"
+      when: not local_testing
       register: tags_tmp
 
     - name: set facts
@@ -26,10 +42,10 @@
         instance_env:          "{{ tags_tmp.tags.get(tag_prefix + ':env', None) }}"
         instance_id:           "{{ ansible_ec2_instance_identity_document_instanceid }}"
         instance_name:         "{{ tags_tmp.tags.get('Name', None) }}"
+      when: not local_testing
 
 - name: provision ec2 instance
-  hosts: localhost
-  connection: local
+  hosts: all
   vars:
     first_provision: yes
   roles:
