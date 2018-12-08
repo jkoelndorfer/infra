@@ -1,0 +1,43 @@
+---
+
+# Due to ordering, this will fail if the administrator
+# configured has the same name as the built-in admin user.
+
+# Since we shouldn't be using built-in usernames anyway, that
+# should be fine.
+- name: configure administrator
+  user:
+    name:    "{{ admin_username }}"
+    state:   present
+    comment: "{{ admin_comment }}"
+    shell:   "{{ admin_shell }}"
+    group:   "{{ admin_group }}"
+    uid:     "{{ admin_uid }}"
+
+- name: configure administrator authorized key
+  authorized_key:
+    user: "{{ admin_username }}"
+    key: "{{ admin_ssh_pubkey }}"
+
+- name: configure core sudo
+  template:
+    owner: root
+    group: root
+    mode:  0440
+    src:   sudoers.j2
+    dest:  "{{ sudoers_path }}"
+    validate: "{{ visudo_path }} -cf %s"
+
+- name: remove built-in admin user
+  user:
+    name: "{{ item }}"
+    state:  absent
+    remove: yes
+  with_items: "{{ cloud_builtin_users }}"
+  when: first_provision
+
+- name: remove built-in sudo rules
+  shell: rm -f {{ sudoers_d_path | quote }}/*
+  args:
+    warn: no
+  when: first_provision

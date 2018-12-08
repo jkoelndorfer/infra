@@ -1,0 +1,17 @@
+---
+
+admin_comment: cloud administrator
+admin_username: cloudadmin
+admin_shell: /bin/bash
+admin_uid: 5000
+admin_group: "{{ {'Debian': 'sudo', 'RedHat': 'wheel'}.get(ansible_os_family, 'wheel') }}"
+
+cloud_builtin_users:
+  - admin
+  - centos
+  - ec2-user
+  - ubuntu
+
+sudoers_path: /etc/sudoers
+sudoers_d_path: /etc/sudoers.d
+visudo_path: /usr/sbin/visudo

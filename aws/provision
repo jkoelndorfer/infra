@@ -1,0 +1,46 @@
+#!/bin/bash
+
+instance_id="$(curl -s http://169.254.169.254/2018-09-24/meta-data/instance-id)"
+region="$(curl -s http://169.254.169.254/2018-09-24/meta-data/placement/availability-zone | sed 's/.$//')"
+instance_tags=''
+tag_prefix='johnk'
+cloud_tools_repo='https://github.com/jkoelndorfer/cloud-tools.git'
+cloud_tools_dir='/opt/cloudtools'
+
+function tag_value() {
+    local tag_name="$1"
+    if [[ -z "$instance_tags" ]]; then
+        instance_tags="$(/usr/local/bin/aws ec2 describe-tags --filters "Name=resource-id,Values=$instance_id" --region "$region")"
+    fi
+    echo "$instance_tags" | jq -r ".Tags[] | select(.Key == \"$tag_name\") | .Value"
+}
+
+apt-get -y install git jq python-pip
+
+# install latest aws CLI, sometimes needed for new features
+pip install awscli ansible
+
+name="$(tag_value 'Name')"
+
+# server category - what high level function this system serves.
+category="$(tag_value "$tag_prefix:category")"
+
+# server class - directly controls how this system is configured.
+class="$(tag_value "$tag_prefix:class")"
+
+# server environment - e.g. dev or prod
+env="$(tag_value "$tag_prefix:env")"
+
+hostname="$name-$(echo "$instance_id" | sed -e 's/^i-//')"
+
+if ! git clone -b "$env" --depth 1 "$cloud_tools_repo" "$cloud_tools_dir"; then
+    echo 'git clone failed; aborting provisioning' >&2
+    exit 1
+fi
+cd "$cloud_tools_dir/ansible"
+ansible-playbook -i localhost, \
+    -e "category=$category" \
+    -e "class=$class" \
+    -e "env=$env" \
+    -e "hostname=$hostname" \
+    provision-ec2.yml
