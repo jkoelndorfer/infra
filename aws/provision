@@ -18,7 +18,7 @@ function tag_value() {
 apt-get -y install git jq python-pip
 
 # install latest aws CLI, sometimes needed for new features
-pip install awscli ansible
+pip install awscli ansible boto3
 
 # server environment - e.g. dev or prod
 env="$(tag_value "$tag_prefix:env")"
