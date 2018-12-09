@@ -20,27 +20,12 @@ apt-get -y install git jq python-pip
 # install latest aws CLI, sometimes needed for new features
 pip install awscli ansible
 
-name="$(tag_value 'Name')"
-
-# server category - what high level function this system serves.
-category="$(tag_value "$tag_prefix:category")"
-
-# server class - directly controls how this system is configured.
-class="$(tag_value "$tag_prefix:class")"
-
 # server environment - e.g. dev or prod
 env="$(tag_value "$tag_prefix:env")"
-
-hostname="$name-$(echo "$instance_id" | sed -e 's/^i-//')"
 
 if ! git clone -b "$env" --depth 1 "$cloud_tools_repo" "$cloud_tools_dir"; then
     echo 'git clone failed; aborting provisioning' >&2
     exit 1
 fi
 cd "$cloud_tools_dir/ansible"
-ansible-playbook -i localhost, \
-    -e "category=$category" \
-    -e "class=$class" \
-    -e "env=$env" \
-    -e "hostname=$hostname" \
-    provision-ec2.yml
+ansible-playbook -i localhost, provision-ec2.yml
