@@ -17,10 +17,12 @@
         instance_id:           i-0febee66103987423
         instance_name:         dev-local-test
       when: local_testing
+      tags: always
 
     - name: gather ec2 metadata facts
       ec2_metadata_facts:
       when: not local_testing
+      tags: always
 
     - name: gather ec2 instance tags
       ec2_tag:
@@ -29,6 +31,7 @@
         region: "{{ ansible_ec2_placement_region }}"
       when: not local_testing
       register: tags_tmp
+      tags: always
 
     - name: set facts
       set_fact:
@@ -43,10 +46,14 @@
         instance_id:           "{{ ansible_ec2_instance_identity_document_instanceid }}"
         instance_name:         "{{ tags_tmp.tags.get('Name', None) }}"
       when: not local_testing
+      tags: always
 
 - name: provision ec2 instance
   hosts: all
   vars:
     first_provision: yes
+  become: yes
+  become_user: root
   roles:
-    - cloudcore
+    - { role: cloudcore, tags: ['cloudcore'] }
+    - { role: cloudclass, tags: ['cloudclass'] }

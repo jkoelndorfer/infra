@@ -1,0 +1,5 @@
+---
+
+- name: include instance class role
+  include_role:
+    name: "{{ instance_class }}"
