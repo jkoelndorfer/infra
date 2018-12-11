@@ -24,27 +24,17 @@
       when: not local_testing
       tags: always
 
-    - name: gather ec2 instance tags
-      ec2_tag:
-        state: list
-        resource: "{{ ansible_ec2_instance_identity_document_instanceid }}"
-        region: "{{ ansible_ec2_placement_region }}"
-      when: not local_testing
-      register: tags_tmp
-      tags: always
-
     - name: set facts
       set_fact:
         admin_username:        "{{ lookup('aws_ssm', '/provision/common/user', region=ansible_ec2_placement_region) }}"
         admin_ssh_pubkey:      "{{ lookup('aws_ssm', '/provision/common/ssh_pubkey', region=ansible_ec2_placement_region) }}"
         ec2_availability_zone: "{{ ansible_ec2_placement_availability_zone }}"
         ec2_region:            "{{ ansible_ec2_placement_region }}"
-        ec2_tags:              "{{ tags_tmp.tags }}"
-        instance_category:     "{{ tags_tmp.tags.get(tag_prefix + ':category', None) }}"
-        instance_class:        "{{ tags_tmp.tags.get(tag_prefix + ':class', None) }}"
-        instance_env:          "{{ tags_tmp.tags.get(tag_prefix + ':env', None) }}"
+        instance_category:     "{{ lookup('env', 'INSTANCE_CATEGORY') }}"
+        instance_class:        "{{ lookup('env', 'INSTANCE_CLASS') }}"
+        instance_env:          "{{ lookup('env', 'INSTANCE_ENV') }}"
         instance_id:           "{{ ansible_ec2_instance_identity_document_instanceid }}"
-        instance_name:         "{{ tags_tmp.tags.get('Name', None) }}"
+        instance_name:         "{{ lookup('env', 'INSTANCE_NAME') }}"
       when: not local_testing
       tags: always
 

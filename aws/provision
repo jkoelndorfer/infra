@@ -1,31 +1,21 @@
 #!/bin/bash
 
-instance_id="$(curl -s http://169.254.169.254/2018-09-24/meta-data/instance-id)"
-region="$(curl -s http://169.254.169.254/2018-09-24/meta-data/placement/availability-zone | sed 's/.$//')"
-instance_tags=''
-tag_prefix='johnk'
 cloud_tools_repo='https://github.com/jkoelndorfer/cloud-tools.git'
 cloud_tools_dir='/opt/cloudtools'
 
-function tag_value() {
-    local tag_name="$1"
-    if [[ -z "$instance_tags" ]]; then
-        instance_tags="$(/usr/local/bin/aws ec2 describe-tags --filters "Name=resource-id,Values=$instance_id" --region "$region")"
-    fi
-    echo "$instance_tags" | jq -r ".Tags[] | select(.Key == \"$tag_name\") | .Value"
-}
-
-apt-get -y install git jq python-pip
+apt-get -y install git python-pip
 
 # install latest aws CLI, sometimes needed for new features
 pip install awscli ansible boto3
 
-# server environment - e.g. dev or prod
-env="$(tag_value "$tag_prefix:env")"
-
-if ! git clone -b "$env" --depth 1 "$cloud_tools_repo" "$cloud_tools_dir"; then
+if ! git clone -b "$INSTANCE_ENV" --depth 1 "$cloud_tools_repo" "$cloud_tools_dir"; then
     echo 'git clone failed; aborting provisioning' >&2
     exit 1
 fi
 cd "$cloud_tools_dir/ansible"
-ansible-playbook -i localhost, provision-ec2.yml
+ansible-playbook -i localhost, \
+    -e instance_category="$INSTANCE_CATEGORY" \
+    -e instance_class="$INSTANCE_CLASS" \
+    -e instance_env="$INSTANCE_ENV" \
+    -e instance_name="$INSTANCE_NAME" \
+    provision-ec2.yml
