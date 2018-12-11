@@ -1,56 +1,7 @@
 ---
 
-- name: get syncthing EBS volume ID
-  set_fact:
-    syncthing_ebs_volume: "{{ lookup('aws_ssm', '/backup/syncthing_ebs_volume_id', region=ansible_ec2_placement_region) }}"
+- name: Run EBS volume tasks
+  import_tasks: ebs_volume.yml
 
-- name: determine if EBS volume is already attached
-  shell: f="$(realpath /dev/disk/by-id/*{{ syncthing_ebs_volume | replace('-', '') | quote }})"; [ -b "$f" ] && echo "$f" || true
-  register: ebs_volume_attached
-  changed_when: false
-  ignore_errors: yes
-
-- name: attach syncthing EBS volume
-  command: aws ec2 attach-volume --device /dev/sdz --instance-id {{ instance_id | quote }} --volume-id {{ syncthing_ebs_volume | quote }} --region {{ ec2_region | quote }}
-  when: ebs_volume_attached.stdout == ""
-
-- name: wait for EBS volume device to appear
-  shell: |
-    f=''
-    while true; do
-      f="$(realpath /dev/disk/by-id/*{{ syncthing_ebs_volume | replace('-', '') | quote }})"
-      if [ -b "$f" ]; then
-        echo "$f"
-        exit 0
-      else
-        sleep 1
-      fi
-    done
-  changed_when: false
-  register: device_path_tmp
-
-- name: set device path
-  set_fact:
-    syncthing_device_path: "{{ device_path_tmp.stdout }}"
-
-- name: determine if EBS volume has a filesystem
-  command: lsblk -l -d {{ syncthing_device_path | quote }} -n -o FSTYPE
-  register: existing_filesystem
-  changed_when: false
-
-- name: create filesystem on EBS volume
-  command: mkfs.ext4 {{ syncthing_device_path | quote }}
-  when: (existing_filesystem.stdout | trim) == ""
-
-- name: determine filesystem UUID
-  command: lsblk -l -d {{ syncthing_device_path | quote }} -n -o UUID
-  register: filesystem_uuid
-  changed_when: false
-
-- name: configure EBS volume mount
-  mount:
-    path: /srv/data
-    src: "UUID={{ filesystem_uuid.stdout | trim }}"
-    fstype: ext4
-    opts: rw,discard,noatime
-    state: mounted
+- name: Run Docker configuration tasks
+  import_tasks: docker.yml

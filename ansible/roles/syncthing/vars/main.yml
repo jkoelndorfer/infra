@@ -1,0 +1,7 @@
+---
+
+syncthing_version: v0.14.54
+syncthing_port: 22000
+
+syncthing_uid: 4000
+syncthing_gid: 4000
