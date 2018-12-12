@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# dev or prod
+env="$1"
+
+if ! [[ "$env" =~ ^(dev|prod)$ ]]; then
+    echo "usage: $0 [dev|prod]" >&2
+    exit 1
+fi
+script_dir="$(realpath "$(dirname "$0")")"
+
+account_id="$(aws sts get-caller-identity --output text | awk '{ print $1 }')"
+bucket_name="${account_id}-${env}-infra"
+
+deploy_tmpdir="$(mktemp --tmpdir -d aws-dyndns-deploy.XXXXXX)"
+if [[ -z "$deploy_tmpdir" ]]; then
+    echo 'Failed creating temporary directory' >&2
+    exit 2
+fi
+function cleanup() {
+    [[ -n "$deploy_tmpdir" ]] && rm -rf "$deploy_tmpdir"
+}
+trap cleanup EXIT
+
+zip "$deploy_tmpdir/dyndns.zip" "$script_dir/dyndns.py"
+aws s3 cp "$deploy_tmpdir/dyndns.zip" "s3://$bucket_name/lambda/dyndns.zip"
