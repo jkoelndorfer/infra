@@ -2,7 +2,7 @@
 
 - name: get syncthing EBS volume ID
   set_fact:
-    syncthing_ebs_volume: "{{ lookup('aws_ssm', '/backup/syncthing_ebs_volume_id', region=ansible_ec2_placement_region) }}"
+    syncthing_ebs_volume: "{{ lookup('aws_ssm', '/' + instance_env + '/backup/syncthing_ebs_volume_id', region=ansible_ec2_placement_region) }}"
 
 - name: determine if EBS volume is already attached
   shell: f="$(realpath /dev/disk/by-id/*{{ syncthing_ebs_volume | replace('-', '') | quote }})"; [ -b "$f" ] && echo "$f" || true
