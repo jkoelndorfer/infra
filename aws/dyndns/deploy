@@ -22,5 +22,5 @@ function cleanup() {
 }
 trap cleanup EXIT
 
-zip "$deploy_tmpdir/dyndns.zip" "$script_dir/dyndns.py"
-aws s3 cp "$deploy_tmpdir/dyndns.zip" "s3://$bucket_name/lambda/dyndns.zip"
+zip -j "$deploy_tmpdir/dyndns.zip" "$script_dir/dyndns.py"
+aws lambda update-function-code --function-name "$env-dyndns" --zip-file "fileb://$deploy_tmpdir/dyndns.zip"
