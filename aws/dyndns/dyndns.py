@@ -1,32 +1,40 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import os
 import sys
 
 import boto3
 
 DNS_TTL = 30
+ENV_TAG = "johnk:env"
 DNS_TAG = "johnk:dns"
 REGION = 'us-east-1'
 boto3.setup_default_session(region_name=REGION)
 
 
 def lambda_handler(event, context):
-    if event["detail"]["state"] != "running":
+    if not handle_event(event):
+        log("Event will not be handled; quitting")
         return
-    instance_id = event["detail"]["instance-id"]
+
+    instance_id = event_instance_id(event)
+    log(f"Got event for instance {instance_id}")
+
     desired_dns_name = determine_desired_dns_name(instance_id)
     if desired_dns_name is None:
+        log(f"Could not determine desired DNS name for {instance_id}; quitting")
         return
 
     r53 = boto3.client("route53")
     zones = r53.list_hosted_zones()["HostedZones"]
     hosted_zone_id = determine_hosted_zone_id_of(desired_dns_name, zones)
     if hosted_zone_id is None:
-        print(f"You not determine hosted zone ID of {desired_dns_name}", file=sys.stderr)
+        log(f"You not determine hosted zone ID of {desired_dns_name}")
         exit(1)
 
     instance_ip_address = determine_instance_ip_address(instance_id)
+    log(f"IP address for instance {instance_id} is {instance_ip_address}; updating")
     r53.change_resource_record_sets(
         HostedZoneId=hosted_zone_id,
         ChangeBatch={
@@ -83,6 +91,40 @@ def determine_instance_ip_address(instance_id):
     return public_ip
 
 
+def event_instance_id(event):
+    return event["detail"]["instance-id"]
+
+
+def handle_event(event):
+    if event["detail"]["state"] != "running":
+        log(f"Instance state is not 'running'; event will not be handled")
+        return False
+    ec2_instance_id = event_instance_id(event)
+    lambda_fn_env = os.environ["env_name"]
+    ec2 = boto3.client("ec2")
+    result = ec2.describe_tags(
+        Filters=[
+            {"Name": "key", "Values": [ENV_TAG]},
+            {"Name": "resource-id", "Values": [ec2_instance_id]}
+        ],
+    )
+    try:
+        instance_env = result["Tags"][0]["Value"]
+    except IndexError:
+        log(f"Could not find tag {ENV_TAG} on instance {ec2_instance_id}; assuming 'prod'")
+        return lambda_fn_env == "prod"
+    if instance_env == lambda_fn_env:
+        log("Instance environment matches")
+        return True
+    else:
+        log("Instance environment does not match")
+        return False
+
+
+def log(msg):
+    print(msg, file=sys.stderr)
+
+
 def normalize_dns_name(dns_name):
     return dns_name.rstrip(".")
 
@@ -91,6 +133,7 @@ def main():
     if len(sys.argv) < 2:
         print("You must pass the ID of an EC2 instance to test against, e.g. i-0febee66103987423", file=sys.stderr)
         exit(1)
+    os.environ["env_name"] = "dev"
     ec2_instance_id = sys.argv[1]
     sts_client = boto3.client("sts")
     account_id = sts_client.get_caller_identity()["Account"]
@@ -112,6 +155,6 @@ def main():
     lambda_handler(mock_cloudwatch_event, None)
 
 
-# For local testing.
 if __name__ == "__main__":
+    log("Running in local testing mode.")
     main()
