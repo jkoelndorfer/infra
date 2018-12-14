@@ -5,3 +5,8 @@
 
 - name: Run Docker configuration tasks
   import_tasks: docker.yml
+
+- name: Start backup service
+  service:
+    name: backup.service
+    state: started

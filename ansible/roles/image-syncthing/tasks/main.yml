@@ -20,6 +20,43 @@
     name: docker-ce
     state: present
 
+# We use these to support our backup script.
+#
+# duplicity, of course, handles most of the backup work.
+#
+# xmllint can find the API key of syncthing:
+#
+# $ xmllint config.xml --xpath "configuration/gui/apikey.text()"
+#
+# jq is used to help interact with the syncthing API.
+# See specifically:
+#   https://docs.syncthing.net/rest/db-status-get.html
+#   https://docs.syncthing.net/rest/system-config-get.html.
+- name: install script utlities
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - duplicity
+    - jq
+    - libxml2-utils
+
+- name: deploy backup script
+  copy:
+    src:   syncthing-s3-backup
+    dest:  /usr/local/bin/syncthing-s3-backup
+    owner: root
+    group: root
+    mode:  0755
+
+- name: deploy systemd backup service
+  copy:
+    src:   backup.service
+    dest:  /etc/systemd/system/backup.service
+    owner: root
+    group: root
+    mode:  0444
+
 - name: configure syncthing group
   group:
     name:    syncthing

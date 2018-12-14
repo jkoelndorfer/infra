@@ -1,0 +1,3 @@
+#!/bin/bash
+
+curl -s 'http://169.254.169.254/2018-09-24/meta-data/placement/availability-zone'

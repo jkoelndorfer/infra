@@ -1,0 +1,93 @@
+#!/bin/bash
+
+# This script waits for the locally running instance of Syncthing
+# to become fully synced, then performs a backup using Duplicity
+# and shuts down the instance.
+
+# Path to Syncthing's config.xml.
+SYNCTHING_CONFIG_PATH='/srv/data/syncthing/config/config.xml'
+
+# How long we wait after this script starts for Syncthing
+# to figure out the state of the cluster.
+SYNCTHING_STATUS_WAIT_TIME=600
+
+SYNCTHING_POLL_TIME=30
+
+function s() {
+    local suburl="$1"
+    shift
+    curl -s -H "X-API-Key: $syncthing_api_key" "$@" "http://127.0.0.1:8384/rest/$suburl"
+}
+
+function list_folder_ids() {
+    s system/config | jq -r '.folders[].id'
+}
+
+function folder_status() {
+    local folder_id="$1"
+    # paste joins all the lines together.
+    local status="$(s db/status -G --data-urlencode "folder=$folder_id" |
+        jq -r '.needBytes,.needDeletes,.needDirectories,.needFiles,.needSymlinks' | paste -sd ' ')"
+
+    # We'd expect each "need" value to be 0. If everything is in sync, status should be:
+    #
+    # 0 0 0 0 0
+
+    [[ "$status" == '0 0 0 0 0' ]]
+}
+
+if ! [[ "$BACKUP_DEV" == '1' ]]; then
+    echo "Waiting $SYNCTHING_STATUS_WAIT_TIME seconds for Syncthing to sync" >&2
+    sleep "$SYNCTHING_STATUS_WAIT_TIME"
+fi
+
+syncthing_api_key="$(xmllint "$SYNCTHING_CONFIG_PATH" --xpath "configuration/gui/apikey/text()")"
+
+synced=0
+while [[ "$synced" == 0 ]]; do
+    # Check the folders after every iteration in case any new ones show up.
+    folders="$(list_folder_ids)"
+    synced=1
+    for f in $folders; do
+        if ! folder_status "$f"; then
+            synced=0
+            echo "Folder $f is not synced" >&2
+            break
+        else
+            echo "Folder $f is synced" >&2
+        fi
+    done
+    if [[ "$synced" == 0 ]]; then
+        echo "Not all folders are synced; rechecking in $SYNCTHING_POLL_TIME" >&2
+        sleep "$SYNCTHING_POLL_TIME"
+    fi
+done
+
+# Now that we're all up-to-date, stop Syncthing so there aren't any further
+# changes while our backup runs.
+docker stop syncthing
+
+source /etc/metadata
+instance_region="$(/opt/cloud-tools/aws/instance/region)"
+backup_s3_bucket="$(/opt/cloud-tools/aws/ssm-param --name "/$INSTANCE_ENV/backup/backup_s3_bucket" --region "$instance_region")"
+if [[ -z "$backup_s3_bucket" ]]; then
+    echo 'Failed getting backup S3 bucket name!' >&2
+    exit 1
+fi
+duplicity_remote="s3://s3.amazonaws.com/$backup_s3_bucket"
+duplicity \
+    --archive-dir /srv/data/duplicity-archive \
+    --full-if-older-than 7D \
+    --no-encryption \
+    --s3-use-multiprocessing \
+    /srv/data/syncthing \
+    "$duplicity_remote"
+
+duplicity \
+    remove-older-than 60D \
+    --force \
+    "$duplicity_remote"
+
+if [[ "$BACKUP_DEV" != '1' ]]; then
+    aws autoscaling update-auto-scaling-group --auto-scaling-group-name "$INSTANCE_ASG_NAME" --desired-capacity 0 --region "$instance_region"
+fi
