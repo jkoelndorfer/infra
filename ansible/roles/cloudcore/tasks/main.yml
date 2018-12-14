@@ -44,3 +44,14 @@
   shell: rm -f {{ sudoers_d_path | quote }}/*
   args:
     warn: no
+
+- name: set hostname
+  shell: |-
+    . /etc/metadata
+    instance_ip="$(curl -s http://169.254.169.254/2018-09-24/meta-data/public-ipv4)"
+    new_hostname="${INSTANCE_NAME}-$(echo "$instance_ip" | sed -e 's/\./-/g')"
+    hostname "$new_hostname"
+    echo "$new_hostname" > /etc/hostname
+    echo "127.0.2.1 $new_hostname" >> /etc/hosts
+  args:
+    executable: /bin/bash
