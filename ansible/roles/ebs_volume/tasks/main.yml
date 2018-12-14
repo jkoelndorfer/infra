@@ -1,0 +1,58 @@
+---
+
+# Accepts these variables:
+#
+# ebs_volume_id: The ID of the EBS volume to attach.
+#
+# filesystem_mount_point: Directory where EBS volume is mounted.
+
+- name: determine if EBS volume is already attached
+  shell: f="$(realpath /dev/disk/by-id/*{{ ebs_volume_id | replace('-', '') | quote }})"; [ -b "$f" ] && echo "$f" || true
+  register: ebs_volume_attached
+  changed_when: false
+  ignore_errors: yes
+
+- name: attach EBS volume
+  command: aws ec2 attach-volume --device /dev/sdz --instance-id {{ instance_id | quote }} --volume-id {{ ebs_volume_id | quote }} --region {{ ec2_region | quote }}
+  when: ebs_volume_attached.stdout == ""
+
+- name: wait for EBS volume device to appear
+  shell: |
+    f=''
+    while true; do
+      f="$(realpath /dev/disk/by-id/*{{ ebs_volume_id | replace('-', '') | quote }})"
+      if [ -b "$f" ]; then
+        echo "$f"
+        exit 0
+      else
+        sleep 1
+      fi
+    done
+  changed_when: false
+  register: device_path_tmp
+
+- name: set device path
+  set_fact:
+    ebs_device_path: "{{ device_path_tmp.stdout }}"
+
+- name: determine if EBS volume has a filesystem
+  command: lsblk -l -d {{ ebs_device_path | quote }} -n -o FSTYPE
+  register: existing_filesystem
+  changed_when: false
+
+- name: create filesystem on EBS volume
+  command: mkfs.ext4 {{ ebs_device_path | quote }}
+  when: (existing_filesystem.stdout | trim) == ""
+
+- name: determine filesystem UUID
+  command: lsblk -l -d {{ ebs_device_path | quote }} -n -o UUID
+  register: filesystem_uuid
+  changed_when: false
+
+- name: configure EBS volume mount
+  mount:
+    path: "{{ filesystem_mount_point }}"
+    src: "UUID={{ filesystem_uuid.stdout | trim }}"
+    fstype: ext4
+    opts: rw,discard,noatime
+    state: mounted
