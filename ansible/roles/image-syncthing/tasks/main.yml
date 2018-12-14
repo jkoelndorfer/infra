@@ -1,0 +1,47 @@
+---
+
+- name: install docker python libs
+  pip:
+    name: docker
+    state: present
+
+- name: import docker apt key
+  apt_key:
+    state: present
+    id:    9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+    url:   https://download.docker.com/linux/debian/gpg
+
+- name: configure docker apt repository
+  apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/debian "{{ ansible_lsb['codename'] }}" stable
+
+- name: install docker
+  package:
+    name: docker-ce
+    state: present
+
+- name: configure syncthing group
+  group:
+    name:    syncthing
+    gid:     "{{ syncthing_gid }}"
+
+- name: configure syncthing user
+  user:
+    name:    syncthing
+    comment: syncthing
+    uid:     "{{ syncthing_uid }}"
+    group:   syncthing
+    shell:   /bin/false
+
+- name: configure syncthing data directory
+  file:
+    path:  /srv/data/syncthing
+    state: directory
+    owner: syncthing
+    group: syncthing
+    mode:  0750
+
+- name: pull syncthing docker image
+  docker_image:
+    name: syncthing/syncthing
+    tag: "{{ syncthing_version }}"

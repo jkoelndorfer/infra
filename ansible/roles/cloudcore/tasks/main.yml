@@ -39,10 +39,8 @@
     state:  absent
     remove: yes
   with_items: "{{ cloud_builtin_users }}"
-  when: first_provision
 
 - name: remove built-in sudo rules
   shell: rm -f {{ sudoers_d_path | quote }}/*
   args:
     warn: no
-  when: first_provision

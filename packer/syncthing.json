@@ -1,0 +1,23 @@
+{
+    "builders": [{
+    "type": "amazon-ebs",
+    "region": "us-east-1",
+    "source_ami_filter": {
+      "filters": {
+        "name": "debian-stretch-hvm-x86_64-gp2*"
+      },
+      "owners": ["679593333241"],
+      "most_recent": true
+    },
+    "instance_type": "t3.micro",
+    "ssh_username": "admin",
+    "ami_name": "syncthing {{isotime \"2006-01-02 1504\"}}"
+  }],
+  "provisioners": [
+    {
+      "type": "ansible",
+      "playbook_file": "../ansible/build-image.yml",
+      "extra_arguments": ["--extra-vars", "image_role=syncthing"]
+    }
+  ]
+}

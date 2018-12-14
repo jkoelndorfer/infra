@@ -1,18 +1,7 @@
 #!/bin/bash
 
-cloud_tools_repo='https://github.com/jkoelndorfer/cloud-tools.git'
-cloud_tools_dir='/opt/cloudtools'
-
-apt-get -y install git python-pip
-
-# install latest aws CLI, sometimes needed for new features
-pip install awscli ansible boto3
-
-if ! git clone -b "$INSTANCE_ENV" --depth 1 "$cloud_tools_repo" "$cloud_tools_dir"; then
-    echo 'git clone failed; aborting provisioning' >&2
-    exit 1
-fi
-cd "$cloud_tools_dir/ansible"
+# Ansible variables below are set in EC2 userdata.
+cd /opt/cloud-tools/ansible
 ansible-playbook -i localhost, \
     -e instance_category="$INSTANCE_CATEGORY" \
     -e instance_class="$INSTANCE_CLASS" \

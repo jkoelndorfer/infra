@@ -1,0 +1,67 @@
+---
+
+- name: update system packages
+  package:
+    name: "*"
+    state: latest
+    force_apt_get: "{{ 'yes' if ansible_os_family == 'Debian' else omit }}"
+
+- name: install core system packages
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - "{{ git_package }}"
+    - "{{ python_pip_package }}"
+
+- name: install core pip packages
+  pip:
+    name:
+      - awscli
+      - ansible
+      - boto3
+    state: latest
+
+- name: locally archive cloud-tools
+  delegate_to: localhost
+  become: no
+  shell: |-
+    #!/bin/bash
+    set -eu
+
+    cloud_tools_tempfile="$(mktemp --tmpdir cloud-tools.XXXXXX.tar.gz)"
+    cd {{ role_path | quote }}/../../..
+    tar -czf "$cloud_tools_tempfile" $(git ls-files | awk -F/ '{ print $1 }' | sort -u) >&2
+    echo "$cloud_tools_tempfile"
+  register: cloud_tools_archive
+
+- name: create cloud-tools directory
+  file:
+    path: /opt/cloud-tools
+    state: directory
+    owner: root
+    group: root
+    mode:  0755
+
+- name: copy cloud-tools archive to host
+  copy:
+    src: "{{ cloud_tools_archive.stdout }}"
+    dest: /tmp/cloud-tools.tar.gz
+
+- name: unarchive cloud-tools
+  shell: |-
+    #!/bin/bash
+
+    mkdir /opt/cloud-tools
+    cd /opt/cloud-tools
+    tar -xzf /tmp/cloud-tools.tar.gz
+    rm -f /tmp/cloud-tools.tar.gz
+    chown -R root:root /opt/cloud-tools
+    chmod u=rwX,go=rX /opt/cloud-tools
+
+- name: remove local cloud-tools archive
+  delegate_to: localhost
+  become: no
+  file:
+    path: "{{ cloud_tools_archive.stdout }}"
+    state: absent
