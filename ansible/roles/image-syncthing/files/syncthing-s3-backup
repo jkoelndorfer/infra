@@ -58,7 +58,7 @@ while [[ "$synced" == 0 ]]; do
         fi
     done
     if [[ "$synced" == 0 ]]; then
-        echo "Not all folders are synced; rechecking in $SYNCTHING_POLL_TIME" >&2
+        echo "Not all folders are synced; rechecking in $SYNCTHING_POLL_TIME seconds" >&2
         sleep "$SYNCTHING_POLL_TIME"
     fi
 done
