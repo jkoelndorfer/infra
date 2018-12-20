@@ -4,14 +4,14 @@
 # to become fully synced, then performs a backup using Duplicity
 # and shuts down the instance.
 
-# Path to Syncthing's config.xml.
-SYNCTHING_CONFIG_PATH='/srv/data/syncthing/config/config.xml'
-
-# How long we wait after this script starts for Syncthing
-# to figure out the state of the cluster.
-SYNCTHING_STATUS_WAIT_TIME=600
-
 SYNCTHING_POLL_TIME=30
+# Path to Syncthing's config.xml.
+if [[ "$BACKUP_LOCALDEV" != '1' ]]; then
+    SYNCTHING_CONFIG_PATH='/srv/data/syncthing/config/config.xml'
+else
+    SYNCTHING_CONFIG_PATH="$HOME/.config/syncthing/config.xml"
+fi
+syncthing_api_key="$(xmllint "$SYNCTHING_CONFIG_PATH" --xpath "configuration/gui/apikey/text()")"
 
 function s() {
     local suburl="$1"
@@ -23,73 +23,187 @@ function list_folder_ids() {
     s system/config | jq -r '.folders[].id'
 }
 
-function folder_status() {
+function folder_sync_status() {
     local folder_id="$1"
     # paste joins all the lines together.
-    local status="$(s db/status -G --data-urlencode "folder=$folder_id" |
+    local folder_status="$(s db/status -G --data-urlencode "folder=$folder_id" |
         jq -r '.needBytes,.needDeletes,.needDirectories,.needFiles,.needSymlinks' | paste -sd ' ')"
 
     # We'd expect each "need" value to be 0. If everything is in sync, status should be:
     #
     # 0 0 0 0 0
 
-    [[ "$status" == '0 0 0 0 0' ]]
+    [[ "$folder_status" == '0 0 0 0 0' ]]
 }
 
-if ! [[ "$BACKUP_DEV" == '1' ]]; then
-    echo "Waiting $SYNCTHING_STATUS_WAIT_TIME seconds for Syncthing to sync" >&2
-    sleep "$SYNCTHING_STATUS_WAIT_TIME"
-fi
+function device_stats() {
+    jq -rs '.[1] as $devstats | .[0] | map(.[] | {(.id): {name, last_seen: $devstats[.id]["lastSeen"]}}) | add' \
+        <(s system/config | jq '.devices | map({(.deviceID): { id: .deviceID, name: .name }})') \
+        <(s stats/device)
+}
 
-syncthing_api_key="$(xmllint "$SYNCTHING_CONFIG_PATH" --xpath "configuration/gui/apikey/text()")"
+function device_last_seen() {
+    local device_id="$1"
+    local last_seen_date=$(device_stats | jq -r '."'"$device_id"'".last_seen')
+    if [[ -z "$last_seen_date" ]]; then
+        return 1
+    fi
+    date -d "$last_seen_date" '+%s'
+}
 
-synced=0
-while [[ "$synced" == 0 ]]; do
-    # Check the folders after every iteration in case any new ones show up.
-    folders="$(list_folder_ids)"
-    synced=1
-    for f in $folders; do
-        if ! folder_status "$f"; then
-            synced=0
-            echo "Folder $f is not synced" >&2
-            break
-        else
-            echo "Folder $f is synced" >&2
+function folder_stats() {
+    jq -rs '.[1] as $fstats | .[0].folders | map({id: .id, label: .label, path: .path, last_activity: $fstats[(.id)]["lastFile"]["at"]})' \
+        <(s system/config) <(s stats/folder)
+}
+
+function log() {
+    msg="$1"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $msg" >&2
+}
+
+function get_backup_device_id() {
+    if [[ "$BACKUP_LOCALDEV" == 1 ]]; then
+        echo "$BACKUP_DEVICE_ID"
+    else
+        /opt/cloud-tools/aws/ssm-param --name "/$INSTANCE_ENV/backup/syncthing_backup_device_id" --region "$instance_region"
+    fi
+}
+
+function main() {
+    source /etc/metadata
+    local instance_region="$(/opt/cloud-tools/aws/instance/region)"
+
+    local backup_s3_bucket="$(/opt/cloud-tools/aws/ssm-param --name "/$INSTANCE_ENV/backup/backup_s3_bucket" --region "$instance_region")"
+    if [[ -z "$backup_s3_bucket" ]]; then
+        log 'Failed getting backup S3 bucket name!'
+    else
+        backup_run_report="$(backup "$instance_region" "$backup_s3_bucket" 2>&1)"
+    fi
+
+    local report=$(backup_report "$backup_s3_bucket" "$backup_run_report")
+    aws sns publish --topic-arn "$backup_report_topic_arn"
+    if [[ "$BACKUP_DEV" != '1' ]]; then
+        sync
+        mount -o remount,ro /srv/data
+        aws autoscaling update-auto-scaling-group --auto-scaling-group-name "$INSTANCE_ASG_NAME" --desired-capacity 0 --region "$instance_region"
+    fi
+}
+
+function backup_report() {
+    local backup_s3_bucket="$1"
+    local backup_run_report="$2"
+    local updated_files="$(find /srv/data/syncthing -print0 -mmin -$((60 * 60 * 24)) | xargs -0 ls -lh)"
+    if [[ -z "$updated_files" ]]; then
+        local updated_files='[none]'
+    fi
+<<EOF
+################################################################################
+#                                 UPDATED FILES                                #
+################################################################################
+$updated_files
+
+################################################################################
+#                                  BACKUP RUN                                  #
+################################################################################
+$backup_run_report
+
+################################################################################
+#                                  S3 BUCKET                                   #
+################################################################################
+$(aws s3 ls --human-readable "s3://$backup_s3_bucket" | sort -r)
+EOF
+}
+
+function wait_for_backup_device() {
+    local instance_region="$1"
+    local start_date="$2"
+    local backup_device_id="$(get_backup_device_id)"
+
+    if [[ -n "$backup_device_id" ]]; then
+        local backup_device_last_seen_time=0
+        log "Got backup device ID $backup_device_id; waiting for device communication"
+        while true; do
+            backup_device_last_seen_time="$(device_last_seen "$backup_device_id")"
+            if [[ -n "$backup_device_last_seen_time" ]]; then
+                if [[ "$backup_device_last_seen_time" -gt "$start_date" ]]; then
+                    log "Backup device $backup_device_id last seen time up-to-date now; continuing"
+                    sleep 5
+                    break
+                fi
+            else
+                # Could not get the last seen time for the backup device for some reason.
+                # This should not happen unless Syncthing glitches out.
+                log 'BUG: Could not get backup device last seen time from Syncthing! This should not happen.'
+
+                # If we end up here somehow, let's just wait a little while and try again.
+                sleep 5
+            fi
+        done
+    else
+        log 'Failed to determine backup device ID; falling back to simple wait.'
+        sleep 300
+    fi
+}
+
+function wait_for_folders_synced() {
+    local synced=0
+    local total_poll_time=0
+    while [[ "$synced" == 0 ]]; do
+        # Check the folders after every iteration in case any new ones show up.
+        local folders=($(list_folder_ids))
+        local synced=1
+        for f in $folders; do
+            if ! folder_sync_status "$f"; then
+                synced=0
+                log "Folder $f is not synced" >&2
+                break
+            else
+                log "Folder $f is synced" >&2
+            fi
+        done
+        if [[ "$synced" == 0 ]]; then
+            log "Not all folders are synced; rechecking in $SYNCTHING_POLL_TIME seconds"
+            local total_poll_time="$((total_poll_time + $SYNCTHING_POLL_TIME))"
+            sleep "$SYNCTHING_POLL_TIME"
         fi
     done
-    if [[ "$synced" == 0 ]]; then
-        echo "Not all folders are synced; rechecking in $SYNCTHING_POLL_TIME seconds" >&2
-        sleep "$SYNCTHING_POLL_TIME"
-    fi
-done
+    log "Synced after $total_poll_time seconds"
+}
 
-# Now that we're all up-to-date, stop Syncthing so there aren't any further
-# changes while our backup runs.
-docker stop syncthing
+function backup() {
+    local aws_region="$1"
+    local backup_s3_bucket="$2"
+    local start_date="$(date +%s)"
 
-source /etc/metadata
-instance_region="$(/opt/cloud-tools/aws/instance/region)"
-backup_s3_bucket="$(/opt/cloud-tools/aws/ssm-param --name "/$INSTANCE_ENV/backup/backup_s3_bucket" --region "$instance_region")"
-if [[ -z "$backup_s3_bucket" ]]; then
-    echo 'Failed getting backup S3 bucket name!' >&2
-    exit 1
-fi
-duplicity_remote="s3://s3.amazonaws.com/$backup_s3_bucket"
-duplicity \
-    --archive-dir /srv/data/duplicity-archive \
-    --full-if-older-than 7D \
-    --no-encryption \
-    --s3-use-multiprocessing \
-    /srv/data/syncthing \
-    "$duplicity_remote"
+    log 'starting syncthing container'
+    log "$(docker start syncthing 2>&1)"
+    wait_for_backup_device "$aws_region" "$start_date"
+    wait_for_folders_synced
 
-duplicity \
-    remove-older-than 60D \
-    --force \
-    "$duplicity_remote"
+    # Now that we're all up-to-date, stop Syncthing so there aren't any further
+    # changes while our backup runs.
+    log 'stopping syncthing container'
+    log "$(docker stop syncthing 2>&1)"
 
-if [[ "$BACKUP_DEV" != '1' ]]; then
-    sync
-    mount -o remount,ro /srv/data
-    aws autoscaling update-auto-scaling-group --auto-scaling-group-name "$INSTANCE_ASG_NAME" --desired-capacity 0 --region "$instance_region"
+    log
+    log 'starting duplicity backup'
+    local duplicity_remote="s3://s3.amazonaws.com/$backup_s3_bucket"
+    duplicity \
+        --archive-dir /srv/data/duplicity-archive \
+        --full-if-older-than 7D \
+        --no-encryption \
+        --s3-use-multiprocessing \
+        /srv/data/syncthing \
+        "$duplicity_remote" 2>&1
+
+    log 'pruning old backups'
+    duplicity \
+        remove-older-than 60D \
+        --force \
+        "$duplicity_remote" 2>&1
+}
+
+sourced=${BASH_SOURCE[0]:-${(%):-%x}}
+if [[ -z "$sourced" ]]; then
+    main
 fi

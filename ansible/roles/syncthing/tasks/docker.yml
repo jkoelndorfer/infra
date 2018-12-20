@@ -1,10 +1,10 @@
 ---
 
-- name: start syncthing container
+- name: create syncthing container
   docker_container:
     name:  syncthing
     image: "syncthing/syncthing:{{ syncthing_version }}"
-    state: started
+    state: stopped
     restart_policy: unless-stopped
     env:
       PUID: "{{ syncthing_uid }}"
