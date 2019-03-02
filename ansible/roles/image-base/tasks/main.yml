@@ -1,11 +1,5 @@
 ---
 
-- name: update system packages
-  package:
-    name: "*"
-    state: latest
-    force_apt_get: "{{ 'yes' if ansible_os_family == 'Debian' else omit }}"
-
 - name: install core system packages
   package:
     name: "{{ item }}"
