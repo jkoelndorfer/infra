@@ -48,6 +48,9 @@
   command: lsblk -l -d {{ ebs_device_path | quote }} -n -o UUID
   register: filesystem_uuid
   changed_when: false
+  retries: 3
+  delay: 5
+  until: (filesystem_uuid.stdout | trim) != ""
 
 - name: configure EBS volume mount
   mount:
