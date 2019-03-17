@@ -25,7 +25,8 @@
 
     cloud_tools_tempfile="$(mktemp --tmpdir cloud-tools.XXXXXX.tar.gz)"
     cd {{ role_path | quote }}/../../..
-    tar --exclude '*.retry' -czf "$cloud_tools_tempfile" $(git ls-files | awk -F/ '{ print $1 }' | sort -u) >&2
+    tar --exclude '*.retry' --exclude '.gitignore' --exclude 'packer' --exclude 'terraform' \
+      -czf "$cloud_tools_tempfile" $(git ls-files | awk -F/ '{ print $1 }' | sort -u) >&2
     echo "$cloud_tools_tempfile"
   register: cloud_tools_archive
 
