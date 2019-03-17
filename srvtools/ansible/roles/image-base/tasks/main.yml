@@ -1,0 +1,52 @@
+---
+
+- name: install core system packages
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - "{{ git_package }}"
+    - "{{ python_pip_package }}"
+
+- name: install core pip packages
+  pip:
+    name:
+      - awscli
+      - ansible
+      - boto3
+    state: latest
+
+- name: locally archive srvtools
+  delegate_to: localhost
+  become: no
+  shell: |-
+    #!/bin/bash
+    set -eu
+
+    srvtools_tempfile="$(mktemp --tmpdir srvtools.XXXXXX.tar.gz)"
+    cd {{ role_path | quote }}/../../../..
+    tar --exclude '*.retry' -czf "$srvtools_tempfile" srvtools >&2
+    echo "$srvtools_tempfile"
+  register: srvtools_archive
+
+- name: copy srvtools archive to host
+  copy:
+    src: "{{ srvtools_archive.stdout }}"
+    dest: /tmp/srvtools.tar.gz
+
+- name: unarchive srvtools
+  shell: |-
+    #!/bin/bash
+
+    cd /opt/
+    tar -xzf /tmp/srvtools.tar.gz
+    rm -f /tmp/srvtools.tar.gz
+    chown -R root:root /opt/srvtools
+    chmod u=rwX,go=rX /opt/srvtools
+
+- name: remove local srvtools archive
+  delegate_to: localhost
+  become: no
+  file:
+    path: "{{ srvtools_archive.stdout }}"
+    state: absent
