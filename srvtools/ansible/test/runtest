@@ -2,17 +2,17 @@
 
 script_dir="$(dirname "$0")"
 function run_docker() {
-    local test_image='debian:cloud-tools-test-9'
+    local test_image='debian:infra-test-9'
     local test_cmd=()
-    local cloudtools_dir='/opt/cloudtools'
+    local srvtools_dir='/opt/srvtools'
     local volpath="$(readlink -f "$script_dir/../..")"
 
     cd "$script_dir"
     docker build -t "$test_image" .
     set -x
     docker run -e IN_DOCKER=1 \
-        -w "$cloudtools_dir/ansible" \
-        -v "$volpath:$cloudtools_dir" \
+        -w "$srvtools_dir/ansible" \
+        -v "$volpath:$srvtools_dir" \
         -t "$test_image" \
         'test/runtest'
     set +x
