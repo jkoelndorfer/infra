@@ -60,7 +60,7 @@ resource "aws_iam_role_policy_attachment" "dyndns_logging" {
 
 resource "aws_lambda_function" "dyndns" {
   # This is a dummy package so we can deploy the Lambda function.
-  # Apply updates from the "cloud-tools" repository.
+  # Apply updates from the "infra" repository.
   filename      = "dyndns.zip"
   function_name = "${local.env["name"]}-dyndns"
   handler       = "dyndns.lambda_handler"
