@@ -85,6 +85,7 @@ function main() {
     if [[ "$BACKUP_DEV" != '1' ]]; then
         sync
         mount -o remount,ro /srv/data
+        sync
         aws autoscaling update-auto-scaling-group --auto-scaling-group-name "$INSTANCE_ASG_NAME" --desired-capacity 0 --region "$instance_region"
     fi
 }

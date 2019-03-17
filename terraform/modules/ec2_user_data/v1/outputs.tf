@@ -9,6 +9,6 @@ INSTANCE_DNS='${var.dns}'
 INSTANCE_ENV='${var.env}'
 INSTANCE_NAME='${var.name}'
 EOM
-/opt/cloud-tools/aws/provision
+/opt/srvtools/aws/provision
 EOF
 }
