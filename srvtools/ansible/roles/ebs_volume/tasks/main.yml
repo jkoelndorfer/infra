@@ -57,5 +57,5 @@
     path: "{{ filesystem_mount_point }}"
     src: "UUID={{ filesystem_uuid.stdout | trim }}"
     fstype: ext4
-    opts: rw,discard,noatime
+    opts: rw,noatime
     state: mounted
