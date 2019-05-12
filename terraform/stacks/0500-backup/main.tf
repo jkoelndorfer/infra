@@ -9,35 +9,6 @@ data "aws_ami" "syncthing" {
   owners = ["${data.aws_caller_identity.current.account_id}"]
 }
 
-data "terraform_remote_state" "bootstrap" {
-  backend = "local"
-  config {
-    path = "../bootstrap/terraform.tfstate.d/prod/terraform.tfstate"
-  }
-}
-
-data "terraform_remote_state" "core" {
-  backend   = "s3"
-  workspace = "${terraform.workspace}"
-  config {
-    bucket               = "310987624463-prod-tfstate"
-    key                  = "core.tfstate"
-    region               = "us-east-1"
-    workspace_key_prefix = "workspaces"
-  }
-}
-
-data "terraform_remote_state" "backup_persistent" {
-  backend   = "s3"
-  workspace = "${terraform.workspace}"
-  config {
-    bucket               = "310987624463-prod-tfstate"
-    key                  = "backup_persistent.tfstate"
-    region               = "us-east-1"
-    workspace_key_prefix = "workspaces"
-  }
-}
-
 resource "aws_subnet" "default" {
   vpc_id            = "${data.terraform_remote_state.core.vpc_id}"
   availability_zone = "${data.terraform_remote_state.backup_persistent.ebs_volume_az}"

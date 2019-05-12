@@ -1,1 +1,1 @@
-../../env.tf
+../common/env.tf

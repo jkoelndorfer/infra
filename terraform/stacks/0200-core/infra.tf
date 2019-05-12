@@ -1,10 +1,3 @@
-data "terraform_remote_state" "bootstrap" {
-  backend = "local"
-  config {
-    path = "../bootstrap/terraform.tfstate.d/prod/terraform.tfstate"
-  }
-}
-
 module "infra_s3_bucket" {
   source = "../../modules/kms_encrypted_s3_bucket/v1"
 

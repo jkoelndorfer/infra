@@ -1,0 +1,1 @@
+../common/remote-state-core.tf
