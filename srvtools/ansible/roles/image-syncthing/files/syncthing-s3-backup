@@ -37,7 +37,7 @@ function folder_sync_status() {
 }
 
 function device_stats() {
-    jq -rs '.[1] as $devstats | .[0] | map(.[] | {(.id): {name, last_seen: $devstats[.id]["lastSeen"]}}) | add' \
+    jq -s '.[1] as $devstats | .[0] | map(.[] | {(.id): {name, last_seen: $devstats[.id]["lastSeen"]}}) | add' \
         <(s system/config | jq '.devices | map({(.deviceID): { id: .deviceID, name: .name }})') \
         <(s stats/device)
 }
@@ -52,7 +52,7 @@ function device_last_seen() {
 }
 
 function folder_stats() {
-    jq -rs '.[1] as $fstats | .[0].folders | map({id: .id, label: .label, path: .path, last_activity: $fstats[(.id)]["lastFile"]["at"]})' \
+    jq -s '.[1] as $fstats | .[0].folders | map({id: .id, label: .label, path: .path, last_activity: $fstats[(.id)]["lastFile"]["at"]})' \
         <(s system/config) <(s stats/folder)
 }
 
@@ -65,24 +65,32 @@ function get_backup_device_id() {
     if [[ "$BACKUP_LOCALDEV" == 1 ]]; then
         echo "$BACKUP_DEVICE_ID"
     else
-        /opt/cloud-tools/aws/ssm-param --name "/$INSTANCE_ENV/backup/syncthing_backup_device_id" --region "$instance_region"
+        /opt/srvtools/aws/ssm-param --name "/$INSTANCE_ENV/backup/syncthing_backup_device_id" --region "$instance_region"
     fi
 }
 
 function main() {
     source /etc/metadata
-    local instance_region="$(/opt/cloud-tools/aws/instance/region)"
+    local instance_region="$(/opt/srvtools/aws/instance/region)"
 
-    local backup_s3_bucket="$(/opt/cloud-tools/aws/ssm-param --name "/$INSTANCE_ENV/backup/backup_s3_bucket" --region "$instance_region")"
+    local backup_date="$(date '+%Y-%m-%d')"
+    local backup_s3_bucket="$(/opt/srvtools/aws/ssm-param --name "/$INSTANCE_ENV/backup/backup_s3_bucket" --region "$instance_region")"
     if [[ -z "$backup_s3_bucket" ]]; then
         log 'Failed getting backup S3 bucket name!'
     else
         backup_run_report="$(backup "$instance_region" "$backup_s3_bucket" 2>&1)"
     fi
 
+    local backup_report_topic_arn="$(/opt/srvtools/aws/ssm-param --name "/$INSTANCE_ENV/backup/backup_sns_topic_arn" --region "$instance_region")"
     local report=$(backup_report "$backup_s3_bucket" "$backup_run_report")
-    aws sns publish --topic-arn "$backup_report_topic_arn"
-    if [[ "$BACKUP_DEV" != '1' ]]; then
+    aws sns publish \
+        --topic-arn "$backup_report_topic_arn" \
+        --subject "Backup Report $backup_date" \
+        --message "$report" \
+        --region "$instance_region"
+
+    local do_scale_down="$(/opt/srvtools/aws/ssm-param --name "/$INSTANCE_ENV/backup/scale_down_after_backup" --region "$instance_region")"
+    if [[ "$do_scale_down" == '1' && "$BACKUP_LOCALDEV" != '1' ]]; then
         sync
         mount -o remount,ro /srv/data
         sync
@@ -93,11 +101,11 @@ function main() {
 function backup_report() {
     local backup_s3_bucket="$1"
     local backup_run_report="$2"
-    local updated_files="$(find /srv/data/syncthing -print0 -mmin -$((60 * 60 * 24)) | xargs -0 ls -lh)"
+    local updated_files="$(find /srv/data/syncthing -type f -mmin -$((60 * 24)) | grep -v -e '/.git/')"
     if [[ -z "$updated_files" ]]; then
         local updated_files='[none]'
     fi
-<<EOF
+cat <<EOF
 ################################################################################
 #                                 UPDATED FILES                                #
 ################################################################################
@@ -107,6 +115,11 @@ $updated_files
 #                                  BACKUP RUN                                  #
 ################################################################################
 $backup_run_report
+
+################################################################################
+#                                  DISK USAGE                                  #
+################################################################################
+$(df -h /srv/data)
 
 ################################################################################
 #                                  S3 BUCKET                                   #
@@ -153,11 +166,10 @@ function wait_for_folders_synced() {
         # Check the folders after every iteration in case any new ones show up.
         local folders=($(list_folder_ids))
         local synced=1
-        for f in $folders; do
+        for f in "${folders[@]}"; do
             if ! folder_sync_status "$f"; then
                 synced=0
                 log "Folder $f is not synced" >&2
-                break
             else
                 log "Folder $f is synced" >&2
             fi
@@ -178,6 +190,8 @@ function backup() {
 
     log 'starting syncthing container'
     log "$(docker start syncthing 2>&1)"
+    log 'waiting for syncthing to start up'
+    sleep 30
     wait_for_backup_device "$aws_region" "$start_date"
     wait_for_folders_synced
 
@@ -204,7 +218,6 @@ function backup() {
         "$duplicity_remote" 2>&1
 }
 
-sourced=${BASH_SOURCE[0]:-${(%):-%x}}
-if [[ -z "$sourced" ]]; then
+if [[ "$SHELL" == '/bin/bash' && "${BASH_SOURCE[0]}" == "$0" ]]; then
     main
 fi

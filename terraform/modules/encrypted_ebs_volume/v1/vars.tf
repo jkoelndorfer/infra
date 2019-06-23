@@ -8,7 +8,7 @@ variable "category" {
   description = "the category of infrastructure that the EBS volume belongs to"
 }
 
-variable "class" {
+variable "role" {
   type        = "string"
   description = "the class of infrastructure that the EBS volume belongs to (used to control attach permissions)"
 }

@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -euo pipefail
+
+script_dir=$(dirname "$(realpath "$0")")
+cd "$script_dir"
+
+if [[ "$(vagrant status)" =~ (not created|shutoff) ]]; then
+    vagrant up
+fi
+
+vagrant_ssh_config=$(vagrant ssh-config)
+
+host=$(awk '$1 == "HostName" { print $2 }' <<<"$vagrant_ssh_config")
+port=$(awk '$1 == "Port" { print $2 }' <<<"$vagrant_ssh_config")
+user=$(awk '$1 == "User" { print $2 }' <<<"$vagrant_ssh_config")
+identity_file=$(awk '$1 == "IdentityFile" { print $2 }' <<<"$vagrant_ssh_config")
+
+ansible-playbook \
+    -e ansible_user="$user" \
+    -e ansible_host="$host" \
+    -e ansible_port="$port" \
+    -e ansible_ssh_private_key_file="$identity_file" \
+    --ssh-common-args '-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' \
+    --limit vagrant \
+    "$@"

@@ -7,7 +7,7 @@ resource "aws_ebs_volume" "ebs_volume" {
   tags              = {
     "Name"           = "${var.env}-${var.name}"
     "johnk:category" = "${var.category}"
-    "johnk:class"    = "${var.class}"
+    "johnk:role"     = "${var.role}"
     "johnk:env"      = "${var.env}"
   }
 }

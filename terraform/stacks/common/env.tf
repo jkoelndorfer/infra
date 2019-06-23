@@ -10,13 +10,13 @@ locals {
       name = "dev"
       dns_zone = "dev.johnk.io"
       vpc_cidr_block = "10.99.0.0/16"
-      syncthing_ami = "syncthing 2019-03-01 2201"
+      syncthing_ami = "syncthing 2019-06-23 2207"
     }
     prod = {
       name = "prod"
       dns_zone = "johnk.io"
       vpc_cidr_block = "10.100.0.0/16"
-      syncthing_ami = "syncthing 2019-03-02 1534"
+      syncthing_ami = "syncthing 2019-06-23 2207"
     }
   }
   env = "${merge(local.environment_defaults, local.environments[terraform.workspace])}"

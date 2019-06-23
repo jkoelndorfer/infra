@@ -3,7 +3,7 @@ data "aws_caller_identity" "current" {}
 data "terraform_remote_state" "core" {
   backend   = "s3"
   workspace = "${terraform.workspace}"
-  config {
+  config = {
     bucket               = "310987624463-prod-tfstate"
     key                  = "core.tfstate"
     region               = "us-east-1"
@@ -37,5 +37,5 @@ resource "aws_iam_instance_profile" "instance_profile" {
 
 resource "aws_iam_role_policy_attachment" "default_policy_attachment" {
   role       = "${aws_iam_role.role.name}"
-  policy_arn = "${data.terraform_remote_state.core.ec2_default_policy_arn}"
+  policy_arn = "${data.terraform_remote_state.core.outputs.ec2_default_policy_arn}"
 }

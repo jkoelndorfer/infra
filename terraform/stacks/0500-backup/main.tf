@@ -10,9 +10,9 @@ data "aws_ami" "syncthing" {
 }
 
 resource "aws_subnet" "default" {
-  vpc_id            = "${data.terraform_remote_state.core.vpc_id}"
-  availability_zone = "${data.terraform_remote_state.backup_persistent.ebs_volume_az}"
-  cidr_block        = "${cidrsubnet(data.terraform_remote_state.core.vpc_cidr_block, 8, local.env["backup_subnet_num"])}"
+  vpc_id            = "${data.terraform_remote_state.core.outputs.vpc_id}"
+  availability_zone = "${data.terraform_remote_state.backup_persistent.outputs.ebs_volume_az}"
+  cidr_block        = "${cidrsubnet(data.terraform_remote_state.core.outputs.vpc_cidr_block, 8, local.env["backup_subnet_num"])}"
 
   tags = {
     "Name"           = "${local.env["name"]}-backup-infra"
@@ -24,7 +24,7 @@ resource "aws_subnet" "default" {
 resource "aws_security_group" "syncthing" {
   name = "${local.env["name"]}-syncthing"
   description = "Security group for syncthing instances"
-  vpc_id = "${data.terraform_remote_state.core.vpc_id}"
+  vpc_id = "${data.terraform_remote_state.core.outputs.vpc_id}"
 
   ingress {
     cidr_blocks = ["0.0.0.0/0"]
@@ -52,7 +52,7 @@ module "asg" {
 
   associate_public_ip_address = "true"
   category                    = "backup"
-  class                       = "syncthing"
+  role                        = "syncthing"
   desired_capacity            = 1
   dns                         = "syncthing.${local.env["dns_zone"]}"
   env                         = "${local.env["name"]}"
@@ -93,7 +93,7 @@ resource "aws_iam_role_policy" "backup_ec2_policy" {
             ],
             "Condition": {
               "StringEquals": {
-                "ec2:ResourceTag/johnk:class": "syncthing"
+                "ec2:ResourceTag/johnk:role": "syncthing"
               }
             }
         },
@@ -101,7 +101,7 @@ resource "aws_iam_role_policy" "backup_ec2_policy" {
             "Sid": "",
             "Effect": "Allow",
             "Action": "kms:CreateGrant",
-            "Resource": "${data.terraform_remote_state.bootstrap.kms_key_arn}",
+            "Resource": "${data.terraform_remote_state.bootstrap.outputs.kms_key_arn}",
             "Condition": {
               "Bool": {
                 "kms:GrantIsForAWSResource": true
@@ -137,8 +137,8 @@ resource "aws_iam_role_policy" "backup_ec2_policy" {
                 "s3:ListMultipartUploadParts"
             ],
             "Resource": [
-              "${data.terraform_remote_state.backup_persistent.s3_bucket_arn}",
-              "${data.terraform_remote_state.backup_persistent.s3_bucket_arn}/*"
+              "${data.terraform_remote_state.backup_persistent.outputs.s3_bucket_arn}",
+              "${data.terraform_remote_state.backup_persistent.outputs.s3_bucket_arn}/*"
             ]
         },
         {
@@ -151,7 +151,7 @@ resource "aws_iam_role_policy" "backup_ec2_policy" {
             "Sid": "",
             "Effect": "Allow",
             "Action": "sns:Publish",
-            "Resource": "${data.terraform_remote_state.backup_persistent.sns_topic_arn}"
+            "Resource": "${data.terraform_remote_state.backup_persistent.outputs.sns_topic_arn}"
         }
     ]
 }
@@ -161,17 +161,23 @@ EOF
 resource "aws_ssm_parameter" "ebs_volume_id" {
   name  = "/${local.env["name"]}/backup/syncthing_ebs_volume_id"
   type  = "String"
-  value = "${data.terraform_remote_state.backup_persistent.ebs_volume_id}"
+  value = "${data.terraform_remote_state.backup_persistent.outputs.ebs_volume_id}"
 }
 
 resource "aws_ssm_parameter" "backup_s3_bucket" {
   name  = "/${local.env["name"]}/backup/backup_s3_bucket"
   type  = "String"
-  value = "${data.terraform_remote_state.backup_persistent.s3_bucket_id}"
+  value = "${data.terraform_remote_state.backup_persistent.outputs.s3_bucket_id}"
 }
 
 resource "aws_ssm_parameter" "backup_sns_topic_arn" {
   name  = "/${local.env["name"]}/backup/backup_sns_topic_arn"
   type  = "String"
-  value = "${data.terraform_remote_state.backup_persistent.sns_topic_arn}"
+  value = "${data.terraform_remote_state.backup_persistent.outputs.sns_topic_arn}"
+}
+
+resource "aws_ssm_parameter" "scale_down_after_backup" {
+  name  = "/${local.env["name"]}/backup/scale_down_after_backup"
+  type  = "String"
+  value = "1"
 }

@@ -6,7 +6,7 @@ source /etc/metadata
 cd /opt/srvtools/ansible
 ansible-playbook -i localhost, \
     -e instance_category="$INSTANCE_CATEGORY" \
-    -e instance_class="$INSTANCE_CLASS" \
+    -e instance_role="$INSTANCE_ROLE" \
     -e instance_env="$INSTANCE_ENV" \
     -e instance_name="$INSTANCE_NAME" \
     provision-ec2.yml

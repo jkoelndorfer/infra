@@ -13,12 +13,12 @@ module "ebs_volume" {
 
   availability_zone = "${local.env["default_aws_region"]}a"
   category          = "backup"
-  class             = "syncthing"
   env               = "${local.env["name"]}"
   name              = "syncthing-data"
-  kms_key_arn       = "${data.terraform_remote_state.bootstrap.kms_key_arn}"
-  size              = "500"
-  type              = "sc1"
+  kms_key_arn       = "${data.terraform_remote_state.bootstrap.outputs.kms_key_arn}"
+  role              = "syncthing"
+  size              = "50"
+  type              = "gp2"
 }
 
 # E-mail subscriptions are unsupported in Terraform because they must be confirmed

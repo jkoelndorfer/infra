@@ -5,5 +5,5 @@ local_testing_admin_ssh_pubkey: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC5hebbZR25
 tag_prefix: "johnk"
 
 syncthing_version: v0.14.54
-syncthing_uid: 4000
-syncthing_gid: 4000
+syncthing_uid: "4000"
+syncthing_gid: "4000"

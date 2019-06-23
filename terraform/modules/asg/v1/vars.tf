@@ -8,11 +8,6 @@ variable "category" {
   description = "the category of infrastructure that the autoscaling group belongs to"
 }
 
-variable "class" {
-  type        = "string"
-  description = "the class assigned to launched instances (used during provisioning)"
-}
-
 variable "desired_capacity" {
   type        = "string"
   description = "the initial desired capacity of the autoscaling group (updates to this value are ignored)"
@@ -58,6 +53,11 @@ variable "min_size" {
 variable "name" {
   type        = "string"
   description = "the name of the autoscaling group"
+}
+
+variable "role" {
+  type        = "string"
+  description = "the role assigned to launched instances (used during provisioning)"
 }
 
 variable "security_groups" {

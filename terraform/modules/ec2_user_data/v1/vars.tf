@@ -8,11 +8,6 @@ variable "category" {
   description = "category of infrastructure that the instance belongs to"
 }
 
-variable "class" {
-  type        = "string"
-  description = "class of instance that will be provisionined"
-}
-
 variable "dns" {
   type        = "string"
   default     = ""
@@ -27,4 +22,9 @@ variable "env" {
 variable "name" {
   type        = "string"
   description = "name assigned to instance"
+}
+
+variable "role" {
+  type        = "string"
+  description = "role of instance that will be provisionined"
 }
