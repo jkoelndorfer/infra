@@ -1,6 +1,0 @@
-#!/bin/bash
-
-# Configures two Syncthing instances to test remote backup
-# functionality.
-
-set -euo pipefail
