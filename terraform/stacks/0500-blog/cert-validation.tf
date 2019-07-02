@@ -1,7 +1,3 @@
-locals {
-  ssl_cert = data.terraform_remote_state.blog_persistent.outputs.ssl_cert
-}
-
 data "aws_route53_zone" "cert_zone" {
   name = data.terraform_remote_state.blog_persistent.outputs.ssl_cert.domain_name
 }

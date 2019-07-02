@@ -7,8 +7,19 @@ resource "aws_route53_record" "blog" {
   name    = "${data.aws_route53_zone.blog_zone.name}"
   type    = "A"
   alias {
-    name                   = data.terraform_remote_state.blog_persistent.outputs.s3_bucket.website_domain
-    zone_id                = data.terraform_remote_state.blog_persistent.outputs.s3_bucket.hosted_zone_id
+    name                   = aws_cloudfront_distribution.blog.domain_name
+    zone_id                = aws_cloudfront_distribution.blog.hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+resource "aws_route53_record" "blog_www" {
+  zone_id = data.aws_route53_zone.blog_zone.zone_id
+  name    = "www.${data.aws_route53_zone.blog_zone.name}"
+  type    = "A"
+  alias {
+    name                   = aws_cloudfront_distribution.blog.domain_name
+    zone_id                = aws_cloudfront_distribution.blog.hosted_zone_id
     evaluate_target_health = false
   }
 }

@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "blog_bucket" {
-  bucket = local.env["dns_zone"]
+  bucket = "${local.aws_account_id}-blog-${local.env["name"]}"
   acl    = "public-read"
 
   website {
