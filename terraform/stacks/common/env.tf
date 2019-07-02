@@ -1,4 +1,7 @@
+data "aws_caller_identity" "current" {}
+
 locals {
+  aws_account_id = "${data.aws_caller_identity.current.account_id}"
   amazon_marketplace_id = "679593333241"
   environment_defaults = {
     default_ec2_public_key= "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCpfRhcMcO9/7PN6USiFh6zJePFi31rdBI+hHNhy6/2WrjGnHp/kOLIRbv4TIpX+XVoseoEb3tcLaPm2YQLmrVl53MAqmXwmFPryKZMIzttoDtXw9V/tXCOFEuPv5YK3wPbXruPLB2gHQgB+denUDS8qSQ9s08K/jqR2v04kOFaDyfuL1dJo0OB6lGRsZV0a/lcNZLG3AaRvsRDVFSUWj1z5ACR4tSHcKwJnq+NsS1vuzTaQpc40WZPvJrNHNSQywHAELvLszIdLfKUBpFX4YLk4zk9+46GkeclIY3dqXtwz+NEw2OWJIUDgPHzQB1m9NZbUzNfpPvAEdyJ5EX6GszR"
