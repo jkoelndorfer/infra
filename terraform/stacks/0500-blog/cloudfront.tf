@@ -14,6 +14,13 @@ resource "aws_cloudfront_distribution" "blog" {
 
   aliases = [local.blog_domain, local.blog_www_domain]
 
+  custom_error_response {
+    error_caching_min_ttl = 60
+    error_code            = 404
+    response_code         = 404
+    response_page_path    = "/404.html"
+  }
+
   default_cache_behavior {
     allowed_methods  = ["HEAD", "GET", "OPTIONS"]
     cached_methods   = ["HEAD", "GET", "OPTIONS"]
