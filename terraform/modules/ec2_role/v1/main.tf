@@ -2,7 +2,7 @@ data "aws_caller_identity" "current" {}
 
 data "terraform_remote_state" "core" {
   backend   = "s3"
-  workspace = "${terraform.workspace}"
+  workspace = terraform.workspace
   config = {
     bucket               = "310987624463-prod-tfstate"
     key                  = "core.tfstate"
@@ -32,10 +32,10 @@ EOF
 
 resource "aws_iam_instance_profile" "instance_profile" {
   name = "${var.env}-${var.name}"
-  role = "${aws_iam_role.role.name}"
+  role = aws_iam_role.role.name
 }
 
 resource "aws_iam_role_policy_attachment" "default_policy_attachment" {
-  role       = "${aws_iam_role.role.name}"
-  policy_arn = "${data.terraform_remote_state.core.outputs.ec2_default_policy_arn}"
+  role       = aws_iam_role.role.name
+  policy_arn = data.terraform_remote_state.core.outputs.ec2_default_policy_arn
 }

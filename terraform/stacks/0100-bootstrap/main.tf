@@ -1,5 +1,5 @@
 provider "aws" {
-    region = "${local.env["default_aws_region"]}"
+    region = local.env["default_aws_region"]
     # Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in the environment
     version = "~> 2.16"
 }
@@ -11,7 +11,7 @@ resource "aws_kms_key" "enc" {
   }
   tags = {
     "johnk:category" = "core"
-    "johnk:env"      = "${local.env["name"]}"
+    "johnk:env"      = local.env["name"]
   }
 }
 
@@ -20,8 +20,8 @@ module "bucket" {
 
   bucket          = "tfstate"
   category        = "core"
-  env             = "${local.env["name"]}"
-  kms_key_id      = "${aws_kms_key.enc.id}"
-  region          = "${local.env["default_aws_region"]}"
+  env             = local.env["name"]
+  kms_key_id      = aws_kms_key.enc.id
+  region          = local.env["default_aws_region"]
   versioning      = true
 }

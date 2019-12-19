@@ -41,7 +41,7 @@ resource "aws_security_group" "syncthing" {
 module "ec2_role" {
   source = "../../modules/ec2_role/v1"
 
-  env  = "${local.env["name"]}"
+  env  = local.env["name"]
   name = "syncthing"
 }
 

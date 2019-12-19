@@ -4,7 +4,7 @@ data "aws_route53_zone" "blog_zone" {
 
 resource "aws_route53_record" "blog" {
   zone_id = data.aws_route53_zone.blog_zone.zone_id
-  name    = "${data.aws_route53_zone.blog_zone.name}"
+  name    = data.aws_route53_zone.blog_zone.name
   type    = "A"
   alias {
     name                   = aws_cloudfront_distribution.blog.domain_name

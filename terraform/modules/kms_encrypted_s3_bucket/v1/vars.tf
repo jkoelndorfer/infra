@@ -1,29 +1,29 @@
 variable "bucket" {
-  type        = "string"
+  type        = string
   description = "the name of the S3 bucket"
 }
 
 variable "category" {
-  type        = "string"
+  type        = string
   description = "the category of infrastructure that the S3 bucket belongs to"
 }
 
 variable "env" {
-  type        = "string"
+  type        = string
   description = "the environment that the bucket lives in, e.g. dev or prod"
 }
 
 variable "kms_key_id" {
-  type        = "string"
+  type        = string
   description = "the ID of the KMS key used to encrypt the bucket"
 }
 
 variable "region" {
-  type        = "string"
+  type        = string
   description = "the AWS region that the S3 bucket is hosted in"
 }
 
 variable "versioning" {
-  type        = "string"
+  type        = string
   description = "whether or not to enable versioning on the bucket"
 }

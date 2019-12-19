@@ -46,13 +46,13 @@ EOF
 }
 
 resource "aws_iam_role_policy_attachment" "dyndns" {
-  role       = "${aws_iam_role.dyndns.name}"
-  policy_arn = "${aws_iam_policy.dyndns.arn}"
+  role       = aws_iam_role.dyndns.name
+  policy_arn = aws_iam_policy.dyndns.arn
 }
 
 resource "aws_iam_role_policy_attachment" "dyndns_logging" {
-  role       = "${aws_iam_role.dyndns.name}"
-  policy_arn = "${aws_iam_policy.lambda_logging.arn}"
+  role       = aws_iam_role.dyndns.name
+  policy_arn = aws_iam_policy.lambda_logging.arn
 }
 
 # TODO: Create a Lambda module that automatically handles logging
@@ -64,19 +64,19 @@ resource "aws_lambda_function" "dyndns" {
   filename      = "dyndns.zip"
   function_name = "${local.env["name"]}-dyndns"
   handler       = "dyndns.lambda_handler"
-  role          = "${aws_iam_role.dyndns.arn}"
+  role          = aws_iam_role.dyndns.arn
   description   = "Provides dynamic DNS as EC2 instances come online."
   memory_size   = 128
   runtime       = "python3.7"
   timeout       = 5
   environment {
     variables = {
-      "env_name" = "${local.env["name"]}"
+      "env_name" = local.env["name"]
     }
   }
-  tags {
+  tags = {
     "johnk:category" = "core"
-    "johnk:env"      = "${local.env["name"]}"
+    "johnk:env"      = local.env["name"]
   }
 }
 
@@ -118,14 +118,14 @@ EOF
 
 
 resource "aws_iam_role_policy_attachment" "cloudwatch_dyndns" {
-  role       = "${aws_iam_role.cloudwatch_dyndns.name}"
-  policy_arn = "${aws_iam_policy.cloudwatch_dyndns.arn}"
+  role       = aws_iam_role.cloudwatch_dyndns.name
+  policy_arn = aws_iam_policy.cloudwatch_dyndns.arn
 }
 
 resource "aws_cloudwatch_event_rule" "ec2_instance_running" {
   name        = "${local.env["name"]}-dyndns-ec2-instance-running"
   description = "Fires when an event at the dyndns Lambda function when an EC2 instance enters the running state"
-  role_arn    = "${aws_iam_role.cloudwatch_dyndns.arn}"
+  role_arn    = aws_iam_role.cloudwatch_dyndns.arn
   event_pattern = <<EOF
     {
       "source": ["aws.ec2"],
@@ -139,13 +139,13 @@ EOF
 
 resource "aws_cloudwatch_event_target" "dyndns" {
   target_id = "${local.env["name"]}-ec2state-dyndns"
-  rule      = "${aws_cloudwatch_event_rule.ec2_instance_running.name}"
-  arn       = "${aws_lambda_function.dyndns.arn}"
+  rule      = aws_cloudwatch_event_rule.ec2_instance_running.name
+  arn       = aws_lambda_function.dyndns.arn
 }
 
 resource "aws_lambda_permission" "cloudwatch_dyndns" {
   action        = "lambda:InvokeFunction"
-  function_name = "${aws_lambda_function.dyndns.function_name}"
+  function_name = aws_lambda_function.dyndns.function_name
   principal     = "events.amazonaws.com"
-  source_arn    = "${aws_cloudwatch_event_rule.ec2_instance_running.arn}"
+  source_arn    = aws_cloudwatch_event_rule.ec2_instance_running.arn
 }
