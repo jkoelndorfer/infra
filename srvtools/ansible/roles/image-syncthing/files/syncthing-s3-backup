@@ -169,9 +169,9 @@ function wait_for_folders_synced() {
         for f in "${folders[@]}"; do
             if ! folder_sync_status "$f"; then
                 synced=0
-                log "Folder $f is not synced" >&2
+                log "[ !! ]: $f not synced" >&2
             else
-                log "Folder $f is synced" >&2
+                log "[ OK ]: $f is synced" >&2
             fi
         done
         if [[ "$synced" == 0 ]]; then
