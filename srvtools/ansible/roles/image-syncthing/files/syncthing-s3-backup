@@ -101,7 +101,7 @@ function main() {
 function backup_report() {
     local backup_s3_bucket="$1"
     local backup_run_report="$2"
-    local updated_files="$(find /srv/data/syncthing -type f -mmin -$((60 * 24)) | grep -v -e '/.git/')"
+    local updated_files="$(find /srv/data/syncthing -type f -mmin -$((60 * 24)) | grep -E -v -e '/.git/' -e '^/srv/data/syncthing/config/')"
     if [[ -z "$updated_files" ]]; then
         local updated_files='[none]'
     fi
