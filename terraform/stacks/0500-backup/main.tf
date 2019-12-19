@@ -74,86 +74,81 @@ resource "aws_autoscaling_schedule" "backup_schedule" {
   desired_capacity = 1
 }
 
+data "aws_iam_policy_document" "backup_ec2_policy" {
+  statement {
+    effect    = "Allow"
+    actions   = ["ec2:AttachVolume"]
+    resources = [
+      "arn:aws:ec2:*:${data.aws_caller_identity.current.account_id}:volume/*",
+      "arn:aws:ec2:*:${data.aws_caller_identity.current.account_id}:instance/*",
+    ]
+    condition {
+      test     = "StringEquals"
+      variable = "ec2:ResourceTag/johnk:role"
+      values   = ["syncthing"]
+    }
+  }
+
+  statement {
+    effect    = "Allow"
+    actions   = ["kms:CreateGrant"]
+    resources = [data.terraform_remote_state.bootstrap.outputs.kms_key_arn]
+    condition {
+      test     = "Bool"
+      variable = "kms:GrantIsForAWSResource"
+      values   = [true]
+    }
+    condition {
+      test     = "ForAllValues:StringEquals"
+      variable = "kms:GrantOperations"
+      values   = ["Decrypt", "Encrypt"]
+    }
+  }
+
+  statement {
+    effect    = "Allow"
+    actions   = [
+      "ssm:GetParameter",
+      "ssm:GetParameterByPath",
+      "ssm:GetParameters",
+    ]
+    resources = ["arn:aws:ssm:*:${data.aws_caller_identity.current.account_id}:parameter/${local.env["name"]}/backup/*"]
+  }
+
+  statement {
+    effect    = "Allow"
+    actions   = [
+      "s3:PutObject",
+      "s3:GetObject",
+      "s3:ListBucketMultipartUploads",
+      "s3:AbortMultipartUpload",
+      "s3:ListBucket",
+      "s3:DeleteObject",
+      "s3:ListMultipartUploadParts",
+    ]
+    resources = [
+      data.terraform_remote_state.backup_persistent.outputs.s3_bucket_arn,
+      "${data.terraform_remote_state.backup_persistent.outputs.s3_bucket_arn}/*"
+    ]
+  }
+
+  statement {
+    effect    = "Allow"
+    actions   = ["autoscaling:UpdateAutoScalingGroup"]
+    resources = [module.asg.asg_arn]
+  }
+
+  statement {
+    effect    = "Allow"
+    actions   = ["sns:Publish"]
+    resources = [data.terraform_remote_state.backup_persistent.outputs.sns_topic_arn]
+  }
+}
+
 resource "aws_iam_role_policy" "backup_ec2_policy" {
   name   = "${local.env["name"]}-syncthing-backup"
   role   = module.ec2_role.iam_role_name
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "",
-            "Effect": "Allow",
-            "Action": "ec2:AttachVolume",
-            "Resource": [
-              "arn:aws:ec2:*:${data.aws_caller_identity.current.account_id}:volume/*",
-              "arn:aws:ec2:*:${data.aws_caller_identity.current.account_id}:instance/*"
-            ],
-            "Condition": {
-              "StringEquals": {
-                "ec2:ResourceTag/johnk:role": "syncthing"
-              }
-            }
-        },
-        {
-            "Sid": "",
-            "Effect": "Allow",
-            "Action": "kms:CreateGrant",
-            "Resource": "${data.terraform_remote_state.bootstrap.outputs.kms_key_arn}",
-            "Condition": {
-              "Bool": {
-                "kms:GrantIsForAWSResource": true
-              },
-              "ForAllValues:StringEquals": {
-                "kms:GrantOperations": [
-                  "Decrypt",
-                  "Encrypt"
-                ]
-              }
-            }
-        },
-        {
-            "Sid": "",
-            "Effect": "Allow",
-            "Action": [
-                "ssm:GetParameter",
-                "ssm:GetParameterByPath",
-                "ssm:GetParameters"
-            ],
-            "Resource": "arn:aws:ssm:*:${data.aws_caller_identity.current.account_id}:parameter/${local.env["name"]}/backup/*"
-        },
-        {
-            "Sid": "",
-            "Effect": "Allow",
-            "Action": [
-                "s3:PutObject",
-                "s3:GetObject",
-                "s3:ListBucketMultipartUploads",
-                "s3:AbortMultipartUpload",
-                "s3:ListBucket",
-                "s3:DeleteObject",
-                "s3:ListMultipartUploadParts"
-            ],
-            "Resource": [
-              "${data.terraform_remote_state.backup_persistent.outputs.s3_bucket_arn}",
-              "${data.terraform_remote_state.backup_persistent.outputs.s3_bucket_arn}/*"
-            ]
-        },
-        {
-            "Sid": "",
-            "Effect": "Allow",
-            "Action": "autoscaling:UpdateAutoScalingGroup",
-            "Resource": "${module.asg.asg_arn}"
-        },
-        {
-            "Sid": "",
-            "Effect": "Allow",
-            "Action": "sns:Publish",
-            "Resource": "${data.terraform_remote_state.backup_persistent.outputs.sns_topic_arn}"
-        }
-    ]
-}
-EOF
+  policy = data.aws_iam_policy_document.backup_ec2_policy.json
 }
 
 resource "aws_ssm_parameter" "ebs_volume_id" {
