@@ -52,7 +52,7 @@ module "asg" {
   category                    = "backup"
   role                        = "syncthing"
   desired_capacity            = 1
-  dns                         = "syncthing-aws.${local.env["dns_zone"]}"
+  dns                         = "syncthing-cloud.${local.env["dns_zone"]}"
   env                         = local.env["name"]
   iam_instance_profile        = module.ec2_role.iam_instance_profile_name
   image_id                    = data.aws_ami.syncthing.id
