@@ -30,7 +30,7 @@ def lambda_handler(event, context):
     zones = r53.list_hosted_zones()["HostedZones"]
     hosted_zone_id = determine_hosted_zone_id_of(desired_dns_name, zones)
     if hosted_zone_id is None:
-        log(f"You not determine hosted zone ID of {desired_dns_name}")
+        log(f"Could not determine hosted zone ID of {desired_dns_name}")
         exit(1)
 
     instance_ip_address = determine_instance_ip_address(instance_id)
