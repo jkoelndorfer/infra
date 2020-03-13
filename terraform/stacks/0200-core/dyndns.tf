@@ -57,6 +57,11 @@ resource "aws_iam_role_policy_attachment" "dyndns_logging" {
 # TODO: Create a Lambda module that automatically handles logging
 # and necessary permissions.
 
+resource "random_string" "dyndns_pw" {
+  length  = 64
+  special = false
+}
+
 resource "aws_lambda_function" "dyndns" {
   # This is a dummy package so we can deploy the Lambda function.
   # Apply updates from the "infra" repository.
@@ -64,13 +69,19 @@ resource "aws_lambda_function" "dyndns" {
   function_name = "${local.env["name"]}-dyndns"
   handler       = "dyndns.lambda_handler"
   role          = aws_iam_role.dyndns.arn
-  description   = "Provides dynamic DNS as EC2 instances come online."
+  description   = "Provides dynamic DNS for EC2 instances and authenticated clients."
   memory_size   = 128
   runtime       = "python3.7"
   timeout       = 5
   environment {
     variables = {
-      "env_name" = local.env["name"]
+      "DYNDNS_AUTHORIZATION" = jsonencode({
+        home = {
+          password  = random_string.dyndns_pw.result
+          dns_names = ["home.${local.env["dns_zone"]}"]
+        }
+      })
+      "env_name"             = local.env["name"]
     }
   }
   tags = {
