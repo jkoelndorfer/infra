@@ -19,14 +19,17 @@
 - name: locally archive srvtools
   delegate_to: localhost
   become: no
-  shell: |-
-    #!/bin/bash
-    set -eu
+  shell:
+    cmd: |
+      #!/bin/bash
+      set -eu
 
-    srvtools_tempfile="$(mktemp --tmpdir srvtools.XXXXXX.tar.gz)"
-    cd {{ role_path | quote }}/../../../..
-    tar --exclude '*.retry' -czf "$srvtools_tempfile" srvtools >&2
-    echo "$srvtools_tempfile"
+      srvtools_tempfile="$(mktemp --tmpdir srvtools.XXXXXX.tar.gz)"
+      cd "$ANSIBLE_PLAYBOOK_DIR/../.."
+      tar --exclude '*.retry' -czf "$srvtools_tempfile" srvtools >&2
+      echo "$srvtools_tempfile"
+  environment:
+    ANSIBLE_PLAYBOOK_DIR: "{{ playbook_dir }}"
   register: srvtools_archive
 
 - name: copy srvtools archive to host

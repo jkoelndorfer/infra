@@ -1,9 +1,10 @@
 
-# This playbook is invoked at runtime on an EC2 instance to perform the last
-# few provisioning tasks. The heavy lifting should be done in build-image.yml.
+# This playbook is invoked at runtime on a server to perform the last
+# few provisioning tasks. The heavy lifting should be done in server-build.yml.
 
-- name: provision ec2 instance
+- name: provision server
   hosts: all
+  become: yes
   pre_tasks:
     - name: set facts (local testing)
       set_fact:
@@ -41,7 +42,7 @@
       tags: always
 
   roles:
-    - role: cloudcore
+    - role: server/lib/provision/core
       tags: ['core']
-    - role: "{{ instance_role }}"
+    - role: "server/role/provision/{{ server_role }}"
       tags: ['role']

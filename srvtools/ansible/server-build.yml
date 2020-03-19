@@ -1,0 +1,17 @@
+---
+
+# This playbook is invoked by packer to create an image
+# for our services.
+
+- name: perform server build
+  hosts: all
+  become: yes
+  become_user: root
+
+  roles:
+    - server/lib/build/core
+
+  post_tasks:
+    - name: include server role
+      include_role:
+        name: "server/role/build/{{ server_role }}"
