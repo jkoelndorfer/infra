@@ -10,7 +10,7 @@ data "terraform_remote_state" "core" {
 }
 
 module "user_data" {
-  source = "../../ec2_user_data/v1"
+  source = "../../aws-ec2-user-data/v1"
 
   asg_name = "${var.env}-${var.name}"
   category = var.category

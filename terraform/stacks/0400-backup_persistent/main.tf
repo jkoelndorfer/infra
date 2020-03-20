@@ -1,5 +1,5 @@
 module "s3_bucket" {
-  source = "../../modules/encrypted_s3_bucket/v1"
+  source = "../../modules/aws-encrypted-s3-bucket/v1"
 
   bucket     = "backups"
   category   = "backup"
@@ -9,7 +9,7 @@ module "s3_bucket" {
 }
 
 module "ebs_volume" {
-  source = "../../modules/encrypted_ebs_volume/v1"
+  source = "../../modules/aws-encrypted-ebs-volume/v1"
 
   availability_zone = "${local.env["default_aws_region"]}a"
   category          = "backup"

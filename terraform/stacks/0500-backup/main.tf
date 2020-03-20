@@ -39,14 +39,14 @@ resource "aws_security_group" "syncthing" {
 }
 
 module "ec2_role" {
-  source = "../../modules/ec2_role/v1"
+  source = "../../modules/aws-ec2-role/v1"
 
   env  = local.env["name"]
   name = "syncthing"
 }
 
 module "asg" {
-  source = "../../modules/asg/v1"
+  source = "../../modules/aws-ec2-asg/v1"
 
   associate_public_ip_address = "true"
   category                    = "backup"

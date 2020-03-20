@@ -1,5 +1,5 @@
 module "vpc" {
-  source = "../../modules/vpc/v1"
+  source = "../../modules/aws-vpc/v1"
 
   category   = "core"
   cidr_block = local.env["vpc_cidr_block"]
