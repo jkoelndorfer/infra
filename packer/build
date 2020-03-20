@@ -1,0 +1,126 @@
+#!/bin/bash
+
+set -o pipefail
+
+BASE_AMI_NAME_FILTER='debian-stretch-hvm-x86_64-gp2*'
+BASE_AMI_OWNER='679593333241'
+
+
+RC_OK=0
+RC_MISSING_ARG=10
+RC_NO_SUCH_CONFIG=11
+RC_DIRTY_REPOSITORY=12
+
+script_dir=$(dirname "$0")
+script_name="$(basename "$script_dir")/$(basename "$0")"
+
+function ami_next_build_number() {
+    local ami_role=$1
+    local ami_software_version=$2
+
+    local describe_filter_template
+    read -r -d '' describe_filter_template <<'EOF'
+        [
+            {
+                "Name":   "tag:johnk:ami:role",
+                "Values": [$role]
+            },
+            {
+                "Name":   "tag:johnk:ami:software-version",
+                "Values": [$software_version]
+            }
+        ]
+EOF
+    describe_filter=$(
+        jq \
+            --null-input \
+            --compact-output \
+            --arg role "$ami_role" \
+            --arg software_version "$ami_software_version" \
+            "$describe_filter_template"
+    )
+    local last_build_number=$(
+        aws ec2 describe-images \
+            --owners self \
+            --filters "$describe_filter" \
+            --query "Images[*].Tags[?Key=='johnk:ami:build-number'].Value" \
+            --output text |
+        sed -E -e 's/\t/\n/g' |
+        grep -E '^[0-9]+$' |
+        sort --numeric --reverse |
+        head -n 1
+    )
+    if [[ -z "$last_build_number" ]]; then
+        echo "1"
+    else
+        echo "$(( last_build_number + 1 ))"
+    fi
+}
+
+function packer_build_template() {
+    local ami_role=$1
+    local ami_software_version=$2
+    local ami_build_number=$3
+
+    local packer_template
+    read -r -d '' packer_template <<'EOF'
+        {
+            "builders": [{
+                "type": "amazon-ebs",
+                "region": "us-east-1",
+                "source_ami_filter": {
+                    "filters":     {"name": $base_ami_name_filter},
+                    "owners":      [$base_ami_owner],
+                    "most_recent": true
+                },
+                "instance_type": "t3.micro",
+                "ssh_username":  "admin",
+                "ami_name":      ($ami_role + " " + $ami_software_version + "-" + $ami_build_number)
+            }],
+            "provisioners": [{
+                "type":            "ansible",
+                "playbook_file":   "../srvtools/ansible/server-build.yml",
+                "extra_arguments": [
+                    "--extra-vars", "server_role=" + $ami_role
+                ]
+            }]
+        }
+EOF
+
+    jq \
+        --null-input \
+        --compact-output \
+        --arg ami_role             "$ami_role" \
+        --arg ami_software_version "$ami_software_version" \
+        --arg ami_build_number     "$ami_build_number" \
+        --arg base_ami_name_filter "$BASE_AMI_NAME_FILTER" \
+        --arg base_ami_owner       "$BASE_AMI_OWNER" \
+        "$packer_template"
+}
+
+function main() {
+    local config=$1
+
+    if [[ -z "$config" ]]; then
+        echo "$script_name: missing operand for configuration file of AMI to build" >&2
+        exit "$RC_MISSING_ARG"
+    fi
+
+    if ! source "$config" 2>/dev/null; then
+        echo "No such configuration file: $config" >&2
+        exit "$RC_NO_SUCH_CONFIG"
+    fi
+
+    cd "$script_dir"
+    infra_revision=$(git describe --dirty --abbrev=7 --always)
+    if [[ "$infra_revision" =~ -dirty$ ]]; then
+        echo 'Refusing to build an AMI from a dirty repository.' >&2
+        exit "$RC_DIRTY_REPOSITORY"
+    fi
+
+    local ami_build_number=$(ami_next_build_number "$AMI_ROLE" "$AMI_SOFTWARE_VERSION")
+    local packer_template=$(packer_build_template "$AMI_ROLE" "$AMI_SOFTWARE_VERSION" "$ami_build_number")
+    echo "$packer_template" | packer build -
+}
+
+main "$@"
