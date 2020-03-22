@@ -1,55 +1,29 @@
 ---
 
+- name: include OS specific variables
+  include_vars: "{{ ansible_os_family }}.yml"
+
+- name: include build metadata tasks
+  include_tasks: metadata.yml
+
+- name: include cloud-init configuration tasks
+  include_tasks: cloud-init.yml
+  when: server_hardware_type == "aws"
+
 - name: install core system packages
   package:
-    name: "{{ item }}"
+    name:  "{{ core_system_packages }}"
     state: present
-  with_items:
-    - "{{ git_package }}"
-    - "{{ python_pip_package }}"
 
 - name: install core pip packages
   pip:
-    name:
-      - awscli
-      - ansible
-      - boto3
+    name:  "{{ core_pip_packages }}"
     state: latest
 
-- name: locally archive srvtools
-  delegate_to: localhost
-  become: no
-  shell:
-    cmd: |
-      #!/bin/bash
-      set -eu
+- name: install usability system packages
+  package:
+    name:  "{{ usability_system_packages }}"
+    state: present
 
-      srvtools_tempfile="$(mktemp --tmpdir srvtools.XXXXXX.tar.gz)"
-      cd "$ANSIBLE_PLAYBOOK_DIR/../.."
-      tar --exclude '*.retry' -czf "$srvtools_tempfile" srvtools >&2
-      echo "$srvtools_tempfile"
-  environment:
-    ANSIBLE_PLAYBOOK_DIR: "{{ playbook_dir }}"
-  register: srvtools_archive
-
-- name: copy srvtools archive to host
-  copy:
-    src: "{{ srvtools_archive.stdout }}"
-    dest: /tmp/srvtools.tar.gz
-
-- name: unarchive srvtools
-  shell: |-
-    #!/bin/bash
-
-    cd /opt/
-    tar -xzf /tmp/srvtools.tar.gz
-    rm -f /tmp/srvtools.tar.gz
-    chown -R root:root /opt/srvtools
-    chmod u=rwX,go=rX /opt/srvtools
-
-- name: remove local srvtools archive
-  delegate_to: localhost
-  become: no
-  file:
-    path: "{{ srvtools_archive.stdout }}"
-    state: absent
+- name: include srvtools deployment tasks
+  include_tasks: srvtools.yml

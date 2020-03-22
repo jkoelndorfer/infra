@@ -1,17 +1,10 @@
 ---
 
-# This playbook is invoked by packer to create an image
-# for our services.
+# This playbook is performed at build-time to install software
+# on a server. In AWS, this helps build an AMI.
+#
+# Configuration should be performed by server-provision.yml.
 
-- name: perform server build
-  hosts: all
-  become: yes
-  become_user: root
-
-  roles:
-    - server/lib/build/core
-
-  post_tasks:
-    - name: include server role
-      include_role:
-        name: "server/role/build/{{ server_role }}"
+- import_playbook: server-setup.yml
+  vars:
+    server_setup_phase: build

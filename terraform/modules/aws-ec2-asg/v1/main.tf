@@ -10,14 +10,15 @@ data "terraform_remote_state" "core" {
 }
 
 module "user_data" {
-  source = "../../aws-ec2-user-data/v1"
+  source = "../../aws-ec2-user-data/v2"
 
   asg_name = "${var.env}-${var.name}"
   category = var.category
-  role     = var.role
   dns      = var.dns
   env      = var.env
+  extra    = var.extra
   name     = "${var.env}-${var.name}"
+  role     = var.role
 }
 
 resource "aws_launch_template" "launch_template" {

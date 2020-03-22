@@ -1,25 +1,5 @@
 ---
 
-- name: install docker python libs
-  pip:
-    name: docker
-    state: present
-
-- name: import docker apt key
-  apt_key:
-    state: present
-    id:    9DC858229FC7DD38854AE2D88D81803C0EBFCD88
-    url:   https://download.docker.com/linux/debian/gpg
-
-- name: configure docker apt repository
-  apt_repository:
-    repo: deb [arch=amd64] https://download.docker.com/linux/debian "{{ ansible_lsb['codename'] }}" stable
-
-- name: install docker
-  package:
-    name: docker-ce
-    state: present
-
 # We use these to support our backup script.
 #
 # duplicity, of course, handles most of the backup work.
@@ -34,51 +14,18 @@
 #   https://docs.syncthing.net/rest/system-config-get.html.
 - name: install script utlities
   package:
-    name: "{{ item }}"
+    name:
+      - duplicity
+      - jq
+      - libxml2-utils
     state: present
-  with_items:
-    - duplicity
-    - jq
-    - libxml2-utils
 
-- name: deploy backup script
-  copy:
-    src:   syncthing-s3-backup
-    dest:  /usr/local/bin/syncthing-s3-backup
-    owner: root
-    group: root
-    mode:  0755
-
-- name: deploy systemd backup service
-  copy:
-    src:   backup.service
-    dest:  /etc/systemd/system/backup.service
-    owner: root
-    group: root
-    mode:  0444
-
-- name: configure syncthing group
-  group:
-    name:    syncthing
-    gid:     "{{ syncthing_gid }}"
-
-- name: configure syncthing user
-  user:
-    name:    syncthing
-    comment: syncthing
-    uid:     "{{ syncthing_uid }}"
-    group:   syncthing
-    shell:   /bin/false
-
-- name: configure syncthing data directory
-  file:
-    path:  /srv/data/syncthing
-    state: directory
-    owner: syncthing
-    group: syncthing
-    mode:  0750
+- name: include docker build-time role
+  include_role:
+    name: server/lib/build/docker
 
 - name: pull syncthing docker image
   docker_image:
-    name: syncthing/syncthing
-    tag: "{{ syncthing_version }}"
+    name:   syncthing/syncthing
+    tag:    "{{ server_software_version }}"
+    source: pull

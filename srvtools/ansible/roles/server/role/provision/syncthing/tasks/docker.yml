@@ -1,9 +1,34 @@
 ---
 
+- name: include docker provision-time tasks
+  include_role:
+    name: server/lib/provision/docker
+
+- name: configure syncthing group
+  group:
+    name:    syncthing
+    gid:     "{{ syncthing_gid }}"
+
+- name: configure syncthing user
+  user:
+    name:    syncthing
+    comment: syncthing
+    uid:     "{{ syncthing_uid }}"
+    group:   syncthing
+    shell:   /bin/false
+
+- name: configure syncthing data directory
+  file:
+    path:  /srv/data/syncthing
+    state: directory
+    owner: syncthing
+    group: syncthing
+    mode:  0750
+
 - name: create syncthing container
   docker_container:
     name:  syncthing
-    image: "syncthing/syncthing:{{ syncthing_version }}"
+    image: "syncthing/syncthing:{{ server_software_version }}"
     state: stopped
     restart_policy: unless-stopped
     env:

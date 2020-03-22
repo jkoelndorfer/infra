@@ -2,7 +2,7 @@
 
 - name: get syncthing EBS volume ID
   set_fact:
-    syncthing_ebs_volume_id: "{{ lookup('aws_ssm', '/' + instance_env + '/backup/syncthing_ebs_volume_id', region=ansible_ec2_placement_region) }}"
+    syncthing_ebs_volume_id: "{{ lookup('aws_ssm', '/' + server_env + '/backup/syncthing_ebs_volume_id', region=ansible_ec2_placement_region) }}"
 
 - include_role:
     name: server/lib/provision/aws-ebs-volume

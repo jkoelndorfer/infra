@@ -13,7 +13,7 @@
   ignore_errors: yes
 
 - name: attach EBS volume
-  command: aws ec2 attach-volume --device /dev/sdz --instance-id {{ instance_id | quote }} --volume-id {{ ebs_volume_id | quote }} --region {{ ec2_region | quote }}
+  command: aws ec2 attach-volume --device /dev/sdz --instance-id {{ server_id | quote }} --volume-id {{ ebs_volume_id | quote }} --region {{ ansible_ec2_placement_region | quote }}
   when: ebs_volume_attached.stdout == ""
 
 - name: wait for EBS volume device to appear

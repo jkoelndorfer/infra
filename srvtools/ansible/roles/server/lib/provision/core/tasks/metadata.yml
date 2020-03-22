@@ -1,0 +1,32 @@
+---
+
+- name: persist provision-time metadata
+  copy:
+    dest:    "{{ metadata_dir }}/{{ item.filename }}"
+    owner:   root
+    group:   root
+    mode:    "{{ item.mode if item.mode is defined else 0444 }}"
+    content: "{{ item.value }}\n"
+  when: item.value is not none
+  with_items:
+    - filename: category
+      value:    "{{ server_category }}"
+
+    - filename: dns
+      value:    "{{ server_dns }}"
+
+    - filename: env
+      value:    "{{ server_env }}"
+
+    - filename: extra
+      mode:     0440
+      value:    "{{ server_extra | to_json }}"
+
+    - filename: id
+      value:    "{{ server_id }}"
+
+    - filename: model
+      value:    "{{ server_model }}"
+
+    - filename: name
+      value:    "{{ server_name }}"

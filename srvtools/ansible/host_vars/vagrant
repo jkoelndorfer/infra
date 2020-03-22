@@ -1,3 +1,12 @@
 ---
 
 local_testing: true
+
+server_category:      localtest
+server_hardware_type: physical
+server_dns:           ~
+server_env:           dev
+server_extra:         {}
+server_id:            vagrant
+server_model:         vagrant-virtual
+server_name:          vagrant

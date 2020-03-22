@@ -1,0 +1,40 @@
+---
+
+- name: install docker python libs
+  pip:
+    name: docker
+    state: present
+
+- name: import docker apt key
+  apt_key:
+    state: present
+    id:    9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+    url:   https://download.docker.com/linux/debian/gpg
+
+- name: configure docker apt repository
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/debian {{ ansible_lsb['codename'] }} stable"
+
+- name: install docker
+  package:
+    name: docker-ce
+    state: present
+
+# The next two tasks will prevent systemd from automatically starting docker.
+# We want the bringup of docker during provision time to be explicit
+# so that the provisioner has an opportunity to configure docker.
+- name: stop and disable docker systemd socket
+  systemd:
+    name:    "{{ docker_systemd_socket }}"
+    enabled: no
+    state:   stopped
+
+- name: disable docker service
+  systemd:
+    name:    "{{ docker_service }}"
+    enabled: no
+
+- name: start docker service
+  systemd:
+    name:  "{{ docker_service }}"
+    state: started

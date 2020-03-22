@@ -24,6 +24,11 @@ variable "env" {
   description = "the environment that the autoscaling group lives in, e.g. dev or prod"
 }
 
+variable "extra" {
+  description = "arbitrary extra data to pass to the instance"
+  default     = {}
+}
+
 variable "iam_instance_profile" {
   type        = string
   default     = ""

@@ -1,5 +1,8 @@
 ---
 
+- name: include metadata persistence tasks
+  include_tasks: metadata.yml
+
 # Due to ordering, this will fail if the administrator
 # configured has the same name as the built-in admin user.
 
@@ -7,22 +10,17 @@
 # should be fine.
 - name: configure administrator
   user:
-    name:    "{{ admin_username }}"
+    name:    "{{ server_admin_username }}"
     state:   present
-    comment: "{{ admin_comment }}"
-    shell:   "{{ admin_shell }}"
-    group:   "{{ admin_group }}"
-    uid:     "{{ admin_uid }}"
+    comment: "{{ server_admin_comment }}"
+    shell:   "{{ server_admin_shell }}"
+    group:   "{{ server_admin_group }}"
+    uid:     "{{ server_admin_uid }}"
 
 - name: configure administrator authorized key
   authorized_key:
-    user: "{{ admin_username }}"
-    key: "{{ admin_ssh_pubkey }}"
-
-- name: install sudo
-  package:
-    name: sudo
-    state: present
+    user: "{{ server_admin_username }}"
+    key:  "{{ server_admin_ssh_pubkey }}"
 
 - name: configure core sudo
   template:
@@ -47,16 +45,11 @@
   with_items: "{{ sudoers_d_builtins }}"
 
 - name: set hostname
-  shell: |-
-    . /etc/metadata
-    if [[ -n "$INSTANCE_DNS" ]]; then
-      new_hostname="$INSTANCE_DNS"
-    else
-      instance_ip="$(curl -s http://169.254.169.254/2018-09-24/meta-data/public-ipv4)"
-      new_hostname="${INSTANCE_NAME}-$(echo "$instance_ip" | sed -e 's/\./-/g')"
-    fi
-    hostname "$new_hostname"
-    echo "$new_hostname" > /etc/hostname
-    echo "127.0.2.1 $new_hostname" >> /etc/hosts
-  args:
-    executable: /bin/bash
+  hostname:
+    name: "{{ server_hostname }}"
+
+- name: update /etc/hosts with hostname
+  lineinfile:
+    path:   "{{ hosts_path }}"
+    regexp: '^127\.0\.1\.1'
+    line:   "127.0.1.1 {{ server_hostname }}"

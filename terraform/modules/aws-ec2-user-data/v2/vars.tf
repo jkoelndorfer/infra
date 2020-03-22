@@ -11,7 +11,7 @@ variable "category" {
 variable "dns" {
   type        = string
   default     = null
-  description = "DNS record pointing to instance; used to set the hostname"
+  description = "DNS record pointing to instance"
 }
 
 variable "env" {
@@ -21,10 +21,14 @@ variable "env" {
 
 variable "extra" {
   description = "arbitrary extra data to pass to the instance"
-  default     = {}
 }
 
 variable "name" {
   type        = string
   description = "name assigned to instance"
+}
+
+variable "role" {
+  type        = string
+  description = "role of instance that will be provisionined"
 }

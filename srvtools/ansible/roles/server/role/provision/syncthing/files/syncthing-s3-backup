@@ -70,7 +70,7 @@ function get_backup_device_id() {
 }
 
 function main() {
-    source /etc/metadata
+    INSTANCE_ENV=$(cat /etc/metadata/env)
     local instance_region="$(/opt/srvtools/aws/instance/region)"
 
     local backup_date="$(date '+%Y-%m-%d')"

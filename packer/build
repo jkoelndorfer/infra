@@ -61,11 +61,14 @@ function packer_build_template() {
     local ami_role=$1
     local ami_software_version=$2
     local ami_build_number=$3
+    local infra_revision=$4
+    local ami_name="${ami_role} ${ami_software_version}-${ami_build_number}"
 
     local packer_template
     read -r -d '' packer_template <<'EOF'
         {
             "builders": [{
+                "name": "aws",
                 "type": "amazon-ebs",
                 "region": "us-east-1",
                 "source_ami_filter": {
@@ -75,13 +78,28 @@ function packer_build_template() {
                 },
                 "instance_type": "t3.micro",
                 "ssh_username":  "admin",
-                "ami_name":      ($ami_role + " " + $ami_software_version + "-" + $ami_build_number)
+                "ami_name":      $ami_name,
+                "tags": {
+                    "Name":                            $ami_name,
+                    "johnk:ami:role":                  $ami_role,
+                    "johnk:ami:software-version":      $ami_software_version,
+                    "johnk:ami:build-number":          $ami_build_number,
+                    "johnk:ami:source-ami":            "{{ .SourceAMI }}",
+                    "johnk:ami:source-ami-name":       "{{ .SourceAMIName }}",
+                    "johnk:ami:source-ami-owner":      "{{ .SourceAMIOwner }}",
+                    "johnk:ami:source-ami-owner-name": "{{ .SourceAMIOwnerName }}"
+                }
             }],
             "provisioners": [{
                 "type":            "ansible",
                 "playbook_file":   "../srvtools/ansible/server-build.yml",
                 "extra_arguments": [
-                    "--extra-vars", "server_role=" + $ami_role
+                    "--extra-vars", "infra_revision=" + $infra_revision,
+                    # Packer automatically passes packer_build_name to Ansible, which is used
+                    # by Ansible to set server_hardware_type automatically. This allows us
+                    # to define additional builders using this same provisioner, if we want.
+                    "--extra-vars", "server_role=" + $ami_role,
+                    "--extra-vars", "server_software_version=" + $ami_software_version
                 ]
             }]
         }
@@ -93,9 +111,11 @@ EOF
         --arg ami_role             "$ami_role" \
         --arg ami_software_version "$ami_software_version" \
         --arg ami_build_number     "$ami_build_number" \
+        --arg ami_name             "$ami_name" \
         --arg base_ami_name_filter "$BASE_AMI_NAME_FILTER" \
         --arg base_ami_owner       "$BASE_AMI_OWNER" \
-        "$packer_template"
+        --arg infra_revision       "$infra_revision" \
+        "$(echo "$packer_template" | grep -E -v '^\s*#')"
 }
 
 function main() {
@@ -112,14 +132,14 @@ function main() {
     fi
 
     cd "$script_dir"
-    infra_revision=$(git describe --dirty --abbrev=7 --always)
+    local infra_revision=$(../revision)
     if [[ "$infra_revision" =~ -dirty$ ]]; then
         echo 'Refusing to build an AMI from a dirty repository.' >&2
         exit "$RC_DIRTY_REPOSITORY"
     fi
 
     local ami_build_number=$(ami_next_build_number "$AMI_ROLE" "$AMI_SOFTWARE_VERSION")
-    local packer_template=$(packer_build_template "$AMI_ROLE" "$AMI_SOFTWARE_VERSION" "$ami_build_number")
+    local packer_template=$(packer_build_template "$AMI_ROLE" "$AMI_SOFTWARE_VERSION" "$ami_build_number" "$infra_revision")
     echo "$packer_template" | packer build -
 }
 

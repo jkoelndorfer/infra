@@ -2,47 +2,6 @@
 # This playbook is invoked at runtime on a server to perform the last
 # few provisioning tasks. The heavy lifting should be done in server-build.yml.
 
-- name: provision server
-  hosts: all
-  become: yes
-  pre_tasks:
-    - name: set facts (local testing)
-      set_fact:
-        admin_username:        localtestadmin
-        admin_ssh_pubkey:      "{{ local_testing_admin_ssh_pubkey }}"
-        ec2_availability_zone: us-east-1a
-        ec2_region:            us-east-1
-        ec2_tags:              {}
-        instance_category:     "{{ instance_category | default('testing') }}"
-        instance_role:         "{{ instance_category | default('localtesting') }}"
-        instance_env:          "{{ instance_env | default('dev') }}"
-        # randomly generated (real looking) ec2 instance ID
-        instance_id:           i-0febee66103987423
-        instance_name:         dev-local-test
-      when: local_testing
-      tags: always
-
-    - name: gather ec2 metadata facts
-      ec2_metadata_facts:
-      when: not local_testing
-      tags: always
-
-    - name: set facts
-      set_fact:
-        admin_username:        "{{ lookup('aws_ssm', '/provision/common/user', region=ansible_ec2_placement_region) }}"
-        admin_ssh_pubkey:      "{{ lookup('aws_ssm', '/provision/common/ssh_pubkey', region=ansible_ec2_placement_region) }}"
-        ec2_availability_zone: "{{ ansible_ec2_placement_availability_zone }}"
-        ec2_region:            "{{ ansible_ec2_placement_region }}"
-        instance_category:     "{{ lookup('env', 'INSTANCE_CATEGORY') }}"
-        instance_role:         "{{ lookup('env', 'INSTANCE_ROLE') }}"
-        instance_env:          "{{ lookup('env', 'INSTANCE_ENV') }}"
-        instance_id:           "{{ ansible_ec2_instance_identity_document_instanceid }}"
-        instance_name:         "{{ lookup('env', 'INSTANCE_NAME') }}"
-      when: not local_testing
-      tags: always
-
-  roles:
-    - role: server/lib/provision/core
-      tags: ['core']
-    - role: "server/role/provision/{{ server_role }}"
-      tags: ['role']
+- import_playbook: server-setup.yml
+  vars:
+    server_setup_phase: provision

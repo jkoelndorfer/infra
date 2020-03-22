@@ -1,0 +1,12 @@
+---
+
+####################################
+# vars/global/server-provision.yml #
+####################################
+#
+# This file defines values that are set on servers at provisioning time.
+
+server_admin_comment:    John Koelndorfer
+server_admin_shell:      /bin/zsh
+server_admin_username:   "{{ lookup('aws_ssm', '/provision/common/user',       region=ssm_lookup_region) }}"
+server_admin_ssh_pubkey: "{{ lookup('aws_ssm', '/provision/common/ssh_pubkey', region=ssm_lookup_region) }}"

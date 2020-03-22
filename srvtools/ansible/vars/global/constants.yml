@@ -1,0 +1,14 @@
+---
+
+#############################
+# vars/global/constants.yml #
+#############################
+
+# By default, we're not in local testing mode.
+local_testing: no
+
+# Path to the system metadata directory.
+metadata_dir: /etc/metadata
+
+# The directory where srvtools lives on servers.
+srvtools_dir: /opt/srvtools
