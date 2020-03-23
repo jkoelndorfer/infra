@@ -1,0 +1,33 @@
+---
+
+# Core system packages are packages which must be installed
+# to ensure that the system is minimally usable.
+core_system_packages:
+  - bash
+  - git
+  - groff           # needed by awscli
+  - jq              # used during provisioning
+  - lvm2            # used for partitioning on physical hosts
+  - openssh-server
+  - python
+  - python-pip
+  - sudo
+  - zsh             # needed because admin user's shell is zsh
+
+# Usability system packages are those that we could go
+# without if we had to, but they provide some niceties
+# so we install them.
+usability_system_packages:
+  - curl
+  - dnsutils
+  - htop
+  - man
+  - net-tools
+  - python3
+  - python3-pip
+  - rsync
+  - sysstat
+  - tcpdump
+  - telnet
+  - tmux
+  - vim

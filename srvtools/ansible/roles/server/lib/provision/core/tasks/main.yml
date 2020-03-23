@@ -1,0 +1,55 @@
+---
+
+- name: include metadata persistence tasks
+  include_tasks: metadata.yml
+
+# Due to ordering, this will fail if the administrator
+# configured has the same name as the built-in admin user.
+
+# Since we shouldn't be using built-in usernames anyway, that
+# should be fine.
+- name: configure administrator
+  user:
+    name:    "{{ server_admin_username }}"
+    state:   present
+    comment: "{{ server_admin_comment }}"
+    shell:   "{{ server_admin_shell }}"
+    group:   "{{ server_admin_group }}"
+    uid:     "{{ server_admin_uid }}"
+
+- name: configure administrator authorized key
+  authorized_key:
+    user: "{{ server_admin_username }}"
+    key:  "{{ server_admin_ssh_pubkey }}"
+
+- name: configure core sudo
+  template:
+    owner: root
+    group: root
+    mode:  0440
+    src:   sudoers.j2
+    dest:  "{{ sudoers_path }}"
+    validate: "{{ visudo_path }} -cf %s"
+
+- name: remove built-in admin user
+  user:
+    name: "{{ item }}"
+    state:  absent
+    remove: yes
+  with_items: "{{ cloud_builtin_users }}"
+
+- name: remove built-in sudo rules
+  file:
+    state: absent
+    path:  "{{ sudoers_d_path }}/{{ item }}"
+  with_items: "{{ sudoers_d_builtins }}"
+
+- name: set hostname
+  hostname:
+    name: "{{ server_hostname }}"
+
+- name: update /etc/hosts with hostname
+  lineinfile:
+    path:   "{{ hosts_path }}"
+    regexp: '^127\.0\.1\.1'
+    line:   "127.0.1.1 {{ server_hostname }}"

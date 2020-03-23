@@ -1,5 +1,5 @@
 module "infra_s3_bucket" {
-  source = "../../modules/kms_encrypted_s3_bucket/v1"
+  source = "../../modules/aws-kms-encrypted-s3-bucket/v1"
 
   bucket     = "infra"
   category   = "core"

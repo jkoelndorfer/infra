@@ -1,0 +1,33 @@
+---
+
+- block:
+    - name: include provision-time variables
+      include_vars: global/server-provision.yml
+
+    - name: validate that required provision-time variables are set
+      assert:
+        that:
+          - "{{ item }} is defined and ({{ item }} | length) > 0"
+      with_items:
+        - server_admin_username
+        - server_admin_ssh_pubkey
+        - server_category
+        - server_env
+        - server_id
+        - server_model
+        - server_name
+
+    - name: validate that special-case provision-time variables are set
+      assert:
+        that:
+          - server_dns is defined and (server_dns is none or (server_dns | length) > 0)
+          - server_extra is defined and server_extra is mapping
+
+    - name: validate that aws-specific provision-time variables are set
+      assert:
+        that:
+          - "{{ item }} is defined and {{ item }} is none or ({{ item }} | length) > 0"
+      when: server_hardware_type == "aws"
+      with_items:
+        - server_aws_asg
+  tags: [always]

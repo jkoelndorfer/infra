@@ -1,0 +1,15 @@
+---
+
+- name: deploy cloud init provisioning script
+  copy:
+    dest:  "{{ cloud_init_provision_script_path }}"
+    owner: root
+    group: root
+    mode:  0555
+    content: |
+      #!/bin/bash
+
+      export ANSIBLE_LOG_PATH={{ provision_log_path | quote }}
+      echo 'Provisioning server with Ansible.' >&2
+      cd {{ srvtools_dir | quote }}/ansible
+      ansible-playbook -vv --limit localhost server-provision.yml

@@ -1,0 +1,18 @@
+---
+
+- name: create metadata directory
+  file:
+    path:  "{{ metadata_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode:  0755
+
+- name: persist build-time variables
+  copy:
+    dest:    "{{ metadata_dir }}/{{ item.filename }}"
+    owner:   root
+    group:   root
+    mode:    0444
+    content: "{{ lookup('vars', item.var_name) }}\n"
+  with_items: "{{ build_time_metadata }}"

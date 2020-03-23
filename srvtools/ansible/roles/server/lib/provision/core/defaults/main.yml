@@ -1,0 +1,26 @@
+---
+
+server_admin_uid: 5000
+server_admin_group: "{{ {'Debian': 'sudo', 'RedHat': 'wheel'}.get(ansible_os_family, 'wheel') }}"
+server_hostname: |-
+  {%- if server_dns is defined and server_dns is not none -%}
+    {{ server_dns }}
+  {%- elif inventory_hostname != 'localhost' and inventory_hostname is not match("^([0-9].?)+") -%}
+    {{ inventory_hostname }}
+  {%- elif server_hardware_type == 'aws' -%}
+    {{ server_env }}-{{ server_name }}-{{ ansible_ec2_local_ipv4 | regex_replace('\.', '-') }}
+  {%- else -%}
+    unset-hostname-fixme
+  {%- endif -%}
+
+cloud_builtin_users:
+  - admin
+  - centos
+  - ec2-user
+  - ubuntu
+
+hosts_path: /etc/hosts
+sudoers_path: /etc/sudoers
+sudoers_d_path: /etc/sudoers.d
+sudoers_d_builtins: []
+visudo_path: /usr/sbin/visudo

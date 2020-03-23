@@ -1,0 +1,10 @@
+---
+
+cloud_init_provision_script_path: /var/lib/cloud/scripts/per-instance/50-provision
+
+core_pip_packages:
+  - awscli
+  - ansible
+  - boto3
+
+provision_log_path: /var/log/provision.log

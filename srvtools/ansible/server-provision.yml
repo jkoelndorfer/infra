@@ -1,0 +1,7 @@
+
+# This playbook is invoked at runtime on a server to perform the last
+# few provisioning tasks. The heavy lifting should be done in server-build.yml.
+
+- import_playbook: server-setup.yml
+  vars:
+    server_setup_phase: provision

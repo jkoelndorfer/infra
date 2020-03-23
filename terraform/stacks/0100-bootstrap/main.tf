@@ -16,7 +16,7 @@ resource "aws_kms_key" "enc" {
 }
 
 module "bucket" {
-  source = "../../modules/kms_encrypted_s3_bucket/v1"
+  source = "../../modules/aws-kms-encrypted-s3-bucket/v1"
 
   bucket          = "tfstate"
   category        = "core"

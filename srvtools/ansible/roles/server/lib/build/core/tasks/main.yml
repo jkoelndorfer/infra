@@ -1,0 +1,29 @@
+---
+
+- name: include OS specific variables
+  include_vars: "{{ ansible_os_family }}.yml"
+
+- name: include build metadata tasks
+  include_tasks: metadata.yml
+
+- name: include cloud-init configuration tasks
+  include_tasks: cloud-init.yml
+  when: server_hardware_type == "aws"
+
+- name: install core system packages
+  package:
+    name:  "{{ core_system_packages }}"
+    state: present
+
+- name: install core pip packages
+  pip:
+    name:  "{{ core_pip_packages }}"
+    state: latest
+
+- name: install usability system packages
+  package:
+    name:  "{{ usability_system_packages }}"
+    state: present
+
+- name: include srvtools deployment tasks
+  include_tasks: srvtools.yml

@@ -1,0 +1,5 @@
+---
+
+server_category: testing
+server_env:      dev
+server_name:     dev-local-test

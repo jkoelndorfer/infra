@@ -1,0 +1,4 @@
+---
+
+docker_service:        docker.service
+docker_systemd_socket: docker.socket

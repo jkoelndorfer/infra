@@ -1,0 +1,28 @@
+---
+
+- name: deploy backup script
+  copy:
+    src:   syncthing-s3-backup
+    dest:  /usr/local/bin/syncthing-s3-backup
+    owner: root
+    group: root
+    mode:  0755
+
+- name: deploy systemd backup service
+  copy:
+    src:   backup.service
+    dest:  /etc/systemd/system/backup.service
+    owner: root
+    group: root
+    mode:  0444
+
+- name: Run EBS volume tasks
+  import_tasks: ebs_volume.yml
+
+- name: Run Docker configuration tasks
+  import_tasks: docker.yml
+
+- name: Start backup service
+  service:
+    name: backup.service
+    state: started

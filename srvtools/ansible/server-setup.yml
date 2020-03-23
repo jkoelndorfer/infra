@@ -1,0 +1,27 @@
+---
+
+# This playbook defines the generic process followed during build
+# and provisioning time for a server. It is included by server-build.yml
+# and server-provision.yml after they set server_setup_phase.
+
+- name: "perform server {{ server_setup_phase }}"
+  hosts: all
+  become: yes
+
+  roles:
+    - role: server/lib/facts
+      tags: [always]
+
+    - role: "server/lib/{{ server_setup_phase }}/core"
+      tags: [core]
+
+  post_tasks:
+    - name: include server role
+      include_role:
+        name: "server/role/{{ server_setup_phase }}/{{ server_role }}"
+      tags: [role]
+
+  environment:
+    # Unset AWS_DEFAULT_REGION so that region must be set when
+    # performing an aws_ssm lookup.
+    AWS_DEFAULT_REGION: ~
