@@ -2,8 +2,12 @@
 
 - name: install docker python libs
   pip:
-    name: docker
+    name:  docker
     state: present
+    executable: "{{ item }}"
+  with_items:
+    - pip
+    - pip3
 
 - name: import docker apt key
   apt_key:
