@@ -1,0 +1,48 @@
+#!/bin/bash
+
+ami_name_or_id=$1
+
+RC_OK=0
+RC_MISSING_ARGS=10
+RC_NO_SUCH_AMI=11
+
+if [[ -z "$ami_name_or_id" ]]; then
+    echo 'missing operand: AMI name or ID' >&2
+    exit "$RC_MISSING_ARGS"
+fi
+
+if [[ "$ami_name_or_id" =~ ^ami- ]]; then
+    ami_id=$ami_name_or_id
+    ami_defn=$(
+        aws ec2 describe-images \
+            --owners self \
+            --image-ids "$ami_id" \
+            --query 'Images[0]'
+    )
+else
+    ami_defn=$(
+        aws ec2 describe-images \
+            --owners self \
+            --filter "Name=name,Values=$ami_name_or_id" \
+            --query 'Images[0]'
+    )
+    ami_id=$(echo "$ami_defn" | jq --raw-output '.ImageId')
+fi
+
+if [[ "$ami_defn" == 'null' ]]; then
+    echo "no such AMI with name or id: $ami_name_or_id" >&2
+    exit "$RC_NO_SUCH_AMI"
+fi
+
+ami_name=$(echo "$ami_defn" | jq --raw-output '.Name')
+snapshot_ids=$(echo "$ami_defn" | jq --raw-output '.BlockDeviceMappings[].Ebs.SnapshotId')
+
+echo "Removing AMI $ami_name ($ami_id)" >&2
+echo "$snapshot_ids" | while read s; do
+    echo "Removing AMI snapshot $s" >&2
+done
+
+aws ec2 deregister-image --image-id "$ami_id"
+echo "$snapshot_ids" | while read s; do
+    aws ec2 delete-snapshot --snapshot-id "$s"
+done
