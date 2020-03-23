@@ -1,7 +1,7 @@
 ---
 
 server_aws_user_data: "{{ ansible_ec2_user_data | from_json }}"
-server_aws_asg:       "{{ server_aws_user_data.get('asg', None) }}"
+server_aws_asg:       "{{ server_aws_user_data.get('asg_name', None) }}"
 server_category:      "{{ server_aws_user_data.get('category', None) }}"
 server_dns:           "{{ server_aws_user_data.get('dns', None) }}"
 server_env:           "{{ server_aws_user_data.get('env', None) }}"

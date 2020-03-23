@@ -9,6 +9,9 @@
     content: "{{ item.value }}\n"
   when: item.value is not none
   with_items:
+    - filename: aws-asg
+      value:    "{{ server_aws_asg }}"
+
     - filename: category
       value:    "{{ server_category }}"
 
