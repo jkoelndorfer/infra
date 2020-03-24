@@ -37,7 +37,7 @@
     state:  absent
     remove: yes
   when: ansible_ssh_user is not defined or (ansible_ssh_user is defined and ansible_ssh_user != item)
-  with_items: "{{ cloud_builtin_users }}"
+  with_items: "{{ builtin_admin_users }}"
 
 - name: remove built-in sudo rules
   file:

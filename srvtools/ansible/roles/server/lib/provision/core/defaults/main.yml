@@ -13,10 +13,11 @@ server_hostname: |-
     unset-hostname-fixme
   {%- endif -%}
 
-cloud_builtin_users:
+builtin_admin_users:
   - admin
   - centos
   - ec2-user
+  - pi
   - ubuntu
 
 hosts_path: /etc/hosts
