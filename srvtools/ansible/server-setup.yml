@@ -7,6 +7,7 @@
 - name: "perform server {{ server_setup_phase }}"
   hosts: all
   become: yes
+  gather_facts: yes
 
   roles:
     - role: server/lib/facts
