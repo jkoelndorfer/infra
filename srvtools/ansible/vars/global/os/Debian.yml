@@ -1,4 +1,5 @@
 ---
 
+debian_pkg_arch:       "{{ {'armv7l': 'armhf', 'x86_64': 'amd64'}.get(ansible_architecture) }}"
 docker_service:        docker.service
 docker_systemd_socket: docker.socket
