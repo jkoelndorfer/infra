@@ -1,1 +1,8 @@
 ---
+
+- name: include docker build-time role
+  include_role:
+    name: server/lib/build/docker
+
+- name: include syncthing build tasks
+  include_tasks: syncthing.yml

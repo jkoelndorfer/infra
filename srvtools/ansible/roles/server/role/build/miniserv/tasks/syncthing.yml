@@ -1,0 +1,14 @@
+---
+
+- name: persist syncthing docker image
+  copy:
+    dest:  "{{ metadata_dir }}/syncthing-docker-image"
+    owner: root
+    group: root
+    mode:  0444
+    content: "{{ syncthing_docker_image }}\n"
+
+- name: pull syncthing image
+  docker_image:
+    name:   "{{ syncthing_docker_image }}"
+    source: pull

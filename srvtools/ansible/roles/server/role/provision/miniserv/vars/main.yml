@@ -1,0 +1,6 @@
+---
+
+syncthing_gid: 2000
+syncthing_uid: 2000
+
+syncthing_data_dir: "{{ server_data_dir }}/syncthing"

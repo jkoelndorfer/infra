@@ -1,0 +1,3 @@
+---
+
+syncthing_docker_image: linuxserver/syncthing:v1.4.0-ls28

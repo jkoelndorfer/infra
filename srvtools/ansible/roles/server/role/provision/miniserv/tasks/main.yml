@@ -1,1 +1,8 @@
 ---
+
+- name: include docker provision-time tasks
+  include_role:
+    name: server/lib/provision/docker
+
+- name: include syncthing setup tasks
+  include_tasks: syncthing.yml

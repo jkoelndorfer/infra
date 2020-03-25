@@ -11,3 +11,5 @@ server_role:     miniserv
 
 server_hardware_type:    physical
 server_software_version: "{{ infra_revision }}"
+
+server_data_dir: /srv/data/0
