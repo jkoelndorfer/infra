@@ -20,7 +20,10 @@
     - name: include server role
       include_role:
         name: "server/role/{{ server_setup_phase }}/{{ server_role }}"
-      tags: [role]
+        apply:
+          become: yes
+          tags:   [role]
+      tags:  [role]
 
   environment:
     # Unset AWS_DEFAULT_REGION so that region must be set when
