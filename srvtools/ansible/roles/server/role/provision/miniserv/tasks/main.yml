@@ -4,5 +4,56 @@
   include_role:
     name: server/lib/provision/docker
 
-- name: include syncthing setup tasks
-  include_tasks: syncthing.yml
+- name: include syncthing setup role
+  include_role:
+    name: server/lib/provision/linuxserver-docker-service
+  vars:
+    service_name:   syncthing
+    image_filename: "{{ metadata_dir }}/syncthing-docker-image"
+    user:
+      name: syncthing
+      uid:  "{{ syncthing_uid }}"
+    group:
+      name: syncthing
+      gid: "{{ syncthing_gid }}"
+    directories:
+      - "{{ syncthing_data_dir }}"
+      - "{{ syncthing_data_dir }}/config"
+      - "{{ syncthing_data_dir }}/data"
+    published_ports:
+      - "127.0.0.1:8384:8384"
+      - "22000:22000"
+      - "21027:21027/udp"
+    volumes:
+      - "{{ syncthing_data_dir }}/config:/config"
+      - "{{ syncthing_data_dir }}/data:/data"
+  tags:
+    - syncthing
+
+- name: include unifi setup role
+  include_role:
+    name: server/lib/provision/linuxserver-docker-service
+  vars:
+    service_name:   unifi
+    image_filename: "{{ metadata_dir }}/unifi-docker-image"
+    user:
+      name: unifi
+      uid:  "{{ unifi_uid }}"
+    group:
+      name: unifi
+      gid: "{{ unifi_gid }}"
+    directories:
+      - "{{ unifi_data_dir }}/config:/config"
+    published_ports:
+      - "3478:3478/udp"
+      - "6789:6789"
+      - "8080:8080"
+      - "8081:8081"
+      - "8443:8443"
+      - "8843:8843"
+      - "8880:8880"
+      - "10001:10001/udp"
+    volumes:
+      - "{{ unifi_data_dir }}/config:/config"
+  tags:
+    - unifi

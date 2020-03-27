@@ -1,0 +1,14 @@
+---
+
+- name: persist unifi docker image
+  copy:
+    dest:  "{{ metadata_dir }}/unifi-docker-image"
+    owner: root
+    group: root
+    mode:  0444
+    content: "{{ unifi_docker_image }}\n"
+
+- name: pull unifi image
+  docker_image:
+    name:   "{{ unifi_docker_image }}"
+    source: pull

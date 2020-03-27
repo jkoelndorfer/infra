@@ -1,0 +1,7 @@
+---
+
+docker_service_default_env_vars:
+  PUID:      "{{ user.uid | string }}"
+  PGID:      "{{ group.gid | string }}"
+  UMASK_SET: "027"
+  TZ:        "{{ local_timezone }}"

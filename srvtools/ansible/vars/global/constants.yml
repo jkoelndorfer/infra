@@ -7,6 +7,8 @@
 # By default, we're not in local testing mode.
 local_testing: no
 
+local_timezone: America/Chicago
+
 # Path to the system metadata directory.
 metadata_dir: /etc/metadata
 

@@ -1,3 +1,4 @@
 ---
 
 syncthing_docker_image: linuxserver/syncthing:v1.4.0-ls28
+unifi_docker_image:     linuxserver/unifi-controller:5.12.66-ls52

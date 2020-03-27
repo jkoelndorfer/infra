@@ -1,0 +1,65 @@
+---
+
+# Library role to provision a Docker service.
+#
+# Required variables:
+#
+# service_name:    name of the service to provision
+# image_filename:  path to the file containing the docker image to run
+# user:            dictionary containing two items: name and uid
+# group:           dictionary containing two items: name and gid
+
+# Optional variables:
+# directories:     list of data directories to be created; directories will be owned by `user`/`group`
+# published_ports: list of container ports to publish, as expected by the docker_container module
+# volumes:         list of volumes to attach to the container, as expected by the docker_container module
+# env:             additional environment variables to pass to the container; PUID, PGID, UMASK_SET, and TZ
+#                  are passed implicitly
+
+
+- name: lookup persisted docker image
+  shell:
+    cmd: 'printf "$(< "$DOCKER_IMAGE_FILE")"'
+    executable: /bin/bash
+  environment:
+    DOCKER_IMAGE_FILE: "{{ image_filename }}"
+  register: service_image_lookup
+  changed_when: false
+
+- name: set service_docker_image from lookup
+  set_fact:
+    service_docker_image: "{{ service_image_lookup.stdout.rstrip() }}"
+
+- name: create service group
+  group:
+    name: "{{ group.name }}"
+    gid:  "{{ group.gid }}"
+
+- name: create service user
+  user:
+    name:    "{{ user.name }}"
+    uid:     "{{ user.uid }}"
+    comment: "{{ service_name }} service"
+    group:   "{{ group.name }}"
+    shell:   "{{ nologin_shell }}"
+
+- name: create service directories
+  file:
+    path:  "{{ item }}"
+    state: directory
+    owner: "{{ user.name }}"
+    group: "{{ group.name }}"
+    mode:  0750
+  with_items: "{{ directories }}"
+
+- name: start service container
+  docker_container:
+    name:       "{{ service_name }}"
+    image:      "{{ service_docker_image }}"
+    log_driver: journald
+    log_options:
+      tag: "{{ service_name }}"
+    env: "{{ docker_service_default_env_vars | combine(env | default({})) }}"
+    published_ports: "{{ published_ports | default([]) }}"
+    volumes: "{{ volumes | default([]) }}"
+    restart_policy: unless-stopped
