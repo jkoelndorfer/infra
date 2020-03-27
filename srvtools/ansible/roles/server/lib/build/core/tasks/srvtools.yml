@@ -10,7 +10,10 @@
 
       srvtools_tempfile="$(mktemp --tmpdir srvtools.XXXXXX.tar.gz)"
       cd "$ANSIBLE_PLAYBOOK_DIR/../.."
-      tar --exclude '*.retry' -czf "$srvtools_tempfile" srvtools >&2
+      tar \
+        --exclude '*.retry' \
+        --exclude 'srvtools/ansible/roles/network' \
+        -czf "$srvtools_tempfile" srvtools >&2
       echo "$srvtools_tempfile"
   environment:
     ANSIBLE_PLAYBOOK_DIR: "{{ playbook_dir }}"
