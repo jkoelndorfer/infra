@@ -1,0 +1,52 @@
+---
+
+# Ansible's net_put module is utterly broken. Here we implement a workaround.
+- name: create tempfile to template edgeos config
+  delegate_to: localhost
+  tempfile:
+    prefix: ansible.roles.router.edgeoscfg.
+    state:  file
+  register: edgeos_cfg_tempfile
+
+- name: template edgeos config locally
+  delegate_to: localhost
+  template:
+    src:  templates/config.j2
+    dest: "{{ edgeos_cfg_tempfile.path }}"
+    mode: 0400
+
+- name: delete existing ansible edgeos config
+  edgeos_command:
+    commands:
+      - "sudo rm -f {{ edgeos_ansible_cfg | quote }}"
+
+- name: deploy edgeos config
+  delegate_to: localhost
+  command:
+    cmd: |
+      scp "$EDGEOS_CONFIG_TEMPFILE" "$ROUTER_HOST:$EDGEOS_ANSIBLE_CFG"
+  environment:
+    EDGEOS_ANSIBLE_CFG: "{{ edgeos_ansible_cfg }}"
+    EDGEOS_CONFIG_TEMPFILE: "{{ edgeos_cfg_tempfile.path }}"
+    ROUTER_HOST: "{{ ansible_host | default(inventory_hostname) }}"
+
+- name: delete edgeos config tempfile
+  delegate_to: localhost
+  file:
+    path:  "{{ edgeos_cfg_tempfile.path }}"
+    state: absent
+
+- name: load edgeos config
+  edgeos_command:
+    commands:
+      - "sudo chown root:vyattacfg {{ edgeos_ansible_cfg | quote }}"
+      - "sudo chmod 0644 {{ edgeos_ansible_cfg | quote }}"
+      - "configure"
+      - "load {{ edgeos_ansible_cfg | quote }}"
+      - "commit"
+
+- name: save edgeos config
+  edgeos_command:
+    commands:
+      - "configure"
+      - "save"

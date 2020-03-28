@@ -1,0 +1,20 @@
+---
+
+- name: ensure required variables are set
+  assert:
+    that:
+      - "{{ item }} is defined and {{ item }} != ''"
+  with_items:
+    - centurylink_pppoe_username
+    - centurylink_pppoe_password
+    - network_subnet
+    - router_ip
+    - server_admin_comment
+    - server_admin_username
+    - server_admin_password
+    - server_admin_ssh_pubkey
+
+# TODO: deploy dyndns script, configuration
+
+- name: include router configuration tasks
+  include_tasks: config.yml

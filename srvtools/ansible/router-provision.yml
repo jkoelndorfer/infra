@@ -1,0 +1,16 @@
+---
+
+- name: provision router
+  hosts: router0.lan
+  become: no
+  gather_facts: no
+
+  pre_tasks:
+    - name: include global variables
+      include_vars: global/global.yml
+
+    - name: include server admin variables
+      include_vars: global/server-admin.yml
+
+  roles:
+      - network/role/provision/router

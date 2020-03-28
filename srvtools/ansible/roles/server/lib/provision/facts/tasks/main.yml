@@ -1,8 +1,8 @@
 ---
 
 - block:
-    - name: include provision-time variables
-      include_vars: global/server-provision.yml
+    - name: include server admin variables
+      include_vars: global/server-admin.yml
 
     - name: validate that required provision-time variables are set
       assert:

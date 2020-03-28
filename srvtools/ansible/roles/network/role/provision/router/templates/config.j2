@@ -1,0 +1,234 @@
+firewall {
+    all-ping enable
+    broadcast-ping disable
+    ipv6-receive-redirects disable
+    ipv6-src-route disable
+    ip-src-route disable
+    log-martians enable
+    options {
+        mss-clamp {
+            interface-type all
+            mss 1452
+        }
+    }
+    receive-redirects disable
+    send-redirects enable
+    source-validation disable
+    syn-cookies enable
+}
+interfaces {
+    ethernet eth0 {
+        duplex auto
+        poe {
+            output off
+        }
+        speed auto
+    }
+    ethernet eth1 {
+        duplex auto
+        poe {
+            output off
+        }
+        speed auto
+    }
+    ethernet eth2 {
+        duplex auto
+        speed auto
+    }
+    ethernet eth3 {
+        duplex auto
+        poe {
+            output off
+        }
+        speed auto
+    }
+    ethernet eth4 {
+        address 172.17.17.1/24
+        description "CenturyLink Modem @ 172.17.17.17"
+        duplex auto
+        poe {
+            output off
+        }
+        pppoe 0 {
+            default-route auto
+            description "CenturyLink Internet"
+            mtu 1492
+            name-server auto
+            password {{ centurylink_pppoe_password }}
+            user-id {{ centurylink_pppoe_username }}
+        }
+        speed auto
+    }
+    ethernet eth5 {
+        address {{ router_ip }}/16
+        description "EdgeSwitch 24"
+        duplex auto
+        speed auto
+    }
+    loopback lo {
+    }
+    openvpn vtun0 {
+        device-type tap
+        disable
+        mode server
+        openvpn-option --client-to-client
+        openvpn-option "--server-bridge {{ router_ip }} 255.255.0.0 10.0.2.10 10.0.2.100"
+        server {
+            name-server {{ router_ip }}
+            subnet {{ network_subnet }}
+        }
+        tls {
+            /* TODO: Persist OpenVPN CA certs, keys, configuration somewhere. */
+            ca-cert-file /config/openvpn/ca/ca.crt
+            cert-file /config/openvpn/server/server.crt
+            dh-file /config/openvpn/dh.pem
+            key-file /config/openvpn/server/server.key
+        }
+    }
+}
+port-forward {
+    auto-firewall enable
+    hairpin-nat enable
+    lan-interface eth5
+    rule 1 {
+        description syncthing
+        forward-to {
+            address 10.0.0.10
+            port 22000
+        }
+        original-port 22000
+        protocol tcp
+    }
+    wan-interface pppoe0
+}
+protocols {
+    static {
+    }
+}
+service {
+    dhcp-server {
+        disabled false
+        hostfile-update disable
+        shared-network-name lan {
+            authoritative enable
+            subnet {{ network_subnet }} {
+                default-router {{ router_ip }}
+                dns-server {{ router_ip }}
+                lease 86400
+                start 10.0.1.10 {
+                    stop 10.0.1.250
+                }
+                static-mapping ap0 {
+                    ip-address 10.0.0.2
+                    mac-address f0:9f:c2:33:6b:76
+                }
+                static-mapping johnk-desktop {
+                    ip-address 10.0.0.50
+                    mac-address d0:50:99:95:7c:53
+                }
+                static-mapping val-desktop {
+                    ip-address 10.0.0.60
+                    mac-address 00:d8:61:e0:27:10
+                }
+            }
+        }
+        static-arp disable
+        use-dnsmasq disable
+    }
+    dns {
+        forwarding {
+            cache-size 10000
+            listen-on vtun0
+            listen-on eth5
+            name-server 8.8.8.8
+            name-server 8.8.4.4
+            options address=/miniserv.johnk.io/10.0.0.10
+            options address=/unifi.johnk.io/10.0.0.10
+            options address=/syncthing.johnk.io/10.0.0.10
+            options address=/router0.lan/{{ router_ip }}
+            options address=/ap0.lan/10.0.0.2
+            options address=/modem.lan/172.17.17.17
+            options address=/deathwing.johnk.io/10.0.0.50
+            options address=/johnk-desktop.lan/10.0.0.50
+            options address=/val-desktop.lan/10.0.0.60
+        }
+    }
+    nat {
+        rule 7000 {
+            description "NAT: LAN <-> Internet"
+            outbound-interface pppoe0
+            protocol all
+            source {
+                address {{ network_subnet }}
+            }
+            type masquerade
+        }
+    }
+    ssh {
+        disable-password-authentication
+        port 22
+        protocol-version v2
+    }
+}
+system {
+    host-name router0
+    login {
+        user {{ server_admin_username }} {
+            authentication {
+                encrypted-password {{ server_admin_password | password_hash('sha256', (65534 | random(seed=inventory_hostname) | string)) }}
+                plaintext-password ""
+                public-keys {{ server_admin_username }}@main {
+                    {% set type, key = server_admin_ssh_pubkey.split(' ') -%}
+                    type {{ type }}
+                    key {{ key }}
+                }
+            }
+            full-name "{{ server_admin_comment }}"
+            level admin
+        }
+    }
+    name-server 8.8.8.8
+    ntp {
+        server 0.ubnt.pool.ntp.org {
+        }
+        server 1.ubnt.pool.ntp.org {
+        }
+        server 2.ubnt.pool.ntp.org {
+        }
+        server 3.ubnt.pool.ntp.org {
+        }
+    }
+    package {
+        repository stretch {
+            components "main contrib non-free"
+            distribution stretch
+            password ""
+            url http://http.us.debian.org/debian
+            username ""
+        }
+    }
+    syslog {
+        global {
+            facility all {
+                level notice
+            }
+            facility protocols {
+                level debug
+            }
+        }
+    }
+    task-scheduler {
+        task dyndns {
+            executable {
+                path /config/user-data/dyndns/dyndns.sh
+            }
+            interval 1m
+        }
+    }
+    time-zone UTC
+}
+
+
+/* Warning: Do not remove the following line. */
+/* === vyatta-config-version: "config-management@1:conntrack@1:cron@1:dhcp-relay@1:dhcp-server@4:firewall@5:ipsec@5:nat@3:qos@1:quagga@2:suspend@1:system@4:ubnt-pptp@1:ubnt-udapi-server@1:ubnt-unms@1:ubnt-util@1:vrrp@1:vyatta-netflow@1:webgui@1:webproxy@1:zone-policy@1" === */
+/* Release version: v2.0.8.5247496.191120.1124 */

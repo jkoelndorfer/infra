@@ -1,8 +1,8 @@
 ---
 
-####################################
-# vars/global/server-provision.yml #
-####################################
+################################
+# vars/global/server-admin.yml #
+################################
 #
 # This file defines values that are set on servers at provisioning time.
 

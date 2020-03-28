@@ -1,5 +1,6 @@
 localhost ansible_connection=local ansible_python_interpreter=python
 miniserv.johnk.io
+router0.lan ansible_connection=network_cli ansible_host=10.0.0.1
 
 [test]
 vagrant
