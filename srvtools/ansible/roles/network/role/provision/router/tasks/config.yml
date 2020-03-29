@@ -32,6 +32,10 @@
       - "load {{ edgeos_ansible_cfg | quote }}"
       - "commit"
 
+- name: confirm running config is ok
+  pause:
+    prompt: "Ensure router running config is OK; try logging in"
+
 - name: save edgeos config
   edgeos_command:
     commands:
