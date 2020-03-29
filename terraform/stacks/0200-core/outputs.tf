@@ -1,3 +1,8 @@
+output "dyndns_url" {
+  value       = local.dyndns_url
+  description = "URL of dynamic DNS service"
+}
+
 output "ec2_default_keypair" {
   value       = "${aws_key_pair.default.id}"
   description = "the ID of the default ec2 key pair"

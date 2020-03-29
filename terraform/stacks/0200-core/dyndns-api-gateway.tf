@@ -54,6 +54,7 @@ resource "aws_api_gateway_method_settings" "update" {
 }
 
 locals {
+  dyndns_url                   = "${aws_api_gateway_stage.dyndns.invoke_url}${aws_api_gateway_resource.update.path}"
   rest_api_source_arn_resource = "${aws_api_gateway_rest_api.dyndns_api.id}/*/${aws_api_gateway_method.update.http_method}${aws_api_gateway_resource.update.path}"
 }
 
