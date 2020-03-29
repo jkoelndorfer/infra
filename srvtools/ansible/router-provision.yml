@@ -8,9 +8,11 @@
   pre_tasks:
     - name: include global variables
       include_vars: global/global.yml
+      tags: [always]
 
     - name: include server admin variables
       include_vars: global/server-admin.yml
+      tags: [always]
 
   roles:
       - network/role/provision/router
