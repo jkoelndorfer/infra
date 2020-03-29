@@ -15,6 +15,19 @@
     - server_admin_ssh_pubkey
   tags: [always]
 
+# When specifying Ansible variables via -e, the value itself has to be quoted,
+# apart from any quoting required by the shell. That's sort of confusing, so
+# here we add an additional check that the value is passed correctly as a reminder.
+- name: ensure server_admin_ssh_pubkey has two parts
+  assert:
+    that:
+      - "(server_admin_ssh_pubkey.split(' ') | length) == 2"
+    fail_msg: |
+      server_admin_ssh_pubkey = '{{ server_admin_ssh_pubkey }}'
+      ansible values with whitespace passed via `-e` must be quoted, e.g.
+      -e 'server_admin_ssh_pubkey="ssh-rsa ..."'
+  tags: [always]
+
 - name: deploy edgeos configuration
   include_role:
     name: network/lib/provision/edgeos-template
