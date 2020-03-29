@@ -3,3 +3,9 @@
 edgeos_ansible_cfg: /config/config.ansible
 network_subnet: 10.0.0.0/16
 router_ip: 10.0.0.1
+
+dyndns_hostname:  "{{ lookup('aws_ssm', '/' + server_env + '/dyndns/hostname') }}"
+dyndns_url:       "{{ lookup('aws_ssm', '/' + server_env + '/dyndns/url') }}"
+dyndns_username:  "{{ lookup('aws_ssm', '/' + server_env + '/dyndns/creds/home/username') }}"
+dyndns_password:  "{{ lookup('aws_ssm', '/' + server_env + '/dyndns/creds/home/password') }}"
+dyndns_wan_iface: pppoe0

@@ -64,3 +64,10 @@ resource "aws_lambda_permission" "api_gateway_dyndns_lambda_invocation" {
   principal     = "apigateway.amazonaws.com"
   source_arn    = "arn:aws:execute-api:${local.env["default_aws_region"]}:${data.aws_caller_identity.current.account_id}:${local.rest_api_source_arn_resource}"
 }
+
+resource "aws_ssm_parameter" "api_gateway_dyndns_url" {
+  name        = "/${local.env["name"]}/dyndns/url"
+  type        = "String"
+  value       = local.dyndns_url
+  description = "URL providing dynamic DNS functionality in ${local.env["name"]}."
+}

@@ -1,0 +1,58 @@
+---
+
+# This role deploys a template to a Ubiquiti EdgeOS device.
+# We use this because Ansible's net_put module is utterly broken.
+#
+# Required variables:
+# src: source path for the template, as passed to ansible's template module
+# dest: destination for templated file on EdgeOS device
+
+
+- name: assert that required variables are set
+  assert:
+    that:
+      - "{{ item }} is defined and {{ item }} != ''"
+  with_items:
+    - src
+    - dest
+
+- name: create template tempfile
+  delegate_to: localhost
+  tempfile:
+    prefix: "ansible.roles.network.edgeos-template.{{ dest | basename }}"
+    state:  file
+  register: edgeos_template_tempfile
+
+- name: template file locally
+  delegate_to: localhost
+  template:
+    src:  "{{ src }}"
+    dest: "{{ edgeos_template_tempfile.path }}"
+    mode: 0400
+
+- name: delete existing deployed file
+  edgeos_command:
+    commands:
+      - "sudo rm -f {{ dest | quote }}"
+
+- name: deploy file
+  delegate_to: localhost
+  command:
+    cmd: |
+      scp "$EDGEOS_TEMPLATE_TEMPFILE" "$HOST:$DEST"
+  environment:
+    DEST: "{{ dest }}"
+    EDGEOS_TEMPLATE_TEMPFILE: "{{ edgeos_template_tempfile.path }}"
+    HOST: "{{ ansible_host | default(inventory_hostname) }}"
+
+- name: delete template tempfile
+  delegate_to: localhost
+  file:
+    path:  "{{ edgeos_template_tempfile.path }}"
+    state: absent
+
+- name: set template file ownership, permissions
+  edgeos_command:
+    commands:
+      - "sudo chown {{ owner | quote }}:{{ group | quote }} {{ dest | quote }}"
+      - "sudo chmod {{ mode | quote }} {{ dest | quote }}"
