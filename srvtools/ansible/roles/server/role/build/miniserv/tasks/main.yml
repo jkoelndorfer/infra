@@ -6,6 +6,8 @@
 
 - name: include syncthing build tasks
   include_tasks: syncthing.yml
+  tags: [syncthing]
 
 - name: include unifi build tasks
   include_tasks: unifi.yml
+  tags: [unifi]

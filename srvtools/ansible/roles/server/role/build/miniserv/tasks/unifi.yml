@@ -7,8 +7,10 @@
     group: root
     mode:  0444
     content: "{{ unifi_docker_image }}\n"
+  tags: [unifi]
 
 - name: pull unifi image
   docker_image:
     name:   "{{ unifi_docker_image }}"
     source: pull
+  tags: [unifi]

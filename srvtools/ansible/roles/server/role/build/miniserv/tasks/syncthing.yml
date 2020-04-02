@@ -7,8 +7,10 @@
     group: root
     mode:  0444
     content: "{{ syncthing_docker_image }}\n"
+  tags: [syncthing]
 
 - name: pull syncthing image
   docker_image:
     name:   "{{ syncthing_docker_image }}"
     source: pull
+  tags: [syncthing]
