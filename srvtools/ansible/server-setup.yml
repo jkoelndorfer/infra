@@ -5,7 +5,7 @@
 # and server-provision.yml after they set server_setup_phase.
 
 - name: "perform server {{ server_setup_phase }}"
-  hosts: all
+  hosts: all:!network
   become: yes
   gather_facts: yes
 
