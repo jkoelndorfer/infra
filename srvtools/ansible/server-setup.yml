@@ -23,7 +23,7 @@
         apply:
           become: yes
           tags:   [role]
-      tags:  [role]
+      tags:  [always]
 
   environment:
     # Unset AWS_DEFAULT_REGION so that region must be set when
