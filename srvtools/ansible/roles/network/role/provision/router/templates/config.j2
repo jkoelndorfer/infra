@@ -113,7 +113,7 @@ service {
             authoritative enable
             subnet {{ network_subnet }} {
                 default-router {{ router_ip }}
-                dns-server {{ router_ip }}
+                dns-server {{ pi_hole_ip }}
                 lease 86400
                 start 10.0.1.10 {
                     stop 10.0.1.250

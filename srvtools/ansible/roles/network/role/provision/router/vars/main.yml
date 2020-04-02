@@ -2,6 +2,7 @@
 
 edgeos_ansible_cfg: /config/config.ansible
 network_subnet: 10.0.0.0/16
+pi_hole_ip: 10.0.0.10
 router_ip: 10.0.0.1
 
 dyndns_hostname:  "{{ lookup('aws_ssm', '/' + server_env + '/dyndns/hostname') }}"
