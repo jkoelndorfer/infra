@@ -7,6 +7,8 @@
 - name: include syncthing setup role
   include_role:
     name: server/lib/provision/linuxserver-docker-service
+    apply:
+      tags: [syncthing]
   vars:
     service_name:   syncthing
     image_filename: "{{ metadata_dir }}/syncthing-docker-image"
@@ -33,6 +35,8 @@
 - name: include unifi setup role
   include_role:
     name: server/lib/provision/linuxserver-docker-service
+    apply:
+      tags: [unifi]
   vars:
     service_name:   unifi
     image_filename: "{{ metadata_dir }}/unifi-docker-image"
