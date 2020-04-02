@@ -61,3 +61,8 @@
       - "{{ unifi_data_dir }}/config:/config"
   tags:
     - unifi
+
+- name: include pi-hole setup tasks
+  include_tasks: pi-hole.yml
+  tags:
+    - pi-hole

@@ -1,0 +1,67 @@
+---
+
+- name: lookup pi-hole docker image
+  shell:
+    cmd: 'printf "$(< "$DOCKER_IMAGE_FILE")"'
+    executable: /bin/bash
+  environment:
+    DOCKER_IMAGE_FILE: "{{ metadata_dir }}/pi-hole-docker-image"
+  register: pi_hole_image_lookup
+  changed_when: false
+  tags: [pi-hole]
+
+- name: set pi_hole_docker_image from lookup
+  set_fact:
+    pi_hole_docker_image: "{{ pi_hole_image_lookup.stdout.rstrip() }}"
+  tags: [pi-hole]
+
+# This directory needs to be heavily locked down because subdirectories
+# will be mode 0777. pi-hole's docker image does not currently support
+# specifying a UID and GID for pi-hole services.
+#
+# See https://github.com/pi-hole/docker-pi-hole/issues/328.
+- name: create pi-hole data directory
+  file:
+    path:  "{{ server_data_dir }}/pi-hole"
+    state: directory
+    owner: root
+    group: root
+    mode:  0700
+  tags: [pi-hole]
+
+- name: create pi-hole data subdirectories
+  file:
+    path:  "{{ server_data_dir }}/pi-hole/{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode:  0777  # FeelsBadMan
+  with_items:
+    - dnsmasq
+    - pi-hole
+  tags: [pi-hole]
+
+- name: run pi-hole container
+  docker_container:
+    name:  pi-hole
+    image: "{{ pi_hole_docker_image }}"
+    log_driver: journald
+    log_options:
+      tag: pi-hole
+    restart_policy: unless-stopped
+    env:
+      TZ:   "{{ local_timezone }}"
+      DNS1: "10.0.0.1"
+      DNS2: "no"
+      VIRTUAL_HOST: "{{ inventory_hostname }}"
+    dns_servers:
+      - "127.0.0.1"
+      - "10.0.0.1"
+    published_ports:
+      - "53:53/udp"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "{{ server_data_dir }}/pi-hole/pi-hole:/etc/pihole"
+      - "{{ server_data_dir }}/pi-hole/dnsmasq:/etc/dnsmasq.d"
+  tags: [pi-hole]

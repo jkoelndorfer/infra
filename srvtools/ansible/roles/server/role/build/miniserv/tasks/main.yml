@@ -4,6 +4,10 @@
   include_role:
     name: server/lib/build/docker
 
+- name: include pi-hole build tasks
+  include_tasks: pi-hole.yml
+  tags: [pi-hole]
+
 - name: include syncthing build tasks
   include_tasks: syncthing.yml
   tags: [syncthing]
