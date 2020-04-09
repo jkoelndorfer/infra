@@ -8,6 +8,12 @@ variable "category" {
   description = "the category of infrastructure that the autoscaling group belongs to"
 }
 
+variable "cpu_credits" {
+  type        = string
+  description = "the CPU credit option for launched instances; can be 'standard' or 'unlimited'"
+  default     = "standard"
+}
+
 variable "desired_capacity" {
   type        = string
   description = "the initial desired capacity of the autoscaling group (updates to this value are ignored)"

@@ -30,6 +30,9 @@ resource "aws_launch_template" "launch_template" {
   iam_instance_profile {
     name = var.iam_instance_profile == "" ? data.terraform_remote_state.core.outputs.ec2_default_instance_profile : var.iam_instance_profile
   }
+  credit_specification {
+    cpu_credits = var.cpu_credits
+  }
   tags = {
     "Name"           = "${var.env}-${var.name}"
     "johnk:category" = "${var.category}"
