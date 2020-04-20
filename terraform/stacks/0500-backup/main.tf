@@ -157,10 +157,10 @@ resource "aws_ssm_parameter" "ebs_volume_id" {
   value = data.terraform_remote_state.backup_persistent.outputs.ebs_volume_id
 }
 
-resource "aws_ssm_parameter" "backup_s3_bucket" {
-  name  = "/${local.env["name"]}/backup/backup_s3_bucket"
+resource "aws_ssm_parameter" "s3_path" {
+  name  = "/${local.env["name"]}/backup/s3_path"
   type  = "String"
-  value = data.terraform_remote_state.backup_persistent.outputs.s3_bucket_id
+  value = "${data.terraform_remote_state.backup_persistent.outputs.s3_bucket_id}/syncthing/duplicity"
 }
 
 resource "aws_ssm_parameter" "backup_sns_topic_arn" {

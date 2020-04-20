@@ -75,15 +75,15 @@ function main() {
     local instance_region="$(/opt/srvtools/aws/instance/region)"
 
     local backup_date="$(date '+%Y-%m-%d')"
-    local backup_s3_bucket="$(/opt/srvtools/aws/ssm-param --name "/$INSTANCE_ENV/backup/backup_s3_bucket" --region "$instance_region")"
-    if [[ -z "$backup_s3_bucket" ]]; then
+    local s3_path="$(/opt/srvtools/aws/ssm-param --name "/$INSTANCE_ENV/backup/s3_path" --region "$instance_region" | sed -r -e 's#/*$#/#')"
+    if [[ -z "$s3_path" ]]; then
         log 'Failed getting backup S3 bucket name!'
     else
-        backup_run_report="$(backup "$instance_region" "$backup_s3_bucket" 2>&1)"
+        backup_run_report="$(backup "$instance_region" "$s3_path" 2>&1)"
     fi
 
     local backup_report_topic_arn="$(/opt/srvtools/aws/ssm-param --name "/$INSTANCE_ENV/backup/backup_sns_topic_arn" --region "$instance_region")"
-    local report=$(backup_report "$backup_s3_bucket" "$backup_run_report")
+    local report=$(backup_report "$s3_path" "$backup_run_report")
     aws sns publish \
         --topic-arn "$backup_report_topic_arn" \
         --subject "Backup Report $backup_date" \
@@ -100,7 +100,7 @@ function main() {
 }
 
 function backup_report() {
-    local backup_s3_bucket="$1"
+    local s3_path="$1"
     local backup_run_report="$2"
     local updated_files="$(find /srv/data/syncthing -type f -mmin -$((60 * 24)) | grep -E -v -e '/.git/' -e '^/srv/data/syncthing/config/')"
     if [[ -z "$updated_files" ]]; then
@@ -125,7 +125,7 @@ $(df -h /srv/data)
 ################################################################################
 #                                  S3 BUCKET                                   #
 ################################################################################
-$(aws s3 ls --human-readable "s3://$backup_s3_bucket" | sort -r)
+$(aws s3 ls --human-readable "$(echo "s3://$s3_path")" | sort -r)
 EOF
 }
 
@@ -186,7 +186,7 @@ function wait_for_folders_synced() {
 
 function backup() {
     local aws_region="$1"
-    local backup_s3_bucket="$2"
+    local s3_path="$2"
     local start_date="$(date +%s)"
 
     log 'starting syncthing container'
@@ -203,7 +203,7 @@ function backup() {
 
     log
     log 'starting duplicity backup'
-    local duplicity_remote="s3://s3.amazonaws.com/$backup_s3_bucket"
+    local duplicity_remote="s3://s3.amazonaws.com/$s3_path"
     # duplicity recognizes a backup hostname change as a source mismatch.
     # Specifying --allow-source-mismatch permits the backup to proceed.
     duplicity \
