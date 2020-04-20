@@ -211,6 +211,7 @@ function backup() {
         --archive-dir /srv/data/duplicity-archive \
         --full-if-older-than 7D \
         --no-encryption \
+        --s3-use-ia \
         --s3-use-multiprocessing \
         /srv/data/syncthing \
         "$duplicity_remote" 2>&1
