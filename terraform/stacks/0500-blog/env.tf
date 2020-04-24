@@ -1,1 +1,6 @@
-../common/env.tf
+locals {
+  environments = {
+    dev  = {}
+    prod = {}
+  }
+}
