@@ -53,6 +53,9 @@ module "asg" {
   role                        = "syncthing"
   desired_capacity            = 1
   dns                         = "syncthing-cloud.${local.env["dns_zone"]}"
+  extra                       = {
+    syncthing_run_backup = true
+  }
   env                         = local.env["name"]
   iam_instance_profile        = module.ec2_role.iam_instance_profile_name
   image_id                    = data.aws_ami.syncthing.id
@@ -60,6 +63,28 @@ module "asg" {
   max_size                    = 1
   min_size                    = 0
   name                        = "syncthing"
+  security_groups             = [aws_security_group.syncthing.id]
+  subnet_ids                  = [aws_subnet.default.id]
+}
+
+module "asg_util" {
+  source = "../../modules/aws-ec2-asg/v1"
+
+  associate_public_ip_address = "true"
+  category                    = "backup"
+  role                        = "syncthing"
+  desired_capacity            = 0
+  dns                         = "syncthing-cloud.${local.env["dns_zone"]}"
+  extra                       = {
+    syncthing_run_backup = false
+  }
+  env                         = local.env["name"]
+  iam_instance_profile        = module.ec2_role.iam_instance_profile_name
+  image_id                    = data.aws_ami.syncthing.id
+  instance_type               = "t3.micro"
+  max_size                    = 1
+  min_size                    = 0
+  name                        = "syncthing-util"
   security_groups             = [aws_security_group.syncthing.id]
   subnet_ids                  = [aws_subnet.default.id]
 }
