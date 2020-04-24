@@ -1,5 +1,6 @@
 ---
 
+cloud_init_config_path:           /etc/cloud/cloud.cfg
 cloud_init_provision_script_path: /var/lib/cloud/scripts/per-instance/50-provision
 
 core_pip_packages:
