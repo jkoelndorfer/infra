@@ -11,6 +11,10 @@ dyndns_username:  "{{ lookup('aws_ssm', '/' + server_env + '/dyndns/creds/home/u
 dyndns_password:  "{{ lookup('aws_ssm', '/' + server_env + '/dyndns/creds/home/password') }}"
 dyndns_wan_iface: pppoe0
 
+upstream_dns:
+  - 8.8.8.8
+  - 8.8.4.4
+
 static_dhcp:
   - name: ap0
     mac:  f0:9f:c2:33:6b:76
@@ -29,3 +33,18 @@ static_dhcp:
     ip:   10.0.0.60
     dns:
       - val-desktop.lan
+
+static_dns:
+  - ip: "{{ router_ip }}"
+    dns:
+      - router0.lan
+
+  - ip: 10.0.0.10
+    dns:
+      - miniserv.johnk.io
+      - syncthing.johnk.io
+      - unifi.johnk.io
+
+  - ip: 172.17.17.17
+    dns:
+      - modem.lan

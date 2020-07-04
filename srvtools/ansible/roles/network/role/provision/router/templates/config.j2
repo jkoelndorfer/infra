@@ -134,13 +134,15 @@ service {
             cache-size 10000
             listen-on vtun0
             listen-on eth5
-            name-server 8.8.8.8
-            name-server 8.8.4.4
-            options address=/miniserv.johnk.io/10.0.0.10
-            options address=/unifi.johnk.io/10.0.0.10
-            options address=/syncthing.johnk.io/10.0.0.10
-            options address=/router0.lan/{{ router_ip }}
-            options address=/modem.lan/172.17.17.17
+            {% for i in upstream_dns -%}
+            name-server {{ i }}
+            {% endfor -%}
+            {% for i in static_dns -%}
+            {% for d in i.dns -%}
+            options address=/{{ d }}/{{ i.ip }}
+            {% endfor -%}
+            {% endfor -%}
+
             {% for i in static_dhcp -%}
             {% for d in i.get("dns", []) -%}
             options address=/{{ d }}/{{ i.ip }}
@@ -182,7 +184,7 @@ system {
             level admin
         }
     }
-    name-server 8.8.8.8
+    name-server {{ upstream_dns[0] }}
     ntp {
         server 0.ubnt.pool.ntp.org {
         }
