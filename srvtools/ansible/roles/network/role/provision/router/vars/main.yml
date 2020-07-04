@@ -10,3 +10,22 @@ dyndns_url:       "{{ lookup('aws_ssm', '/' + server_env + '/dyndns/url') }}"
 dyndns_username:  "{{ lookup('aws_ssm', '/' + server_env + '/dyndns/creds/home/username') }}"
 dyndns_password:  "{{ lookup('aws_ssm', '/' + server_env + '/dyndns/creds/home/password') }}"
 dyndns_wan_iface: pppoe0
+
+static_dhcp:
+  - name: ap0
+    mac:  f0:9f:c2:33:6b:76
+    ip:   10.0.0.8
+    dns:
+      - ap0.lan
+
+  - name: johnk-desktop
+    mac:  d0:50:99:95:7c:53
+    ip:   10.0.0.50
+    dns:
+      - johnk-desktop.lan
+
+  - name: val-desktop
+    mac:  f0:9f:c2:33:6b:76
+    ip:   10.0.0.60
+    dns:
+      - val-desktop.lan

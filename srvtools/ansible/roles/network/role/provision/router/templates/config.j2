@@ -118,18 +118,12 @@ service {
                 start 10.0.1.10 {
                     stop 10.0.1.250
                 }
-                static-mapping ap0 {
-                    ip-address 10.0.0.2
-                    mac-address f0:9f:c2:33:6b:76
+                {% for i in static_dhcp -%}
+                static-mapping {{ i.name }} {
+                    ip-address   {{ i.ip }}
+                    mac-address  {{ i.mac }}
                 }
-                static-mapping johnk-desktop {
-                    ip-address 10.0.0.50
-                    mac-address d0:50:99:95:7c:53
-                }
-                static-mapping val-desktop {
-                    ip-address 10.0.0.60
-                    mac-address 00:d8:61:e0:27:10
-                }
+                {% endfor -%}
             }
         }
         static-arp disable
@@ -146,11 +140,12 @@ service {
             options address=/unifi.johnk.io/10.0.0.10
             options address=/syncthing.johnk.io/10.0.0.10
             options address=/router0.lan/{{ router_ip }}
-            options address=/ap0.lan/10.0.0.2
             options address=/modem.lan/172.17.17.17
-            options address=/deathwing.johnk.io/10.0.0.50
-            options address=/johnk-desktop.lan/10.0.0.50
-            options address=/val-desktop.lan/10.0.0.60
+            {% for i in static_dhcp -%}
+            {% for d in i.get("dns", []) -%}
+            options address=/{{ d }}/{{ i.ip }}
+            {% endfor -%}
+            {% endfor -%}
         }
     }
     nat {
