@@ -22,6 +22,12 @@ static_dhcp:
     dns:
       - ap0.lan
 
+  - name: switch0
+    mac:  74:83:c2:0d:0a:4a
+    ip:   10.0.0.2
+    dns:
+      - switch0.lan
+
   - name: johnk-desktop
     mac:  d0:50:99:95:7c:53
     ip:   10.0.0.50
