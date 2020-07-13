@@ -99,6 +99,15 @@ port-forward {
         original-port 22000
         protocol tcp
     }
+    rule 2 {
+        description "desktop ssh"
+        forward-to {
+            address 10.0.0.50
+            port 22
+        }
+        original-port 225
+        protocol tcp
+    }
     wan-interface pppoe0
 }
 protocols {
