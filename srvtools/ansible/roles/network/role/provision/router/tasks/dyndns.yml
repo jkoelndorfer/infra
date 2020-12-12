@@ -3,13 +3,24 @@
 - name: ensure required configuration variables are set
   assert:
     that:
-      - "{{ item }} is defined and {{ item }} != ''"
+      - "item.value is defined and item.value not in ['', none]"
+  loop_control:
+    label: "{{ item.name }}"
   with_items:
-    - dyndns_hostname
-    - dyndns_password
-    - dyndns_url
-    - dyndns_username
-    - dyndns_wan_iface
+    - name:  dyndns_hostname
+      value: "{{ dyndns_hostname }}"
+
+    - name:  dyndns_password
+      value: "{{ dyndns_password }}"
+
+    - name:  dyndns_url
+      value: "{{ dyndns_url }}"
+
+    - name:  dyndns_username
+      value: "{{ dyndns_username }}"
+
+    - name:  dyndns_wan_iface
+      value: "{{ dyndns_wan_iface }}"
   tags: [always, dyndns]
 
 - name: deploy dyndns configuration

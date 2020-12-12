@@ -7,15 +7,29 @@
     - name: validate that required provision-time variables are set
       assert:
         that:
-          - "{{ item }} is defined and ({{ item }} | length) > 0"
+          - "item.value is defined and item.value not in ['', none]"
       with_items:
-        - server_admin_username
-        - server_admin_ssh_pubkey
-        - server_category
-        - server_env
-        - server_id
-        - server_model
-        - server_name
+        - name:  server_admin_username
+          value: "{{ server_admin_username }}"
+
+        - name:  server_admin_ssh_pubkey
+          value: "{{ server_admin_ssh_pubkey }}"
+
+        - name:  server_category
+          value: "{{ server_category }}"
+
+        - name:  server_env
+          value: "{{ server_env }}"
+
+        - name:  server_id
+          value: "{{ server_id }}"
+
+        - name:  server_model
+          value: "{{ server_model }}"
+
+        - name:  server_name
+          value: "{{ server_name }}"
+
 
     - name: validate that special-case provision-time variables are set
       assert:
@@ -26,8 +40,10 @@
     - name: validate that aws-specific provision-time variables are set
       assert:
         that:
-          - "{{ item }} is defined and {{ item }} is none or ({{ item }} | length) > 0"
+          - "item.value is defined and item.value not in ['', none]"
       when: server_hardware_type == "aws"
       with_items:
-        - server_aws_asg
+        - name:  server_aws_asg
+          value: "{{ server_aws_asg }}"
+
   tags: [always]

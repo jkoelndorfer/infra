@@ -60,7 +60,7 @@
     - name: validate that build-time variables are set
       assert:
         that:
-          - "{{ item.var_name }} is defined and ({{ item.var_name }} | length) > 0"
+          - "{{ item.var_name }} is defined and {{ item.var_name }} not in ['', none]"
       with_items: "{{ build_time_metadata }}"
 
     - name: perform additional build-time variable validation

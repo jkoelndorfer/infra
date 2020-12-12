@@ -3,16 +3,32 @@
 - name: ensure required configuration variables are set
   assert:
     that:
-      - "{{ item }} is defined and {{ item }} != ''"
+      - "item.value is defined and item.value not in ['', none]"
   with_items:
-    - centurylink_pppoe_username
-    - centurylink_pppoe_password
-    - network_subnet
-    - router_ip
-    - server_admin_comment
-    - server_admin_username
-    - server_admin_password
-    - server_admin_ssh_pubkey
+    - name:  centurylink_pppoe_username
+      value: "{{ centurylink_pppoe_username }}"
+
+    - name:  centurylink_pppoe_password
+      value: "{{ centurylink_pppoe_password }}"
+
+    - name:  network_subnet
+      value: "{{ network_subnet }}"
+
+    - name:  router_ip
+      value: "{{ router_ip }}"
+
+    - name:  server_admin_comment
+      value: "{{ server_admin_comment }}"
+
+    - name:  server_admin_username
+      value: "{{ server_admin_username }}"
+
+    - name:  server_admin_password
+      value: "{{ server_admin_password }}"
+
+    - name:  server_admin_ssh_pubkey
+      value: "{{ server_admin_ssh_pubkey }}"
+
   tags: [always]
 
 # When specifying Ansible variables via -e, the value itself has to be quoted,

@@ -11,10 +11,13 @@
 - name: assert that required variables are set
   assert:
     that:
-      - "{{ item }} is defined and {{ item }} != ''"
+      - "item.value is defined and item.value not in ['', none]"
   with_items:
-    - src
-    - dest
+    - name:  src
+      value: "{{ src }}"
+
+    - name:  dest
+      value: "{{ dest }}"
 
 - name: create template tempfile
   delegate_to: localhost
