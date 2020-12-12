@@ -160,6 +160,23 @@ service {
         }
     }
     nat {
+        rule 1300 {
+            description "Redirect outbound DNS to internal DNS server"
+            inbound-interface eth5
+            protocol tcp_udp
+            source {
+                address 10.0.13.0/24
+            }
+            inside-address {
+                address {{ pi_hole_ip }}
+                port    53
+            }
+            destination {
+                address !{{ pi_hole_ip }}
+                port    53
+            }
+            type destination
+        }
         rule 7000 {
             description "NAT: LAN <-> Internet"
             outbound-interface pppoe0

@@ -40,6 +40,21 @@ static_dhcp:
     dns:
       - val-desktop.lan
 
+  # Devices that are bad network citizens should be put into
+  # 10.0.13.0/24. Smart TVs specifically are known not to obey
+  # DNS settings offered by DHCP.
+  - name: roku-family-room
+    mac:  b8:3e:59:15:97:c8
+    ip:   10.0.13.10
+
+  - name: roku-living-room
+    mac:  5c:ad:76:bd:c1:6d
+    ip:   10.0.13.20
+
+  - name: roku-master-bedroom
+    mac:  5c:ad:76:89:06:c5
+    ip:   10.0.13.30
+
 static_dns:
   - ip: "{{ router_ip }}"
     dns:
