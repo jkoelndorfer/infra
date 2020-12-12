@@ -45,7 +45,7 @@ static_dns:
     dns:
       - router0.lan
 
-  - ip: 10.0.0.10
+  - ip: "{{ pi_hole_ip }}"
     dns:
       - miniserv.johnk.io
       - syncthing.johnk.io
