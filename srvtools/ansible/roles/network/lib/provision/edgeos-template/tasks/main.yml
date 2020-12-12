@@ -40,8 +40,11 @@
 
 - name: deploy file
   delegate_to: localhost
-  command:
+  shell:
+  args:
+    executable: /bin/bash
     cmd: |
+      set -x
       scp "$EDGEOS_TEMPLATE_TEMPFILE" "$HOST:$DEST"
   environment:
     DEST: "{{ dest }}"
