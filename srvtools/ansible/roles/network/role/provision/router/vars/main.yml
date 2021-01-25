@@ -40,6 +40,14 @@ static_dhcp:
     dns:
       - val-desktop.lan
 
+  - name: val-phone-5ghz
+    mac:  be:4f:e0:09:f1:fa
+    ip:   10.0.0.61
+
+  - name: val-phone-24ghz
+    mac:  1a:54:6f:b8:a6:f6
+    ip:   10.0.0.62
+
   # Devices that are bad network citizens should be put into
   # 10.0.13.0/24. Smart TVs specifically are known not to obey
   # DNS settings offered by DHCP.
