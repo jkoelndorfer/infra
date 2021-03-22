@@ -18,7 +18,7 @@ module "ebs_volume" {
   kms_key_arn       = "${data.terraform_remote_state.bootstrap.outputs.kms_key_arn}"
   role              = "syncthing"
   size              = local.env.backup_vol_size
-  type              = "gp2"
+  type              = "gp3"
 }
 
 # E-mail subscriptions are unsupported in Terraform because they must be confirmed
