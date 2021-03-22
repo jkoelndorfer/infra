@@ -48,6 +48,12 @@ static_dhcp:
     mac:  1a:54:6f:b8:a6:f6
     ip:   10.0.0.62
 
+  - name: office-laserjet-pro
+    mac:  e8:d8:d1:b0:f6:56
+    ip:   10.0.0.40
+    dns:
+      - office-laserjet-pro.lan
+
   # Devices that are bad network citizens should be put into
   # 10.0.13.0/24. Smart TVs specifically are known not to obey
   # DNS settings offered by DHCP.
