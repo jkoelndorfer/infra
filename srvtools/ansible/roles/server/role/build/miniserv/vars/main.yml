@@ -1,5 +1,5 @@
 ---
 
 pi_hole_docker_image:   pihole/pihole:v5.1.2
-syncthing_docker_image: linuxserver/syncthing:v1.10.0-ls40
+syncthing_docker_image: linuxserver/syncthing:v1.15.1-ls52
 unifi_docker_image:     linuxserver/unifi-controller:6.1.71-ls105
