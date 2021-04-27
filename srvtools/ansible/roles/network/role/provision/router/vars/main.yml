@@ -16,11 +16,17 @@ upstream_dns:
   - 8.8.4.4
 
 static_dhcp:
-  - name: ap0
-    mac:  f0:9f:c2:33:6b:76
-    ip:   10.0.0.8
+  - name: ap-1f
+    mac:  f4:92:bf:69:86:68
+    ip:   10.0.0.11
     dns:
-      - ap0.lan
+      - ap1f.lan
+
+  - name: ap-3f
+    mac:  f0:9f:c2:33:6b:76
+    ip:   10.0.0.13
+    dns:
+      - ap3f.lan
 
   - name: switch0
     mac:  74:83:c2:0d:0a:4a
