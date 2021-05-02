@@ -60,6 +60,12 @@ static_dhcp:
     dns:
       - office-laserjet-pro.lan
 
+  - name: gaming-rpi
+    mac: e4:5f:01:09:b9:64
+    ip:  10.0.0.20
+    dns:
+      - gaming-rpi.lan
+
   # Devices that are bad network citizens should be put into
   # 10.0.13.0/24. Smart TVs specifically are known not to obey
   # DNS settings offered by DHCP.
