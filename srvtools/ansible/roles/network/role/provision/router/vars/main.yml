@@ -35,10 +35,16 @@ static_dhcp:
       - switch0.lan
 
   - name: johnk-desktop
-    mac:  d0:50:99:95:7c:53
+    mac:  d8:bb:c1:10:03:e9
     ip:   10.0.0.50
     dns:
       - johnk-desktop.lan
+
+  - name: media-center-pc
+    mac:  d0:50:99:95:7c:53
+    ip:   10.0.0.55
+    dns:
+      - media-center-pc.lan
 
   - name: val-desktop
     mac:  f0:9f:c2:33:6b:76
