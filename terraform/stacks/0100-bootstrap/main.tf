@@ -1,9 +1,3 @@
-provider "aws" {
-    region = local.env["default_aws_region"]
-    # Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in the environment
-    version = "~> 2.16"
-}
-
 resource "aws_kms_key" "enc" {
   description = "kms key used for general encryption"
   lifecycle {
@@ -22,6 +16,5 @@ module "bucket" {
   category        = "core"
   env             = local.env["name"]
   kms_key_id      = aws_kms_key.enc.id
-  region          = local.env["default_aws_region"]
   versioning      = true
 }
