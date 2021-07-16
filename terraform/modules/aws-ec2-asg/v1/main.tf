@@ -35,8 +35,8 @@ resource "aws_launch_template" "launch_template" {
   }
   tags = {
     "Name"           = "${var.env}-${var.name}"
-    "johnk:category" = "${var.category}"
-    "johnk:env"      = "${var.env}"
+    "johnk:category" = var.category
+    "johnk:env"      = var.env
   }
   tag_specifications {
     resource_type = "instance"

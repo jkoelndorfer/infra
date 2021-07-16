@@ -3,18 +3,18 @@ module "s3_bucket" {
 
   bucket     = "backups"
   category   = "backup"
-  env        = "${local.env["name"]}"
+  env        = local.env.name
   versioning = "false"
 }
 
 module "ebs_volume" {
   source = "../../modules/aws-encrypted-ebs-volume/v1"
 
-  availability_zone = "${local.env["default_aws_region"]}a"
+  availability_zone = "${local.env.default_aws_region}a"
   category          = "backup"
-  env               = "${local.env["name"]}"
+  env               = local.env.name
   name              = "syncthing-data"
-  kms_key_arn       = "${data.terraform_remote_state.bootstrap.outputs.kms_key_arn}"
+  kms_key_arn       = data.terraform_remote_state.bootstrap.outputs.kms_key_arn
   role              = "syncthing"
   size              = local.env.backup_vol_size
   type              = "gp3"
@@ -26,5 +26,5 @@ module "ebs_volume" {
 #
 # Don't forget to manually set up an SNS subscription! FeelsBadMan.
 resource "aws_sns_topic" "backup_notifications" {
-  name = "${local.env["name"]}-backup-notifications"
+  name = "${local.env.name}-backup-notifications"
 }
