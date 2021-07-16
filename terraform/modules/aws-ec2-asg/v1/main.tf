@@ -61,7 +61,7 @@ resource "aws_launch_template" "launch_template" {
     associate_public_ip_address = var.associate_public_ip_address
     security_groups             = concat(
         var.security_groups,
-        list(data.terraform_remote_state.core.outputs.vpc_default_sg)
+        [data.terraform_remote_state.core.outputs.vpc_default_sg]
     )
     delete_on_termination       = true
   }

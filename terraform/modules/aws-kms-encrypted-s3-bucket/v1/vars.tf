@@ -18,11 +18,6 @@ variable "kms_key_id" {
   description = "the ID of the KMS key used to encrypt the bucket"
 }
 
-variable "region" {
-  type        = string
-  description = "the AWS region that the S3 bucket is hosted in"
-}
-
 variable "versioning" {
   type        = string
   description = "whether or not to enable versioning on the bucket"

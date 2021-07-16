@@ -7,7 +7,6 @@ resource "aws_s3_bucket" "bucket" {
     "johnk:category" = var.category
     "johnk:env"      = var.env
   }
-  region = var.region
   versioning {
     enabled = var.versioning
   }
