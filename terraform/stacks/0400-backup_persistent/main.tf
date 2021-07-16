@@ -4,7 +4,6 @@ module "s3_bucket" {
   bucket     = "backups"
   category   = "backup"
   env        = "${local.env["name"]}"
-  region     = "${local.env["default_aws_region"]}"
   versioning = "false"
 }
 
