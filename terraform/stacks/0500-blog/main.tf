@@ -1,5 +1,5 @@
 data "aws_route53_zone" "blog_zone" {
-  name = "${local.env["dns_zone"]}."
+  name = "${local.env.dns_zone}."
 }
 
 resource "aws_route53_record" "blog" {

@@ -11,7 +11,7 @@ data "aws_iam_policy_document" "dyndns_assume_role" {
 }
 
 resource "aws_iam_role" "dyndns" {
-  name = "${local.env["name"]}-lambda-dyndns"
+  name = "${local.env.name}-lambda-dyndns"
 
   assume_role_policy = data.aws_iam_policy_document.dyndns_assume_role.json
 }
@@ -39,7 +39,7 @@ data "aws_iam_policy_document" "lambda_dyndns" {
 }
 
 resource "aws_iam_policy" "dyndns" {
-  name        = "${local.env["name"]}-lambda-dyndns"
+  name        = "${local.env.name}-lambda-dyndns"
   description = "Policy permitting Lambda to perform actions needed for cloud dynamic DNS"
   policy      = data.aws_iam_policy_document.lambda_dyndns.json
 }
@@ -63,14 +63,14 @@ resource "random_string" "dyndns_pw" {
 }
 
 locals {
-  dyndns_hostname = "home.${local.env["dns_zone"]}"
+  dyndns_hostname = "home.${local.env.dns_zone}"
 }
 
 resource "aws_lambda_function" "dyndns" {
   # This is a dummy package so we can deploy the Lambda function.
   # Apply updates from the "infra" repository.
   filename      = "dyndns.zip"
-  function_name = "${local.env["name"]}-dyndns"
+  function_name = "${local.env.name}-dyndns"
   handler       = "dyndns.lambda_handler"
   role          = aws_iam_role.dyndns.arn
   description   = "Provides dynamic DNS for EC2 instances and authenticated clients."
@@ -85,32 +85,32 @@ resource "aws_lambda_function" "dyndns" {
           dns_names = [local.dyndns_hostname]
         }
       })
-      "env_name"             = local.env["name"]
+      "env_name"             = local.env.name
     }
   }
   tags = {
     "johnk:category" = "core"
-    "johnk:env"      = local.env["name"]
+    "johnk:env"      = local.env.name
   }
 }
 
 resource "aws_ssm_parameter" "api_gateway_dyndns_username_home" {
-  name        = "/${local.env["name"]}/dyndns/creds/home/username"
+  name        = "/${local.env.name}/dyndns/creds/home/username"
   type        = "String"
   value       = "home"
-  description = "Username for home dynamic DNS in ${local.env["name"]}."
+  description = "Username for home dynamic DNS in ${local.env.name}."
 }
 
 resource "aws_ssm_parameter" "api_gateway_dyndns_password_home" {
-  name        = "/${local.env["name"]}/dyndns/creds/home/password"
+  name        = "/${local.env.name}/dyndns/creds/home/password"
   type        = "SecureString"
   value       = random_string.dyndns_pw.result
-  description = "Password for home dynamic DNS in ${local.env["name"]}."
+  description = "Password for home dynamic DNS in ${local.env.name}."
 }
 
 resource "aws_ssm_parameter" "api_gateway_dyndns_hostname" {
-  name        = "/${local.env["name"]}/dyndns/hostname"
+  name        = "/${local.env.name}/dyndns/hostname"
   type        = "String"
   value       = local.dyndns_hostname
-  description = "Hostname for home dynamic DNS in ${local.env["name"]}."
+  description = "Hostname for home dynamic DNS in ${local.env.name}."
 }

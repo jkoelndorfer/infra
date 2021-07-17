@@ -1,8 +1,8 @@
 resource "aws_acm_certificate" "blog" {
-  domain_name       = local.env["dns_zone"]
+  domain_name       = local.env.dns_zone
   validation_method = "DNS"
 
-  subject_alternative_names = ["www.${local.env["dns_zone"]}"]
+  subject_alternative_names = ["www.${local.env.dns_zone}"]
 
   lifecycle {
     create_before_destroy = true

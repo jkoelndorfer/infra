@@ -5,7 +5,7 @@ resource "aws_kms_key" "enc" {
   }
   tags = {
     "johnk:category" = "core"
-    "johnk:env"      = local.env["name"]
+    "johnk:env"      = local.env.name
   }
 }
 
@@ -14,7 +14,7 @@ module "bucket" {
 
   bucket          = "tfstate"
   category        = "core"
-  env             = local.env["name"]
+  env             = local.env.name
   kms_key_id      = aws_kms_key.enc.id
   versioning      = true
 }

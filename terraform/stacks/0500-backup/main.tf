@@ -2,7 +2,7 @@ data "aws_ami" "syncthing" {
   most_recent = true
   filter {
     name   = "name"
-    values = [local.env["syncthing_ami"]]
+    values = [local.env.syncthing_ami]
   }
   owners = [data.aws_caller_identity.current.account_id]
 }
@@ -10,17 +10,17 @@ data "aws_ami" "syncthing" {
 resource "aws_subnet" "default" {
   vpc_id            = data.terraform_remote_state.core.outputs.vpc_id
   availability_zone = data.terraform_remote_state.backup_persistent.outputs.ebs_volume_az
-  cidr_block        = cidrsubnet(data.terraform_remote_state.core.outputs.vpc_cidr_block, 8, local.env["backup_subnet_num"])
+  cidr_block        = cidrsubnet(data.terraform_remote_state.core.outputs.vpc_cidr_block, 8, local.env.backup_subnet_num)
 
   tags = {
-    "Name"           = "${local.env["name"]}-backup-infra"
+    "Name"           = "${local.env.name}-backup-infra"
     "johnk:category" = "backup"
-    "johnk:env"      = local.env["name"]
+    "johnk:env"      = local.env.name
   }
 }
 
 resource "aws_security_group" "syncthing" {
-  name        = "${local.env["name"]}-syncthing"
+  name        = "${local.env.name}-syncthing"
   description = "Security group for syncthing instances"
   vpc_id      = data.terraform_remote_state.core.outputs.vpc_id
 
@@ -32,16 +32,16 @@ resource "aws_security_group" "syncthing" {
   }
 
   tags = {
-    "Name"           = "${local.env["name"]}-syncthing"
+    "Name"           = "${local.env.name}-syncthing"
     "johnk:category" = "backup"
-    "johnk:env"      = local.env["name"]
+    "johnk:env"      = local.env.name
   }
 }
 
 module "ec2_role" {
   source = "../../modules/aws-ec2-role/v1"
 
-  env  = local.env["name"]
+  env  = local.env.name
   name = "syncthing"
 }
 
@@ -52,11 +52,11 @@ module "asg" {
   category                    = "backup"
   role                        = "syncthing"
   desired_capacity            = 1
-  dns                         = "syncthing-cloud.${local.env["dns_zone"]}"
+  dns                         = "syncthing-cloud.${local.env.dns_zone}"
   extra                       = {
     syncthing_run_backup = true
   }
-  env                         = local.env["name"]
+  env                         = local.env.name
   iam_instance_profile        = module.ec2_role.iam_instance_profile_name
   image_id                    = data.aws_ami.syncthing.id
   instance_type               = "t3.micro"
@@ -74,11 +74,11 @@ module "asg_util" {
   category                    = "backup"
   role                        = "syncthing"
   desired_capacity            = 0
-  dns                         = "syncthing-cloud.${local.env["dns_zone"]}"
+  dns                         = "syncthing-cloud.${local.env.dns_zone}"
   extra                       = {
     syncthing_run_backup = false
   }
-  env                         = local.env["name"]
+  env                         = local.env.name
   iam_instance_profile        = module.ec2_role.iam_instance_profile_name
   image_id                    = data.aws_ami.syncthing.id
   instance_type               = "t3.micro"
@@ -91,7 +91,7 @@ module "asg_util" {
 
 resource "aws_autoscaling_schedule" "backup_schedule" {
   autoscaling_group_name = module.asg.asg_name
-  scheduled_action_name  = "${local.env["name"]}-nightly-backup"
+  scheduled_action_name  = "${local.env.name}-nightly-backup"
   # Schedule is in UTC
   recurrence       = "0 8 * * *"
   min_size         = -1
@@ -137,7 +137,7 @@ data "aws_iam_policy_document" "backup_ec2_policy" {
       "ssm:GetParameterByPath",
       "ssm:GetParameters",
     ]
-    resources = ["arn:aws:ssm:*:${data.aws_caller_identity.current.account_id}:parameter/${local.env["name"]}/backup/*"]
+    resources = ["arn:aws:ssm:*:${data.aws_caller_identity.current.account_id}:parameter/${local.env.name}/backup/*"]
   }
 
   statement {
@@ -171,31 +171,31 @@ data "aws_iam_policy_document" "backup_ec2_policy" {
 }
 
 resource "aws_iam_role_policy" "backup_ec2_policy" {
-  name   = "${local.env["name"]}-syncthing-backup"
+  name   = "${local.env.name}-syncthing-backup"
   role   = module.ec2_role.iam_role_name
   policy = data.aws_iam_policy_document.backup_ec2_policy.json
 }
 
 resource "aws_ssm_parameter" "ebs_volume_id" {
-  name  = "/${local.env["name"]}/backup/syncthing_ebs_volume_id"
+  name  = "/${local.env.name}/backup/syncthing_ebs_volume_id"
   type  = "String"
   value = data.terraform_remote_state.backup_persistent.outputs.ebs_volume_id
 }
 
 resource "aws_ssm_parameter" "s3_path" {
-  name  = "/${local.env["name"]}/backup/s3_path"
+  name  = "/${local.env.name}/backup/s3_path"
   type  = "String"
   value = "${data.terraform_remote_state.backup_persistent.outputs.s3_bucket_id}/syncthing/duplicity"
 }
 
 resource "aws_ssm_parameter" "backup_sns_topic_arn" {
-  name  = "/${local.env["name"]}/backup/backup_sns_topic_arn"
+  name  = "/${local.env.name}/backup/backup_sns_topic_arn"
   type  = "String"
   value = data.terraform_remote_state.backup_persistent.outputs.sns_topic_arn
 }
 
 resource "aws_ssm_parameter" "scale_down_after_backup" {
-  name  = "/${local.env["name"]}/backup/scale_down_after_backup"
+  name  = "/${local.env.name}/backup/scale_down_after_backup"
   type  = "String"
   value = "1"
 }

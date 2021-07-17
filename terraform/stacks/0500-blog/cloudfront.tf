@@ -1,5 +1,5 @@
 locals {
-  origin_id = "blog-${local.env["name"]}"
+  origin_id = "blog-${local.env.name}"
 }
 
 resource "aws_cloudfront_distribution" "blog" {
