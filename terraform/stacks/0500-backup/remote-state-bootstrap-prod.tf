@@ -1,1 +1,1 @@
-../common/remote-state-bootstrap-prod.tf
+../../remote-states/remote-state-bootstrap-prod.tf

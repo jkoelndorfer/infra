@@ -1,1 +1,1 @@
-../common/remote-state-backup-persistent.tf
+../../remote-states/remote-state-backup-persistent.tf

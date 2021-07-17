@@ -1,1 +1,1 @@
-../common/remote-state-air-quality.tf
+../../remote-states/remote-state-air-quality.tf

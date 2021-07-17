@@ -1,1 +1,1 @@
-../common/remote-state-core.tf
+../../remote-states/remote-state-core.tf
