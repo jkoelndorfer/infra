@@ -119,6 +119,11 @@ EOF
 }
 
 function main() {
+    local -a packer_args=()
+    if [[ "$1" == '--debug' ]]; then
+        shift
+        packer_args=('-on-error=ask' '-debug')
+    fi
     local config=$1
 
     if [[ -z "$config" ]]; then
@@ -140,7 +145,7 @@ function main() {
 
     local ami_build_number=$(ami_next_build_number "$AMI_ROLE" "$AMI_SOFTWARE_VERSION")
     local packer_template=$(packer_build_template "$AMI_ROLE" "$AMI_SOFTWARE_VERSION" "$ami_build_number" "$infra_revision")
-    echo "$packer_template" | packer build -
+    echo "$packer_template" | packer build "${packer_args[@]}" -
 }
 
 main "$@"
