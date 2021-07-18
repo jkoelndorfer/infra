@@ -1,7 +1,11 @@
+locals {
+  name_env = "${var.name}-${var.env}"
+}
+
 resource "aws_vpc" "vpc" {
   cidr_block = var.cidr_block
   tags = {
-    "Name"           = "${var.env}-${var.name}"
+    "Name"           = local.name_env
     "johnk:env"      = var.env
     "johnk:category" = var.category
   }
@@ -10,7 +14,7 @@ resource "aws_vpc" "vpc" {
 resource "aws_internet_gateway" "default_gateway" {
   vpc_id = aws_vpc.vpc.id
   tags = {
-    "Name"           = "${var.env}-${var.name}-default-gateway"
+    "Name"           = "${local.name_env}-default-gateway"
     "johnk:env"      = var.env
     "johnk:category" = var.category
   }
@@ -23,7 +27,7 @@ resource "aws_route" "default_route" {
 }
 
 resource "aws_security_group" "default_sg" {
-  name        = "${var.env}-${var.name}-default-sg"
+  name        = "${local.name_env}-default-sg"
   description = "Provides default traffic rules, including egress traffic and management via ssh"
   vpc_id      = aws_vpc.vpc.id
 
@@ -42,7 +46,7 @@ resource "aws_security_group" "default_sg" {
   }
 
   tags = {
-    "Name"           = "${var.env}-${var.name}-default-sg"
+    "Name"           = "${local.name_env}-default-sg"
     "johnk:env"      = var.env
     "johnk:category" = var.category
   }

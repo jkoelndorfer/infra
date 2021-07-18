@@ -10,7 +10,6 @@ fi
 script_dir="$(realpath "$(dirname "$0")")"
 
 account_id="$(aws sts get-caller-identity --output text | awk '{ print $1 }')"
-bucket_name="${account_id}-${env}-infra"
 
 deploy_tmpdir="$(mktemp --tmpdir -d aws-dyndns-deploy.XXXXXX)"
 if [[ -z "$deploy_tmpdir" ]]; then
@@ -23,4 +22,4 @@ function cleanup() {
 trap cleanup EXIT
 
 zip -j "$deploy_tmpdir/dyndns.zip" "$script_dir/dyndns.py"
-aws lambda update-function-code --function-name "$env-dyndns" --zip-file "fileb://$deploy_tmpdir/dyndns.zip"
+aws lambda update-function-code --function-name "dyndns-${env}" --zip-file "fileb://$deploy_tmpdir/dyndns.zip"

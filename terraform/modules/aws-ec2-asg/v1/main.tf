@@ -1,17 +1,21 @@
+locals {
+  name_env = "${var.name}-${var.env}"
+}
+
 module "user_data" {
   source = "../../aws-ec2-user-data/v2"
 
-  asg_name = "${var.env}-${var.name}"
+  asg_name = local.name_env
   category = var.category
   dns      = var.dns
   env      = var.env
   extra    = var.extra
-  name     = "${var.env}-${var.name}"
+  name     = local.name_env
   role     = var.role
 }
 
 resource "aws_launch_template" "launch_template" {
-  name          = "${var.env}-${var.name}"
+  name          = local.name_env
   image_id      = var.image_id
   instance_type = var.instance_type
   key_name      = data.terraform_remote_state.core.outputs.ec2_default_keypair
@@ -23,14 +27,14 @@ resource "aws_launch_template" "launch_template" {
     cpu_credits = var.cpu_credits
   }
   tags = {
-    "Name"           = "${var.env}-${var.name}"
+    "Name"           = local.name_env
     "johnk:category" = var.category
     "johnk:env"      = var.env
   }
   tag_specifications {
     resource_type = "instance"
     tags = {
-      "Name"           = "${var.env}-${var.name}"
+      "Name"           = local.name_env
       "johnk:category" = var.category
       "johnk:role"     = var.role
       "johnk:dns"      = var.dns
@@ -40,7 +44,7 @@ resource "aws_launch_template" "launch_template" {
   tag_specifications {
     resource_type = "volume"
     tags = {
-      "Name"           = "${var.env}-${var.name}"
+      "Name"           = local.name_env
       "johnk:category" = var.category
       "johnk:role"     = var.role
       "johnk:env"      = var.env
@@ -57,7 +61,7 @@ resource "aws_launch_template" "launch_template" {
 }
 
 resource "aws_autoscaling_group" "autoscaling_group" {
-  name = "${var.env}-${var.name}"
+  name = local.name_env
   launch_template {
     id      = aws_launch_template.launch_template.id
     version = "$Latest"

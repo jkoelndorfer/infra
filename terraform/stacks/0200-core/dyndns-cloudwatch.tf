@@ -11,7 +11,7 @@ data "aws_iam_policy_document" "cloudwatch_assume_role" {
 }
 
 resource "aws_iam_role" "cloudwatch_dyndns" {
-  name = "${local.env.name}-cloudwatch-dyndns"
+  name = "cloudwatch-dyndns-${local.env.name}"
 
   assume_role_policy = data.aws_iam_policy_document.cloudwatch_assume_role.json
 }
@@ -26,7 +26,7 @@ data "aws_iam_policy_document" "cloudwatch_dyndns" {
 }
 
 resource "aws_iam_policy" "cloudwatch_dyndns" {
-  name        = "${local.env.name}-cloudwatch-dyndns"
+  name        = "cloudwatch-dyndns-${local.env.name}"
   description = "Policy permitting CloudWatch to invoke the dynamic DNS Lambda function"
   policy      = data.aws_iam_policy_document.cloudwatch_dyndns.json
 }
@@ -38,7 +38,7 @@ resource "aws_iam_role_policy_attachment" "cloudwatch_dyndns" {
 }
 
 resource "aws_cloudwatch_event_rule" "ec2_instance_running" {
-  name        = "${local.env.name}-dyndns-ec2-instance-running"
+  name        = "dyndns-ec2-instance-running-${local.env.name}"
   description = "Fires when an event at the dyndns Lambda function when an EC2 instance enters the running state"
   role_arn    = aws_iam_role.cloudwatch_dyndns.arn
   event_pattern = jsonencode({
@@ -51,7 +51,7 @@ resource "aws_cloudwatch_event_rule" "ec2_instance_running" {
 }
 
 resource "aws_cloudwatch_event_target" "dyndns" {
-  target_id = "${local.env.name}-ec2state-dyndns"
+  target_id = "ec2state-dyndns-${local.env.name}"
   rule      = aws_cloudwatch_event_rule.ec2_instance_running.name
   arn       = aws_lambda_function.dyndns.arn
 }

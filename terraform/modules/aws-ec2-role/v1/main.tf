@@ -1,7 +1,11 @@
+locals {
+  name_env = "${var.name}-${var.env}"
+}
+
 data "aws_caller_identity" "current" {}
 
 resource "aws_iam_role" "role" {
-  name = "${var.env}-${var.name}"
+  name = local.name_env
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -20,7 +24,7 @@ EOF
 }
 
 resource "aws_iam_instance_profile" "instance_profile" {
-  name = "${var.env}-${var.name}"
+  name = local.name_env
   role = aws_iam_role.role.name
 }
 

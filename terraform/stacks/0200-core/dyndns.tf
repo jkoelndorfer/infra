@@ -11,7 +11,7 @@ data "aws_iam_policy_document" "dyndns_assume_role" {
 }
 
 resource "aws_iam_role" "dyndns" {
-  name = "${local.env.name}-lambda-dyndns"
+  name = "lambda-dyndns-${local.env.name}"
 
   assume_role_policy = data.aws_iam_policy_document.dyndns_assume_role.json
 }
@@ -39,7 +39,7 @@ data "aws_iam_policy_document" "lambda_dyndns" {
 }
 
 resource "aws_iam_policy" "dyndns" {
-  name        = "${local.env.name}-lambda-dyndns"
+  name        = "lambda-dyndns-${local.env.name}"
   description = "Policy permitting Lambda to perform actions needed for cloud dynamic DNS"
   policy      = data.aws_iam_policy_document.lambda_dyndns.json
 }
@@ -70,7 +70,7 @@ resource "aws_lambda_function" "dyndns" {
   # This is a dummy package so we can deploy the Lambda function.
   # Apply updates from the "infra" repository.
   filename      = "dyndns.zip"
-  function_name = "${local.env.name}-dyndns"
+  function_name = "dyndns-${local.env.name}"
   handler       = "dyndns.lambda_handler"
   role          = aws_iam_role.dyndns.arn
   description   = "Provides dynamic DNS for EC2 instances and authenticated clients."

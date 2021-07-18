@@ -26,5 +26,5 @@ module "ebs_volume" {
 #
 # Don't forget to manually set up an SNS subscription! FeelsBadMan.
 resource "aws_sns_topic" "backup_notifications" {
-  name = "${local.env.name}-backup-notifications"
+  name = "backup-notifications-${local.env.name}"
 }

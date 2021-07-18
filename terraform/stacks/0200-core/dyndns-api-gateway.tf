@@ -1,5 +1,5 @@
 resource "aws_api_gateway_rest_api" "dyndns_api" {
-  name        = "${local.env.name}-dyndns"
+  name        = "dyndns-${local.env.name}"
   description = "API for client-initiated DNS in ${local.env.name}."
 
   endpoint_configuration {

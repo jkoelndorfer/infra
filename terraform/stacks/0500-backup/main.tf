@@ -13,14 +13,14 @@ resource "aws_subnet" "default" {
   cidr_block        = cidrsubnet(data.terraform_remote_state.core.outputs.vpc_cidr_block, 8, local.env.backup_subnet_num)
 
   tags = {
-    "Name"           = "${local.env.name}-backup-infra"
+    "Name"           = "backup-infra-${local.env.name}"
     "johnk:category" = "backup"
     "johnk:env"      = local.env.name
   }
 }
 
 resource "aws_security_group" "syncthing" {
-  name        = "${local.env.name}-syncthing"
+  name        = "syncthing-${local.env.name}"
   description = "Security group for syncthing instances"
   vpc_id      = data.terraform_remote_state.core.outputs.vpc_id
 
@@ -32,7 +32,7 @@ resource "aws_security_group" "syncthing" {
   }
 
   tags = {
-    "Name"           = "${local.env.name}-syncthing"
+    "Name"           = "syncthing-${local.env.name}"
     "johnk:category" = "backup"
     "johnk:env"      = local.env.name
   }
@@ -91,7 +91,7 @@ module "asg_util" {
 
 resource "aws_autoscaling_schedule" "backup_schedule" {
   autoscaling_group_name = module.asg.asg_name
-  scheduled_action_name  = "${local.env.name}-nightly-backup"
+  scheduled_action_name  = "nightly-backup-${local.env.name}"
   # Schedule is in UTC
   recurrence       = "0 8 * * *"
   min_size         = -1
@@ -171,7 +171,7 @@ data "aws_iam_policy_document" "backup_ec2_policy" {
 }
 
 resource "aws_iam_role_policy" "backup_ec2_policy" {
-  name   = "${local.env.name}-syncthing-backup"
+  name   = "syncthing-backup-${local.env.name}"
   role   = module.ec2_role.iam_role_name
   policy = data.aws_iam_policy_document.backup_ec2_policy.json
 }
