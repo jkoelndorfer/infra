@@ -1,7 +1,7 @@
 data "aws_caller_identity" "current" {}
 
 resource "aws_s3_bucket" "bucket" {
-  bucket = "${data.aws_caller_identity.current.account_id}-${var.env}-${var.bucket}"
+  bucket = "${data.aws_caller_identity.current.account_id}-${var.bucket}-${var.env}"
   acl    = "private"
   tags   = {
     "johnk:category" = var.category
