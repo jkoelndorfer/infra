@@ -51,7 +51,7 @@ module "asg" {
   associate_public_ip_address = "true"
   category                    = "backup"
   role                        = "syncthing"
-  desired_capacity            = 1
+  desired_capacity            = 0
   dns                         = "syncthing-cloud.${local.env.dns_zone}"
   extra                       = {
     syncthing_run_backup = true
