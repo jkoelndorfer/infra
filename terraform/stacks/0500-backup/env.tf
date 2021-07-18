@@ -1,10 +1,10 @@
 locals {
   environments = {
     dev = {
-      syncthing_ami  = "syncthing 1.4.2-5"
+      syncthing_ami  = "syncthing 1.18.0-1"
     }
     prod = {
-      syncthing_ami  = "syncthing 1.4.2-5"
+      syncthing_ami  = "syncthing 1.18.0-1"
     }
   }
 }
