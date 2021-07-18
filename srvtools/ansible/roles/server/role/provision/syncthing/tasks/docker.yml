@@ -32,8 +32,8 @@
     state: stopped
     restart_policy: unless-stopped
     env:
-      PUID: "{{ syncthing_uid }}"
-      PGID: "{{ syncthing_gid }}"
+      PUID: "{{ syncthing_uid | string }}"
+      PGID: "{{ syncthing_gid | string }}"
     ports:
       - "127.0.0.1:{{ syncthing_gui_port }}:{{ syncthing_gui_port }}"
       - "{{ syncthing_port }}:{{ syncthing_port }}"
