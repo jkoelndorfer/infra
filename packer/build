@@ -2,8 +2,8 @@
 
 set -o pipefail
 
-BASE_AMI_NAME_FILTER='debian-stretch-hvm-x86_64-gp2*'
-BASE_AMI_OWNER='679593333241'
+BASE_AMI_NAME_FILTER='debian-10-amd64-*'
+BASE_AMI_OWNER='136693071363'
 
 
 RC_OK=0

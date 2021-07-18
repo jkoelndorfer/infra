@@ -9,7 +9,7 @@ Vagrant.configure("2") do |config|
   # 2. Install vagrant libvirt plugin: `vagrant plugin install vagrant-libvirt`
   #
   # 3. Start libvirtd service
-  config.vm.box = "debian/stretch64"
+  config.vm.box = "debian/buster64"
   config.vm.synced_folder ".", "/vagrant", disabled: true
 
   config.vm.provider "libvirt" do |vm|
