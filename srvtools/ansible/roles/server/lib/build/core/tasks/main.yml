@@ -10,6 +10,25 @@
   include_tasks: cloud-init.yml
   when: server_hardware_type == "aws"
 
+# We do this at build time to prevent systemd from starting
+# the automatic upgrade process on instance initialization.
+- name: disable automatic upgrade services
+  systemd:
+    name:    "{{ item }}"
+    state:   stopped
+    enabled: no
+    masked:  yes
+  with_items: "{{ automatic_upgrade_services }}"
+
+- name: disable AWS-specific automatic upgrade services
+  systemd:
+    name:    "{{ item }}"
+    state:   stopped
+    enabled: no
+    masked:  yes
+  with_items: "{{ automatic_upgrade_services_aws }}"
+  when: server_hardware_type == "aws"
+
 - name: install core system packages
   package:
     name:  "{{ core_system_packages }}"

@@ -1,5 +1,23 @@
 ---
 
+# Services whose purpose is to automatically update a Debian
+# EC2 instance. Because our instances tend to be short lived
+# and quite locked down, we don't want to waste CPU cycles
+# on upgrades. We'll update when we build a new AMI.
+#
+# These services exist in Vagrant installations.
+automatic_upgrade_services:
+  - apt-daily.service
+  - apt-daily.timer
+  - apt-daily-upgrade.service
+  - apt-daily-upgrade.timer
+
+# Automatic upgrade services, as above.
+#
+# These are only present on EC2.
+automatic_upgrade_services_aws:
+  - unattended-upgrades.service
+
 # Core system packages are packages which must be installed
 # to ensure that the system is minimally usable.
 core_system_packages:
