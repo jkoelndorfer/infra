@@ -4,6 +4,9 @@
 # vagrant state
 .vagrant/
 
+# Temporary SSH private key when packer is run in debug mode
+packer/ec2_aws.pem
+
 # python ignores taken from github/gitignore
 # Byte-compiled / optimized / DLL files
 __pycache__/
