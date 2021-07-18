@@ -14,7 +14,7 @@ module "ebs_volume" {
   category          = "backup"
   env               = local.env.name
   name              = "syncthing-data"
-  kms_key_arn       = data.terraform_remote_state.bootstrap.outputs.kms_key_arn
+  kms_key_arn       = data.terraform_remote_state.bootstrap.outputs.kms_key.arn
   role              = "syncthing"
   size              = local.env.backup_vol_size
   type              = "gp3"

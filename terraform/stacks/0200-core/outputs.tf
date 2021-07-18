@@ -4,46 +4,65 @@ output "dyndns_url" {
 }
 
 output "ec2_default_keypair" {
-  value       = aws_key_pair.default.id
-  description = "the ID of the default ec2 key pair"
+  value = {
+    for k, v in aws_key_pair.default:
+      k => v if contains(["arn", "id", "key_name"], k)
+  }
+  description = "the default EC2 key pair"
 }
 
 output "ec2_default_instance_profile" {
-  value       = aws_iam_instance_profile.instance_profile.name
-  description = "the ID of the EC2 instance profile containing minimum permissions"
+  value = {
+    for k, v in aws_iam_instance_profile.instance_profile:
+      k => v if contains(["arn", "id", "name", "role", "unique_id"], k)
+  }
+  description = "the EC2 instance profile containing the minimum set of permissions"
 }
 
 output "ec2_default_role" {
-  value       = aws_iam_role.role.name
-  description = "the ID of the default role that EC2 instances are are assigned"
+  value = {
+    for k, v in aws_iam_role.role:
+      k => v if contains(["arn", "name"], k)
+  }
+  description = "the default role that EC2 instances are are assigned"
 }
 
-output "ec2_default_policy_arn" {
-  value       = aws_iam_policy.ec2_default_policy.arn
-  description = "the ARN of the base policy for EC2 instances"
+output "ec2_default_policy" {
+  value = {
+    for k, v in aws_iam_policy.ec2_default_policy:
+      k => v if contains(["arn", "name"], k)
+  }
+  description = "the base policy for EC2 instances"
 }
 
 output "infra_s3_bucket" {
-  value       = module.infra_s3_bucket.id
+  value = {
+    for k, v in module.infra_s3_bucket.bucket:
+      k => v if contains(["arn", "bucket"], k)
+  }
   description = "S3 bucket that is used for general infrastructure tasks"
 }
 
 output "lambda_logging_policy_arn" {
-  value       = aws_iam_policy.lambda_logging.arn
+  value = {
+    for k, v in aws_iam_policy.lambda_logging:
+      k => v if contains(["arn", "name"], k)
+  }
   description = "ARN of IAM policy that permits Lambda to log to CloudWatch"
 }
 
-output "vpc_id" {
-  value       = module.vpc.vpc_id
-  description = "the ID of the core VPC"
-}
-
-output "vpc_cidr_block" {
-  value       = module.vpc.vpc_cidr_block
-  description = "the CIDR block of the core VPC"
+output "vpc" {
+  value = {
+    for k, v in module.vpc.vpc:
+      k => v if contains(["arn", "cidr_block", "id"], k)
+  }
+  description = "the core VPC"
 }
 
 output "vpc_default_sg" {
-  value       = module.vpc.default_sg_id
-  description = "the ID of the default security group for the VPC"
+  value = {
+    for k, v in module.vpc.default_sg:
+      k => v if contains(["arn", "id"], k)
+  }
+  description = "the default security group of the core VPC"
 }

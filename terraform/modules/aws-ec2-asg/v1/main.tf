@@ -18,10 +18,10 @@ resource "aws_launch_template" "launch_template" {
   name          = local.name_env
   image_id      = var.image_id
   instance_type = var.instance_type
-  key_name      = data.terraform_remote_state.core.outputs.ec2_default_keypair
+  key_name      = data.terraform_remote_state.core.outputs.ec2_default_keypair.key_name
   user_data     = base64encode(module.user_data.user_data)
   iam_instance_profile {
-    name = var.iam_instance_profile == "" ? data.terraform_remote_state.core.outputs.ec2_default_instance_profile : var.iam_instance_profile
+    name = var.iam_instance_profile == "" ? data.terraform_remote_state.core.outputs.ec2_default_instance_profile.name : var.iam_instance_profile
   }
   credit_specification {
     cpu_credits = var.cpu_credits
@@ -54,7 +54,7 @@ resource "aws_launch_template" "launch_template" {
     associate_public_ip_address = var.associate_public_ip_address
     security_groups             = concat(
         var.security_groups,
-        [data.terraform_remote_state.core.outputs.vpc_default_sg]
+        [data.terraform_remote_state.core.outputs.vpc_default_sg.id]
     )
     delete_on_termination       = true
   }

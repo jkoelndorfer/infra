@@ -4,6 +4,6 @@ module "infra_s3_bucket" {
   bucket     = "infra"
   category   = "core"
   env        = local.env.name
-  kms_key_id = data.terraform_remote_state.bootstrap.outputs.kms_key_id
+  kms_key_id = data.terraform_remote_state.bootstrap.outputs.kms_key.id
   versioning = "false"
 }

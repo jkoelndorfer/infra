@@ -8,9 +8,9 @@ data "aws_ami" "syncthing" {
 }
 
 resource "aws_subnet" "default" {
-  vpc_id            = data.terraform_remote_state.core.outputs.vpc_id
-  availability_zone = data.terraform_remote_state.backup_persistent.outputs.ebs_volume_az
-  cidr_block        = cidrsubnet(data.terraform_remote_state.core.outputs.vpc_cidr_block, 8, local.env.backup_subnet_num)
+  vpc_id            = data.terraform_remote_state.core.outputs.vpc.id
+  availability_zone = data.terraform_remote_state.backup_persistent.outputs.ebs_volume.availability_zone
+  cidr_block        = cidrsubnet(data.terraform_remote_state.core.outputs.vpc.cidr_block, 8, local.env.backup_subnet_num)
 
   tags = {
     "Name"           = "backup-infra-${local.env.name}"
@@ -22,7 +22,7 @@ resource "aws_subnet" "default" {
 resource "aws_security_group" "syncthing" {
   name        = "syncthing-${local.env.name}"
   description = "Security group for syncthing instances"
-  vpc_id      = data.terraform_remote_state.core.outputs.vpc_id
+  vpc_id      = data.terraform_remote_state.core.outputs.vpc.id
 
   ingress {
     cidr_blocks = ["0.0.0.0/0"]
@@ -57,7 +57,7 @@ module "asg" {
     syncthing_run_backup = true
   }
   env                         = local.env.name
-  iam_instance_profile        = module.ec2_role.iam_instance_profile_name
+  iam_instance_profile        = module.ec2_role.iam_instance_profile.name
   image_id                    = data.aws_ami.syncthing.id
   instance_type               = "t3.micro"
   max_size                    = 1
@@ -79,7 +79,7 @@ module "asg_util" {
     syncthing_run_backup = false
   }
   env                         = local.env.name
-  iam_instance_profile        = module.ec2_role.iam_instance_profile_name
+  iam_instance_profile        = module.ec2_role.iam_instance_profile.name
   image_id                    = data.aws_ami.syncthing.id
   instance_type               = "t3.micro"
   max_size                    = 1
@@ -90,7 +90,7 @@ module "asg_util" {
 }
 
 resource "aws_autoscaling_schedule" "backup_schedule" {
-  autoscaling_group_name = module.asg.asg_name
+  autoscaling_group_name = module.asg.asg.name
   scheduled_action_name  = "nightly-backup-${local.env.name}"
   # Schedule is in UTC
   recurrence       = "0 8 * * *"
@@ -117,7 +117,7 @@ data "aws_iam_policy_document" "backup_ec2_policy" {
   statement {
     effect    = "Allow"
     actions   = ["kms:CreateGrant"]
-    resources = [data.terraform_remote_state.bootstrap.outputs.kms_key_arn]
+    resources = [data.terraform_remote_state.bootstrap.outputs.kms_key.arn]
     condition {
       test     = "Bool"
       variable = "kms:GrantIsForAWSResource"
@@ -152,46 +152,46 @@ data "aws_iam_policy_document" "backup_ec2_policy" {
       "s3:ListMultipartUploadParts",
     ]
     resources = [
-      data.terraform_remote_state.backup_persistent.outputs.s3_bucket_arn,
-      "${data.terraform_remote_state.backup_persistent.outputs.s3_bucket_arn}/*"
+      data.terraform_remote_state.backup_persistent.outputs.s3_bucket.arn,
+      "${data.terraform_remote_state.backup_persistent.outputs.s3_bucket.arn}/*"
     ]
   }
 
   statement {
     effect    = "Allow"
     actions   = ["autoscaling:UpdateAutoScalingGroup"]
-    resources = [module.asg.asg_arn]
+    resources = [module.asg.asg.arn]
   }
 
   statement {
     effect    = "Allow"
     actions   = ["sns:Publish"]
-    resources = [data.terraform_remote_state.backup_persistent.outputs.sns_topic_arn]
+    resources = [data.terraform_remote_state.backup_persistent.outputs.sns_topic.arn]
   }
 }
 
 resource "aws_iam_role_policy" "backup_ec2_policy" {
   name   = "syncthing-backup-${local.env.name}"
-  role   = module.ec2_role.iam_role_name
+  role   = module.ec2_role.iam_role.name
   policy = data.aws_iam_policy_document.backup_ec2_policy.json
 }
 
 resource "aws_ssm_parameter" "ebs_volume_id" {
   name  = "/${local.env.name}/backup/syncthing_ebs_volume_id"
   type  = "String"
-  value = data.terraform_remote_state.backup_persistent.outputs.ebs_volume_id
+  value = data.terraform_remote_state.backup_persistent.outputs.ebs_volume.id
 }
 
 resource "aws_ssm_parameter" "s3_path" {
   name  = "/${local.env.name}/backup/s3_path"
   type  = "String"
-  value = "${data.terraform_remote_state.backup_persistent.outputs.s3_bucket_id}/syncthing/duplicity"
+  value = "${data.terraform_remote_state.backup_persistent.outputs.s3_bucket.bucket}/syncthing/duplicity"
 }
 
 resource "aws_ssm_parameter" "backup_sns_topic_arn" {
   name  = "/${local.env.name}/backup/backup_sns_topic_arn"
   type  = "String"
-  value = data.terraform_remote_state.backup_persistent.outputs.sns_topic_arn
+  value = data.terraform_remote_state.backup_persistent.outputs.sns_topic.arn
 }
 
 resource "aws_ssm_parameter" "scale_down_after_backup" {
