@@ -1,0 +1,1 @@
+../../../remote-states/remote-state-core.tf

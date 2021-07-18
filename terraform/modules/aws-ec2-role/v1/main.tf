@@ -1,16 +1,5 @@
 data "aws_caller_identity" "current" {}
 
-data "terraform_remote_state" "core" {
-  backend   = "s3"
-  workspace = terraform.workspace
-  config = {
-    bucket               = "310987624463-prod-tfstate"
-    key                  = "core.tfstate"
-    region               = "us-east-1"
-    workspace_key_prefix = "workspaces"
-  }
-}
-
 resource "aws_iam_role" "role" {
   name = "${var.env}-${var.name}"
   assume_role_policy = <<EOF
