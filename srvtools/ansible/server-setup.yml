@@ -10,7 +10,7 @@
   gather_facts: yes
 
   roles:
-    - role: server/lib/facts
+    - role: server/lib/common/facts
       tags: [always]
 
     - role: "server/lib/{{ server_setup_phase }}/core"
