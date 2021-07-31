@@ -1,0 +1,53 @@
+---
+
+- name: download, install aqgo
+  block:
+    - name: create temporary directory to download aqgo binary
+      tempfile:
+        state:  directory
+        suffix: aqgo-download
+      register: aqgo_temp_dir
+      delegate_to: localhost
+      become: no
+
+    - name: fetch aqgo binary from s3
+      amazon.aws.aws_s3:
+        mode:   get
+        bucket: "{{ infra_s3_bucket.name }}"
+        object: "/deploy/aqgo/{{ aqgo.revision }}/aqgo"
+        dest:   "{{ aqgo_temp_dir.path }}/aqgo"
+        region: "{{ infra_s3_bucket.region }}"
+      delegate_to: localhost
+      # Explicitly disable privilege escalation here so that Ansible can find
+      # our AWS credentials.
+      become: no
+
+    - name: calculate aqgo checksum
+      stat:
+        path: "{{ aqgo_temp_dir.path }}/aqgo"
+        checksum_algorithm: sha512
+      register: aqgo_stat
+      delegate_to: localhost
+
+    - name: assert that aqgo checksum matches expected value
+      assert:
+        that:
+          - aqgo_stat.stat.checksum == aqgo.sha512sum
+        fail_msg: "aqgo binary checksum ({{ aqgo_stat.stat.checksum }}) did not match expected value ({{ aqgo.sha512sum }})"
+        success_msg: "aqgo binary matched expected checksum ({{ aqgo.sha512sum }})"
+      delegate_to: localhost
+
+    - name: copy aqgo binary to target path
+      copy:
+        src:   "{{ aqgo_temp_dir.path }}/aqgo"
+        dest:  /usr/local/bin/aqgo
+        owner: root
+        group: root
+        mode:  0555
+  always:
+    - name: clean up temporary directory
+      file:
+        path:  "{{ aqgo_temp_dir.path }}"
+        state: absent
+      delegate_to: localhost
+  tags: [air-quality]

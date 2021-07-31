@@ -8,5 +8,10 @@
 # The packer/build script will provide this to Ansible via the --extra-vars argument.
 infra_revision: "{{ lookup('pipe', 'cd ' + (playbook_dir | quote) + '/../..; ./revision') }}"
 
+# The S3 bucket that serves as a persistent file store for infrastructure deployment and automation.
+infra_s3_bucket:
+  name:   "310987624463-infra-prod"
+  region: us-east-1
+
 # The AWS region that is used to look up SSM parameters.
 ssm_lookup_region: "{{ ansible_ec2_placement_region if ansible_ec2_placement_region is defined else 'us-east-1' }}"

@@ -66,3 +66,8 @@
   include_tasks: pi-hole.yml
   tags:
     - pi-hole
+
+- name: include air quality setup tasks
+  include_tasks: air-quality.yml
+  tags:
+    - air-quality

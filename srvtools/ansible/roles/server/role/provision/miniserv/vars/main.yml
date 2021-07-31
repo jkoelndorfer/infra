@@ -1,5 +1,8 @@
 ---
 
+air_quality_dev_path: /dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0
+air_quality_metric_namespace: home
+
 syncthing_gid: 2000
 syncthing_uid: 2000
 
