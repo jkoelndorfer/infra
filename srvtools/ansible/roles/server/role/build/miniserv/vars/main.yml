@@ -5,5 +5,5 @@ syncthing_docker_image: linuxserver/syncthing:v1.15.1-ls52
 unifi_docker_image:     linuxserver/unifi-controller:6.1.71-ls105
 
 aqgo:
-  revision:  "453f327f683b3bf39fc234d310b7335383be92e6"
-  sha512sum: "d0be6d2fb1ef40de60da28250e908798ddb0e09913ee23aaef7fa47a041a89a6770f4589edda296d363a4a9eff41cd507de0efcd09deb78e31fa9f4d766af0c2"
+  revision:  "67c42eb29df81060b9fe62c335bc6d630e9d8778"
+  sha512sum: "bbed42101531eedff3389b10d4d913a96f90f27caf862ca13a0cf33652a42be1c9f91b581ef407eeba0f66e0f1e222ddaea74da4034402db72ce79027f65f830"
