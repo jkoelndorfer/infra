@@ -1,8 +1,8 @@
 locals {
-  origin_id = "blog-${local.env.name}"
+  origin_id = "website-${local.env.name}"
 }
 
-resource "aws_cloudfront_distribution" "blog" {
+resource "aws_cloudfront_distribution" "this" {
   origin {
     domain_name = local.s3_bucket.bucket_regional_domain_name
     origin_id   = local.origin_id
@@ -12,7 +12,7 @@ resource "aws_cloudfront_distribution" "blog" {
   is_ipv6_enabled     = true
   default_root_object = "index.html"
 
-  aliases = [local.blog_domain, local.blog_www_domain]
+  aliases = [local.website_domain, local.website_www_domain]
 
   custom_error_response {
     error_caching_min_ttl = 60

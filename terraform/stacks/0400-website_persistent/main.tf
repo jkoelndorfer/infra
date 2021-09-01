@@ -1,5 +1,5 @@
-resource "aws_s3_bucket" "blog_bucket" {
-  bucket = "${local.aws_account_id}-blog-${local.env.name}"
+resource "aws_s3_bucket" "website_bucket" {
+  bucket = "${local.aws_account_id}-website-${local.env.name}"
   acl    = "public-read"
 
   website {

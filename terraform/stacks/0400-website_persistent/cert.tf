@@ -1,4 +1,4 @@
-resource "aws_acm_certificate" "blog" {
+resource "aws_acm_certificate" "website" {
   domain_name       = local.env.dns_zone
   validation_method = "DNS"
 
