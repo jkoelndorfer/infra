@@ -41,6 +41,27 @@ resource "aws_cloudfront_distribution" "blog" {
     viewer_protocol_policy = "redirect-to-https"
   }
 
+  ordered_cache_behavior {
+    path_pattern     = "/fonts/*"
+    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+    cached_methods   = ["GET", "HEAD", "OPTIONS"]
+    target_origin_id = local.origin_id
+
+    min_ttl     = 3600
+    default_ttl = 604800
+    max_ttl     = 604800
+
+    forwarded_values {
+      cookies {
+        forward = "none"
+      }
+      headers      = []
+      query_string = false
+    }
+
+    viewer_protocol_policy = "redirect-to-https"
+  }
+
   price_class = "PriceClass_100"
 
   restrictions {
