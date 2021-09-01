@@ -6,7 +6,7 @@ provider "aws" {
 terraform {
   backend "s3" {
     bucket               = "310987624463-tfstate-prod"
-    key                  = "blog.tfstate"
+    key                  = "website.tfstate"
     region               = "us-east-1"
     workspace_key_prefix = "workspaces"
   }
