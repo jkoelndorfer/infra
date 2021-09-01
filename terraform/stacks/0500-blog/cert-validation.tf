@@ -1,5 +1,5 @@
 data "aws_route53_zone" "cert_zone" {
-  name = data.terraform_remote_state.blog_persistent.outputs.ssl_cert.domain_name
+  name = data.terraform_remote_state.website_persistent.outputs.ssl_cert.domain_name
 }
 
 resource "aws_route53_record" "cert_validation" {
