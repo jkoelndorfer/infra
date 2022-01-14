@@ -4,7 +4,7 @@ locals {
       backup_vol_size = 5
     }
     prod = {
-      backup_vol_size = 30
+      backup_vol_size = 50
     }
   }
 }
