@@ -26,7 +26,6 @@ def make_logger():
 
 
 class JSONLogFormatter(logging.Formatter):
-
     @classmethod
     def _timestamp(cls) -> str:
         now = datetime.now(tz=timezone.utc)
@@ -130,7 +129,7 @@ def determine_ec2_instance_desired_dns_name(ec2_instance_id):
     result = ec2.describe_tags(
         Filters=[
             {"Name": "key", "Values": [DNS_TAG]},
-            {"Name": "resource-id", "Values": [ec2_instance_id]}
+            {"Name": "resource-id", "Values": [ec2_instance_id]},
         ],
     )
     try:
@@ -155,10 +154,7 @@ def determine_hosted_zone_id_of(dns_name, hosted_zones):
 def determine_ec2_instance_ip_address(instance_id):
     ec2 = boto3.client("ec2")
     result = ec2.describe_instances(
-        Filters=[{
-            "Name": "instance-id",
-            "Values": [instance_id]
-        }]
+        Filters=[{"Name": "instance-id", "Values": [instance_id]}],
     )
     public_ip = result["Reservations"][0]["Instances"][0]["PublicIpAddress"]
     return public_ip
@@ -211,7 +207,7 @@ def handle_ec2_instance_event(event):
     result = ec2.describe_tags(
         Filters=[
             {"Name": "key", "Values": [ENV_TAG]},
-            {"Name": "resource-id", "Values": [ec2_instance_id]}
+            {"Name": "resource-id", "Values": [ec2_instance_id]},
         ],
     )
     try:
@@ -254,18 +250,17 @@ def main_dyndns2(argv) -> int:
     api_id = "deadbeef"
     pw_chars = string.ascii_letters + string.digits
     localtest_user = "localtest"
-    localtest_password = ''.join(random.choice(pw_chars) for i in range(20))
+    localtest_password = "".join(random.choice(pw_chars) for i in range(20))
 
     localtest_http_auth = "Basic " + b64encode(
         localtest_user.encode("ascii") + b":" + localtest_password.encode("ascii")
     ).decode("ascii")
 
-    os.environ["DYNDNS_AUTHORIZATION"] = json.dumps({
-        "localtest": {
-            "password": localtest_password,
-            "dns_names": ["dyndns-localtest.johnk.io"]
+    os.environ["DYNDNS_AUTHORIZATION"] = json.dumps(
+        {
+            "localtest": {"password": localtest_password, "dns_names": ["dyndns-localtest.johnk.io"]},
         }
-    })
+    )
     mock_api_gw_event = {
         "path": "/dyndns",
         "headers": {
@@ -301,13 +296,11 @@ def main_ec2_instance(argv) -> int:
         "account": account_id,
         "time": "2015-11-11T21:29:54Z",
         "region": REGION,
-        "resources": [
-            f"arn:aws:ec2:{REGION}:{account_id}:instance/{ec2_instance_id}"
-        ],
+        "resources": [f"arn:aws:ec2:{REGION}:{account_id}:instance/{ec2_instance_id}"],
         "detail": {
             "instance-id": ec2_instance_id,
-            "state": "running"
-        }
+            "state": "running",
+        },
     }
     lambda_handler(mock_cloudwatch_event, None)
     return 0
@@ -325,23 +318,25 @@ def update_dns(update_type, dns_name, ip):
         HostedZoneId=hosted_zone_id,
         ChangeBatch={
             "Comment": f"dyndns update -- {update_type}",
-            "Changes": [{
-                "Action": "UPSERT",
-                "ResourceRecordSet": {
-                    "Name": dns_name,
-                    "Type": "A",
-                    "TTL": DNS_TTL,
-                    "ResourceRecords": [{"Value": ip}]
+            "Changes": [
+                {
+                    "Action": "UPSERT",
+                    "ResourceRecordSet": {
+                        "Name": dns_name,
+                        "Type": "A",
+                        "TTL": DNS_TTL,
+                        "ResourceRecords": [{"Value": ip}],
+                    },
                 }
-            }]
-        }
+            ],
+        },
     )
 
 
 DNS_TTL = 30
 ENV_TAG = "johnk:env"
 DNS_TAG = "johnk:dns"
-REGION = 'us-east-1'
+REGION = "us-east-1"
 boto3.setup_default_session(region_name=REGION)
 
 r53 = boto3.client("route53")
