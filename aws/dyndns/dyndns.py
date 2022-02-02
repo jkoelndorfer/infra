@@ -85,7 +85,7 @@ def handle_ec2_instance_dyndns(event, context):
 
 
 def handle_dyndns2(event, context):
-    query_params = event.get("queryStringParameters", {})
+    query_params = event.get("queryStringParameters", None) or {}
 
     hostname = query_params.get("hostname", None)
     ip = query_params.get("myip", None)
