@@ -4,12 +4,12 @@ data "aws_route53_zone" "email_domain" {
   private_zone = false
 }
 
-resource "aws_route53_record" "ownership_verification_and_spf" {
+resource "aws_route53_record" "spf" {
   zone_id = data.aws_route53_zone.email_domain.zone_id
   name    = local.env.dns_zone
   type    = "TXT"
   ttl     = local.env.default_dns_ttl
-  records = [local.env.ownership_verification, local.env.spf_record]
+  records = [local.env.spf_record]
 }
 
 resource "aws_route53_record" "dmarc_record" {
