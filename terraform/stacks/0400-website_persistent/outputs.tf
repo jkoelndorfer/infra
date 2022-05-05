@@ -1,8 +1,8 @@
 output "s3_bucket" {
   description = "s3 bucket that hosts the website"
   value = {
-    for k, v in aws_s3_bucket.website_bucket:
-      k => v if contains(["arn", "bucket", "bucket_regional_domain_name"], k)
+    for k, v in aws_s3_bucket.website_bucket :
+    k => v if contains(["arn", "bucket", "bucket_regional_domain_name"], k)
   }
 }
 

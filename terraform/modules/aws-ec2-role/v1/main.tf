@@ -5,7 +5,7 @@ locals {
 data "aws_caller_identity" "current" {}
 
 resource "aws_iam_role" "role" {
-  name = local.name_env
+  name               = local.name_env
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",

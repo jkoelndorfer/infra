@@ -42,11 +42,11 @@ resource "aws_cloudwatch_event_rule" "ec2_instance_running" {
   description = "Fires when an event at the dyndns Lambda function when an EC2 instance enters the running state"
   role_arn    = aws_iam_role.cloudwatch_dyndns.arn
   event_pattern = jsonencode({
-      source      = ["aws.ec2"],
-      detail-type = ["EC2 Instance State-change Notification"],
-      detail = {
-        state = ["running"]
-      }
+    source      = ["aws.ec2"],
+    detail-type = ["EC2 Instance State-change Notification"],
+    detail = {
+      state = ["running"]
+    }
   })
 }
 

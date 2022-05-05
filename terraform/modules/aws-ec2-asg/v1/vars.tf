@@ -72,11 +72,11 @@ variable "role" {
 }
 
 variable "security_groups" {
-  type        = list
+  type        = list(any)
   description = "the list of security groups assigned to instances, in addition to the default"
 }
 
 variable "subnet_ids" {
-  type        = list
+  type        = list(any)
   description = "the list of subnets that instances may come up in"
 }

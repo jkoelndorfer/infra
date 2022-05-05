@@ -85,7 +85,7 @@ resource "aws_lambda_function" "dyndns" {
           dns_names = [local.dyndns_hostname]
         }
       })
-      "env_name"             = local.env.name
+      "env_name" = local.env.name
     }
   }
   tags = {

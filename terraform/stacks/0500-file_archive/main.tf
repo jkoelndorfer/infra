@@ -27,7 +27,7 @@ resource "aws_s3_bucket" "archive" {
     prefix  = "glacier/"
 
     transition {
-      days = 1
+      days          = 1
       storage_class = "GLACIER"
     }
   }

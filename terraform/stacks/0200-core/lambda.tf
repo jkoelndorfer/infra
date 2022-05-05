@@ -1,7 +1,7 @@
 resource "aws_iam_policy" "lambda_logging" {
   name        = "lambda-logging-${local.env.name}"
   description = "Policy permitting Lambda to log to CloudWatch"
-   policy = <<EOF
+  policy      = <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [

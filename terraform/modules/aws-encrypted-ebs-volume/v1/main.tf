@@ -4,7 +4,7 @@ resource "aws_ebs_volume" "ebs_volume" {
   type              = var.type
   encrypted         = true
   kms_key_id        = var.kms_key_arn
-  tags              = {
+  tags = {
     "Name"           = "${var.name}-${var.env}"
     "johnk:category" = var.category
     "johnk:role"     = var.role

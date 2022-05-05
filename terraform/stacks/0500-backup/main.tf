@@ -53,18 +53,18 @@ module "asg" {
   role                        = "syncthing"
   desired_capacity            = 0
   dns                         = "syncthing-cloud.${local.env.dns_zone}"
-  extra                       = {
+  extra = {
     syncthing_run_backup = true
   }
-  env                         = local.env.name
-  iam_instance_profile        = module.ec2_role.iam_instance_profile.name
-  image_id                    = data.aws_ami.syncthing.id
-  instance_type               = "t3.micro"
-  max_size                    = 1
-  min_size                    = 0
-  name                        = "syncthing"
-  security_groups             = [aws_security_group.syncthing.id]
-  subnet_ids                  = [aws_subnet.default.id]
+  env                  = local.env.name
+  iam_instance_profile = module.ec2_role.iam_instance_profile.name
+  image_id             = data.aws_ami.syncthing.id
+  instance_type        = "t3.micro"
+  max_size             = 1
+  min_size             = 0
+  name                 = "syncthing"
+  security_groups      = [aws_security_group.syncthing.id]
+  subnet_ids           = [aws_subnet.default.id]
 }
 
 module "asg_util" {
@@ -75,18 +75,18 @@ module "asg_util" {
   role                        = "syncthing"
   desired_capacity            = 0
   dns                         = "syncthing-cloud.${local.env.dns_zone}"
-  extra                       = {
+  extra = {
     syncthing_run_backup = false
   }
-  env                         = local.env.name
-  iam_instance_profile        = module.ec2_role.iam_instance_profile.name
-  image_id                    = data.aws_ami.syncthing.id
-  instance_type               = "t3.micro"
-  max_size                    = 1
-  min_size                    = 0
-  name                        = "syncthing-util"
-  security_groups             = [aws_security_group.syncthing.id]
-  subnet_ids                  = [aws_subnet.default.id]
+  env                  = local.env.name
+  iam_instance_profile = module.ec2_role.iam_instance_profile.name
+  image_id             = data.aws_ami.syncthing.id
+  instance_type        = "t3.micro"
+  max_size             = 1
+  min_size             = 0
+  name                 = "syncthing-util"
+  security_groups      = [aws_security_group.syncthing.id]
+  subnet_ids           = [aws_subnet.default.id]
 }
 
 resource "aws_autoscaling_schedule" "backup_schedule" {
@@ -101,8 +101,8 @@ resource "aws_autoscaling_schedule" "backup_schedule" {
 
 data "aws_iam_policy_document" "backup_ec2_policy" {
   statement {
-    effect    = "Allow"
-    actions   = ["ec2:AttachVolume"]
+    effect  = "Allow"
+    actions = ["ec2:AttachVolume"]
     resources = [
       "arn:aws:ec2:*:${data.aws_caller_identity.current.account_id}:volume/*",
       "arn:aws:ec2:*:${data.aws_caller_identity.current.account_id}:instance/*",
@@ -131,8 +131,8 @@ data "aws_iam_policy_document" "backup_ec2_policy" {
   }
 
   statement {
-    effect    = "Allow"
-    actions   = [
+    effect = "Allow"
+    actions = [
       "ssm:GetParameter",
       "ssm:GetParameterByPath",
       "ssm:GetParameters",
@@ -141,8 +141,8 @@ data "aws_iam_policy_document" "backup_ec2_policy" {
   }
 
   statement {
-    effect    = "Allow"
-    actions   = [
+    effect = "Allow"
+    actions = [
       "s3:PutObject",
       "s3:GetObject",
       "s3:ListBucketMultipartUploads",

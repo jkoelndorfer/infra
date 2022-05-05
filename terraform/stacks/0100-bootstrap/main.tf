@@ -12,9 +12,9 @@ resource "aws_kms_key" "enc" {
 module "bucket" {
   source = "../../modules/aws-kms-encrypted-s3-bucket/v1"
 
-  bucket          = "tfstate"
-  category        = "core"
-  env             = local.env.name
-  kms_key_id      = aws_kms_key.enc.id
-  versioning      = true
+  bucket     = "tfstate"
+  category   = "core"
+  env        = local.env.name
+  kms_key_id = aws_kms_key.enc.id
+  versioning = true
 }

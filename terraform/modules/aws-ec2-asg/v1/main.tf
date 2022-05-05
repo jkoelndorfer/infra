@@ -52,11 +52,11 @@ resource "aws_launch_template" "launch_template" {
   }
   network_interfaces {
     associate_public_ip_address = var.associate_public_ip_address
-    security_groups             = concat(
-        var.security_groups,
-        [data.terraform_remote_state.core.outputs.vpc_default_sg.id]
+    security_groups = concat(
+      var.security_groups,
+      [data.terraform_remote_state.core.outputs.vpc_default_sg.id]
     )
-    delete_on_termination       = true
+    delete_on_termination = true
   }
 }
 
@@ -71,23 +71,23 @@ resource "aws_autoscaling_group" "autoscaling_group" {
   max_size         = var.max_size
   tags = [
     {
-      key = "johnk:category"
-      value = var.category
+      key                 = "johnk:category"
+      value               = var.category
       propagate_at_launch = false
     },
     {
-      key = "johnk:role"
-      value = var.role
+      key                 = "johnk:role"
+      value               = var.role
       propagate_at_launch = false
     },
     {
-      key = "johnk:dns"
-      value = var.dns
+      key                 = "johnk:dns"
+      value               = var.dns
       propagate_at_launch = false
     },
     {
-      key = "johnk:env"
-      value = var.env
+      key                 = "johnk:env"
+      value               = var.env
       propagate_at_launch = false
     }
   ]
