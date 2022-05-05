@@ -11,7 +11,7 @@ data "aws_iam_policy_document" "api_gw_logging_assume_role" {
 }
 
 resource "aws_iam_role" "api_gw_logging" {
-  name = "prod-api-gateway-cloudwatch-logging"
+  name = "api-gateway-cloudwatch-logging-prod"
 
   assume_role_policy = data.aws_iam_policy_document.api_gw_logging_assume_role.json
 }
