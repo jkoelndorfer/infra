@@ -51,8 +51,8 @@ def lambda_handler(event, context):
         #
         # We should handle updating instance DNS records.
         return handle_ec2_instance_dyndns(event, context)
-    elif event.get("requestContext", {}).get("httpMethod", None) is not None:
-        # We got an event from API Gateway. We should handle this event as
+    elif event.get("requestContext", {}).get("http", {}).get("method", None) is not None:
+        # We got an event via the Lambda function URL. We should handle this event as
         # a client-invoked "dyndns2" protocol request. For more information, see:
         # https://sourceforge.net/p/ddclient/wiki/protocols/#dyndns2
         try:

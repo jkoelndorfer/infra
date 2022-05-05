@@ -1,5 +1,5 @@
 output "dyndns_url" {
-  value       = local.dyndns_url
+  value       = aws_lambda_function_url.dyndns.function_url
   description = "URL of dynamic DNS service"
 }
 
