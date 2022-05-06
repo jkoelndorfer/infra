@@ -1,6 +1,10 @@
 locals {
   environments = {
-    dev  = {}
-    prod = {}
+    dev = {
+      zone = "dev.johnk.io"
+    }
+    prod = {
+      zone = "johnk.io"
+    }
   }
 }
