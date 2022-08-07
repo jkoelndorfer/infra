@@ -141,9 +141,21 @@ function main() {
 
     cd "$script_dir"
     local infra_revision=$(../revision)
+    local dirty_repo=0
     if [[ "$infra_revision" =~ -dirty$ ]]; then
-        echo 'Refusing to build an AMI from a dirty repository.' >&2
-        exit "$RC_DIRTY_REPOSITORY"
+        dirty_repo=1
+        if [[ "$PACKER_ALLOW_BUILD_FROM_DIRTY_REPO" == '1' ]]; then
+            echo 'Permitting a Packer build from a dirty repository.' >&2
+            echo 'Only use this for testing!' >&2
+        else
+            {
+                echo 'Refusing to build an AMI from a dirty repository. '
+                echo 'If you are REALLY sure you want to do this, set '
+                echo 'PACKER_ALLOW_BUILD_FROM_DIRTY_REPO=1 and rerun '
+                echo 'this script.'
+            } >&2
+            exit "$RC_DIRTY_REPOSITORY"
+        fi
     fi
 
     local packer_version=$(packer version | head -n1 | grep -Eo '([0-9]+\.)*[0-9]+')
@@ -154,6 +166,10 @@ function main() {
     local ami_build_number=$(ami_next_build_number "$AMI_ROLE" "$AMI_SOFTWARE_VERSION")
     local packer_template=$(packer_build_template "$AMI_ROLE" "$AMI_SOFTWARE_VERSION" "$ami_build_number" "$infra_revision" "$packer_version")
     echo "$packer_template" | packer build "${packer_args[@]}" -
+    if [[ "$?" == '0' && "$dirty_repo" == '1' ]]; then
+        echo 'NOTICE: This image was built from a DIRTY REPOSITORY!' >&2
+        echo 'Rebuild the image from a clean repository when testing is finished.' >&2
+    fi
 }
 
 main "$@"
