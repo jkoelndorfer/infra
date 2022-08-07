@@ -46,6 +46,12 @@ static_dhcp:
     dns:
       - media-center-pc.lan
 
+  - name: dance-station
+    mac:  4c:ed:fb:bf:ac:0e
+    ip:   10.0.0.56
+    dns:
+      - dance-station.lan
+
   - name: val-desktop
     mac:  f0:9f:c2:33:6b:76
     ip:   10.0.0.60
