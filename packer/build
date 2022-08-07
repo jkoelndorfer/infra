@@ -91,6 +91,7 @@ function packer_build_template() {
             "provisioners": [{
                 "type":            "ansible",
                 "playbook_file":   "../srvtools/ansible/server-build.yml",
+                "use_proxy":       false,
                 "extra_arguments": [
                     "--extra-vars", "infra_revision=" + $infra_revision,
                     # Packer automatically passes packer_build_name to Ansible, which is used
