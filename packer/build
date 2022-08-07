@@ -2,10 +2,6 @@
 
 set -o pipefail
 
-BASE_AMI_NAME_FILTER='debian-10-amd64-*'
-BASE_AMI_OWNER='136693071363'
-
-
 RC_OK=0
 RC_MISSING_ARG=10
 RC_NO_SUCH_CONFIG=11
@@ -13,6 +9,8 @@ RC_DIRTY_REPOSITORY=12
 
 script_dir=$(dirname "$0")
 script_name="$(basename "$script_dir")/$(basename "$0")"
+
+source "$script_dir/conf/global.conf"
 
 function ami_next_build_number() {
     local ami_role=$1
