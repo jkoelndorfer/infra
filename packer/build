@@ -87,8 +87,7 @@ function packer_build_template() {
                     "johnk:ami:build-number":          $ami_build_number,
                     "johnk:ami:source-ami":            "{{ .SourceAMI }}",
                     "johnk:ami:source-ami-name":       "{{ .SourceAMIName }}",
-                    "johnk:ami:source-ami-owner":      "{{ .SourceAMIOwner }}",
-                    "johnk:ami:source-ami-owner-name": "{{ .SourceAMIOwnerName }}"
+                    "johnk:ami:source-ami-owner":      "{{ .SourceAMIOwner }}"
                 }
             }],
             "provisioners": [{
