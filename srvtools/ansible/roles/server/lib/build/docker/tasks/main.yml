@@ -4,10 +4,7 @@
   pip:
     name:  docker
     state: present
-    executable: "{{ item }}"
-  with_items:
-    - pip
-    - pip3
+    executable: pip3
 
 - name: include OS/arch specific tasks
   include_tasks: "{{ ansible_os_family }}-{{ ansible_architecture }}.yml"

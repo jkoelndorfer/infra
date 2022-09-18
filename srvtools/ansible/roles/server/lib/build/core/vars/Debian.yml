@@ -27,9 +27,7 @@ core_system_packages:
   - jq              # used during provisioning
   - lvm2            # used for partitioning on physical hosts
   - openssh-server
-  - python
   - python3
-  - python-pip
   - python3-pip
   - sudo
   - zsh             # needed because admin user's shell is zsh

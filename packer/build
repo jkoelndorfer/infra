@@ -2,17 +2,16 @@
 
 set -o pipefail
 
-BASE_AMI_NAME_FILTER='debian-10-amd64-*'
-BASE_AMI_OWNER='136693071363'
-
-
 RC_OK=0
 RC_MISSING_ARG=10
 RC_NO_SUCH_CONFIG=11
 RC_DIRTY_REPOSITORY=12
+RC_FAILED_DETERMINING_PACKER_VERSION=13
 
 script_dir=$(dirname "$0")
 script_name="$(basename "$script_dir")/$(basename "$0")"
+
+source "$script_dir/conf/global.conf"
 
 function ami_next_build_number() {
     local ami_role=$1
@@ -62,6 +61,7 @@ function packer_build_template() {
     local ami_software_version=$2
     local ami_build_number=$3
     local infra_revision=$4
+    local ami_packer_version=$5
     local ami_name="${ami_role} ${ami_software_version}-${ami_build_number}"
 
     local packer_template
@@ -82,17 +82,18 @@ function packer_build_template() {
                 "tags": {
                     "Name":                            $ami_name,
                     "johnk:ami:role":                  $ami_role,
+                    "johnk:ami:packer-version":        $ami_packer_version,
                     "johnk:ami:software-version":      $ami_software_version,
                     "johnk:ami:build-number":          $ami_build_number,
                     "johnk:ami:source-ami":            "{{ .SourceAMI }}",
                     "johnk:ami:source-ami-name":       "{{ .SourceAMIName }}",
-                    "johnk:ami:source-ami-owner":      "{{ .SourceAMIOwner }}",
-                    "johnk:ami:source-ami-owner-name": "{{ .SourceAMIOwnerName }}"
+                    "johnk:ami:source-ami-owner":      "{{ .SourceAMIOwner }}"
                 }
             }],
             "provisioners": [{
                 "type":            "ansible",
                 "playbook_file":   "../srvtools/ansible/server-build.yml",
+                "use_proxy":       false,
                 "extra_arguments": [
                     "--extra-vars", "infra_revision=" + $infra_revision,
                     # Packer automatically passes packer_build_name to Ansible, which is used
@@ -109,6 +110,7 @@ EOF
         --null-input \
         --compact-output \
         --arg ami_role             "$ami_role" \
+        --arg ami_packer_version   "$ami_packer_version" \
         --arg ami_software_version "$ami_software_version" \
         --arg ami_build_number     "$ami_build_number" \
         --arg ami_name             "$ami_name" \
@@ -138,14 +140,35 @@ function main() {
 
     cd "$script_dir"
     local infra_revision=$(../revision)
+    local dirty_repo=0
     if [[ "$infra_revision" =~ -dirty$ ]]; then
-        echo 'Refusing to build an AMI from a dirty repository.' >&2
-        exit "$RC_DIRTY_REPOSITORY"
+        dirty_repo=1
+        if [[ "$PACKER_ALLOW_BUILD_FROM_DIRTY_REPO" == '1' ]]; then
+            echo 'Permitting a Packer build from a dirty repository.' >&2
+            echo 'Only use this for testing!' >&2
+        else
+            {
+                echo 'Refusing to build an AMI from a dirty repository. '
+                echo 'If you are REALLY sure you want to do this, set '
+                echo 'PACKER_ALLOW_BUILD_FROM_DIRTY_REPO=1 and rerun '
+                echo 'this script.'
+            } >&2
+            exit "$RC_DIRTY_REPOSITORY"
+        fi
     fi
 
+    local packer_version=$(packer version | head -n1 | grep -Eo '([0-9]+\.)*[0-9]+')
+    if [[ -z "$packer_version" ]]; then
+        echo 'FATAL: Unable to determine Packer version.' >&2
+        exit "$RC_FAILED_DETERMINING_PACKER_VERSION"
+    fi
     local ami_build_number=$(ami_next_build_number "$AMI_ROLE" "$AMI_SOFTWARE_VERSION")
-    local packer_template=$(packer_build_template "$AMI_ROLE" "$AMI_SOFTWARE_VERSION" "$ami_build_number" "$infra_revision")
+    local packer_template=$(packer_build_template "$AMI_ROLE" "$AMI_SOFTWARE_VERSION" "$ami_build_number" "$infra_revision" "$packer_version")
     echo "$packer_template" | packer build "${packer_args[@]}" -
+    if [[ "$?" == '0' && "$dirty_repo" == '1' ]]; then
+        echo 'NOTICE: This image was built from a DIRTY REPOSITORY!' >&2
+        echo 'Rebuild the image from a clean repository when testing is finished.' >&2
+    fi
 }
 
 main "$@"
