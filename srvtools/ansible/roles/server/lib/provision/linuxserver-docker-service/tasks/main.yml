@@ -15,6 +15,7 @@
 # volumes:         list of volumes to attach to the container, as expected by the docker_container module
 # env:             additional environment variables to pass to the container; PUID, PGID, UMASK_SET, and TZ
 #                  are passed implicitly
+# security_opts:   list of security options
 
 
 - name: lookup persisted docker image
@@ -59,6 +60,7 @@
     log_driver: journald
     log_options:
       tag: "{{ service_name }}"
+    security_opts: "{{ security_opts | default([]) }}"
     env: "{{ docker_service_default_env_vars | combine(env | default({})) }}"
     published_ports: "{{ published_ports | default([]) }}"
     volumes: "{{ volumes | default([]) }}"
