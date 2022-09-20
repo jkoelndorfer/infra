@@ -203,7 +203,7 @@ function backup() {
 
     log
     log 'starting duplicity backup'
-    local duplicity_remote="s3://s3.amazonaws.com/$s3_path"
+    local duplicity_remote="boto3+s3://$s3_path"
     # duplicity recognizes a backup hostname change as a source mismatch.
     # Specifying --allow-source-mismatch permits the backup to proceed.
     duplicity \
