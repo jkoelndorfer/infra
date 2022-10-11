@@ -51,12 +51,12 @@
     restart_policy: unless-stopped
     env:
       TZ:   "{{ local_timezone }}"
-      DNS1: "10.0.0.1"
+      DNS1: "192.168.192.1"
       DNS2: "no"
       VIRTUAL_HOST: "{{ inventory_hostname }}"
     dns_servers:
       - "127.0.0.1"
-      - "10.0.0.1"
+      - "192.168.192.1"
     published_ports:
       - "53:53/udp"
       - "80:80"

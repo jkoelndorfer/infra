@@ -72,7 +72,7 @@ interfaces {
         disable
         mode server
         openvpn-option --client-to-client
-        openvpn-option "--server-bridge {{ router_ip }} 255.255.0.0 10.0.2.10 10.0.2.100"
+        openvpn-option "--server-bridge {{ router_ip }} 255.255.0.0 192.168.202.10 192.168.202.100"
         server {
             name-server {{ router_ip }}
             subnet {{ network_subnet }}
@@ -93,7 +93,7 @@ port-forward {
     rule 1 {
         description syncthing
         forward-to {
-            address 10.0.0.10
+            address 192.168.192.10
             port 22000
         }
         original-port 22000
@@ -102,7 +102,7 @@ port-forward {
     rule 2 {
         description "desktop ssh"
         forward-to {
-            address 10.0.0.50
+            address 192.168.193.50
             port 22
         }
         original-port 225
@@ -124,8 +124,8 @@ service {
                 default-router {{ router_ip }}
                 dns-server {{ pi_hole_ip }}
                 lease 86400
-                start 10.0.1.10 {
-                    stop 10.0.1.250
+                start 192.168.194.10 {
+                    stop 192.168.194.250
                 }
                 {% for i in static_dhcp -%}
                 static-mapping {{ i.name }} {
@@ -165,7 +165,7 @@ service {
             inbound-interface eth5
             protocol tcp_udp
             source {
-                address 10.0.13.0/24
+                address 192.168.201.0/24
             }
             inside-address {
                 address {{ pi_hole_ip }}
@@ -189,7 +189,7 @@ service {
     }
     ssh {
         disable-password-authentication
-        listen-address 10.0.0.1
+        listen-address 192.168.192.1
         port 22
         protocol-version v2
     }

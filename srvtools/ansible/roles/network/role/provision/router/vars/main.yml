@@ -1,9 +1,9 @@
 ---
 
 edgeos_ansible_cfg: /config/config.ansible
-network_subnet: 10.0.0.0/16
-pi_hole_ip: 10.0.0.10
-router_ip: 10.0.0.1
+network_subnet: 192.168.192.0/20
+pi_hole_ip: 192.168.192.10
+router_ip: 192.168.192.1
 
 dyndns_hostname:  "{{ lookup('aws_ssm', '/' + server_env + '/dyndns/hostname') }}"
 dyndns_url:       "{{ lookup('aws_ssm', '/' + server_env + '/dyndns/url') }}"
@@ -18,80 +18,80 @@ upstream_dns:
 static_dhcp:
   - name: ap-1f
     mac:  f4:92:bf:69:86:68
-    ip:   10.0.0.11
+    ip:   192.168.192.11
     dns:
       - ap1f.lan
 
   - name: ap-3f
     mac:  f0:9f:c2:33:6b:76
-    ip:   10.0.0.13
+    ip:   192.168.192.13
     dns:
       - ap3f.lan
 
   - name: switch0
     mac:  74:83:c2:0d:0a:4a
-    ip:   10.0.0.2
+    ip:   192.168.192.2
     dns:
       - switch0.lan
 
   - name: johnk-desktop
     mac:  d8:bb:c1:10:03:e9
-    ip:   10.0.0.50
+    ip:   192.168.193.50
     dns:
       - johnk-desktop.lan
 
   - name: media-center-pc
     mac:  d0:50:99:95:7c:53
-    ip:   10.0.0.55
+    ip:   192.168.193.100
     dns:
       - media-center-pc.lan
 
   - name: dance-station
     mac:  4c:ed:fb:bf:ac:0e
-    ip:   10.0.0.56
+    ip:   192.168.193.101
     dns:
       - dance-station.lan
 
   - name: val-desktop
     mac:  f0:9f:c2:33:6b:76
-    ip:   10.0.0.60
+    ip:   192.168.193.200
     dns:
       - val-desktop.lan
 
   - name: val-phone-5ghz
     mac:  be:4f:e0:09:f1:fa
-    ip:   10.0.0.61
+    ip:   192.168.193.201
 
   - name: val-phone-24ghz
     mac:  1a:54:6f:b8:a6:f6
-    ip:   10.0.0.62
+    ip:   192.168.193.202
 
   - name: office-laserjet-pro
     mac:  e8:d8:d1:b0:f6:56
-    ip:   10.0.0.40
+    ip:   192.168.193.10
     dns:
       - office-laserjet-pro.lan
 
   - name: gaming-rpi
     mac: e4:5f:01:09:b9:64
-    ip:  10.0.0.20
+    ip:  192.168.193.102
     dns:
       - gaming-rpi.lan
 
   # Devices that are bad network citizens should be put into
-  # 10.0.13.0/24. Smart TVs specifically are known not to obey
+  # 192.168.201.0/24. Smart TVs specifically are known not to obey
   # DNS settings offered by DHCP.
   - name: roku-family-room
     mac:  b8:3e:59:15:97:c8
-    ip:   10.0.13.10
+    ip:   192.168.201.10
 
   - name: roku-living-room
     mac:  5c:ad:76:bd:c1:6d
-    ip:   10.0.13.20
+    ip:   192.168.201.20
 
   - name: roku-master-bedroom
     mac:  5c:ad:76:89:06:c5
-    ip:   10.0.13.30
+    ip:   192.168.201.30
 
 static_dns:
   - ip: "{{ router_ip }}"
