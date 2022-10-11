@@ -16,6 +16,12 @@ upstream_dns:
   - 208.67.220.220
 
 static_dhcp:
+  - name: miniserv
+    mac:  dc:a6:32:61:15:93
+    ip:   "{{ pi_hole_ip }}"
+    dns:
+      - miniserv.lan
+
   - name: ap-1f
     mac:  f4:92:bf:69:86:68
     ip:   192.168.192.11
