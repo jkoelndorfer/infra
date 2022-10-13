@@ -59,8 +59,7 @@
       - "192.168.192.1"
     published_ports:
       - "53:53/udp"
-      - "80:80"
-      - "443:443"
+      - "8053:8053"
     volumes:
       - "{{ server_data_dir }}/pi-hole/pi-hole:/etc/pihole"
       - "{{ server_data_dir }}/pi-hole/dnsmasq:/etc/dnsmasq.d"
