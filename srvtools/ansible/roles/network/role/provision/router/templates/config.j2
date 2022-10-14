@@ -90,24 +90,17 @@ port-forward {
     auto-firewall enable
     hairpin-nat enable
     lan-interface eth5
-    rule 1 {
-        description syncthing
+    {% for i in port_forwards -%}
+    rule {{ loop.index }} {
+        description "{{ i.description }}"
         forward-to {
-            address 192.168.192.10
-            port 22000
+            address {{ i.destination.ip }}
+            port {{ i.destination.port }}
         }
-        original-port 22000
-        protocol tcp
+        original-port {{ i.source_port }}
+        protocol {{ i.protocol }}
     }
-    rule 2 {
-        description "desktop ssh"
-        forward-to {
-            address 192.168.193.50
-            port 22
-        }
-        original-port 225
-        protocol tcp
-    }
+    {% endfor -%}
     wan-interface pppoe0
 }
 protocols {
