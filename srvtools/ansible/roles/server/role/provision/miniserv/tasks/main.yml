@@ -67,6 +67,40 @@
   tags:
     - pi-hole
 
+- name: include secure web application gateway (swag) setup role
+  include_role:
+    name: server/lib/provision/linuxserver-docker-service
+    apply:
+      tags: [swag]
+  vars:
+    service_name:   swag
+    image_filename: "{{ metadata_dir }}/swag-docker-image"
+    user:
+      name: swag
+      uid:  "{{ swag_uid }}"
+    group:
+      name: swag
+      gid: "{{ swag_gid }}"
+    capabilities:
+      - NET_ADMIN
+
+    # See https://github.com/linuxserver/docker-swag#parameters
+    # for a description of these parameters.
+    env:
+      URL:        vaultwarden.johnk.io
+      EMAIL:      letsencrypt@johnk.io
+      VALIDATION: http
+      STAGING:    "false"
+    directories:
+      - "{{ swag_data_dir }}/config"
+    published_ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "{{ swag_data_dir }}/config:/config"
+  tags:
+    - swag
+
 - name: include air quality setup tasks
   include_tasks: air-quality.yml
   tags:

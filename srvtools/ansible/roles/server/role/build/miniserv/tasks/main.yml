@@ -12,6 +12,11 @@
   include_tasks: pi-hole.yml
   tags: [pi-hole]
 
+- name: include secure web application gateway (swag) build tasks
+  include_tasks: swag.yml
+  tags:
+    - swag
+
 - name: include syncthing build tasks
   include_tasks: syncthing.yml
   tags: [syncthing]

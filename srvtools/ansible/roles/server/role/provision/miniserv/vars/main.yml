@@ -13,3 +13,8 @@ unifi_gid: 2010
 unifi_uid: 2010
 
 unifi_data_dir: "{{ server_data_dir }}/unifi"
+
+swag_uid: 2020
+swag_gid: 2020
+
+swag_data_dir: "{{ server_data_dir }}/swag"
