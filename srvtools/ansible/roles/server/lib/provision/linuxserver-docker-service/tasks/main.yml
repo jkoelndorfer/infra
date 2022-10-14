@@ -10,6 +10,7 @@
 # group:           dictionary containing two items: name and gid
 
 # Optional variables:
+# capabilities:    list of additional capabilities to grant the container, e.g. 'NET_ADMIN'
 # directories:     list of data directories to be created; directories will be owned by `user`/`group`
 # published_ports: list of container ports to publish, as expected by the docker_container module
 # volumes:         list of volumes to attach to the container, as expected by the docker_container module
@@ -60,6 +61,7 @@
     log_driver: journald
     log_options:
       tag: "{{ service_name }}"
+    capabilities: "{{ capabilities | default([]) }}"
     dns_servers:
       # This is the docker bridge interface on the host side.
       #
