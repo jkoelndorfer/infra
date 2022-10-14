@@ -1,3 +1,8 @@
+output "dyndns_hostname" {
+  value       = local.dyndns_hostname
+  description = "hostname of home dynamic DNS"
+}
+
 output "dyndns_url" {
   value       = aws_lambda_function_url.dyndns.function_url
   description = "URL of dynamic DNS service"
