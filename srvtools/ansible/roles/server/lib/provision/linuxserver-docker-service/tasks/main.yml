@@ -60,6 +60,16 @@
     log_driver: journald
     log_options:
       tag: "{{ service_name }}"
+    dns_servers:
+      # This is the docker bridge interface on the host side.
+      #
+      # One would hope that using the default physical NIC's IP would work inside
+      # containers. Unfortunately, DNS query responses come back from this docker
+      # bridge IP, and the result of those queries is silently discarded.
+      #
+      # But if we use that IP from the get-go, things work just fine.
+      - "172.17.0.1"
+
     # seccomp:unconfined is required to run newer versions of the
     # linuxserver/syncthing container on Debian Buster (and probably
     # other containers published by linuxserver).
