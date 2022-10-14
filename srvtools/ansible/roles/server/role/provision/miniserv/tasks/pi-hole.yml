@@ -56,7 +56,6 @@
       VIRTUAL_HOST: "{{ inventory_hostname }}"
     dns_servers:
       - "127.0.0.1"
-      - "192.168.192.1"
     published_ports:
       - "53:53/udp"
       - "8053:8053"
