@@ -12,17 +12,6 @@
   vars:
     service_name:   syncthing
     image_filename: "{{ metadata_dir }}/syncthing-docker-image"
-
-    # seccomp:unconfined is required to run newer versions of the
-    # linuxserver/syncthing container on Debian Buster (and probably
-    # other containers published by linuxserver).
-    #
-    # See:
-    #
-    # https://github.com/mbentley/docker-timemachine/issues/92
-    # https://github.com/oznu/docker-homebridge/issues/461
-    security_opts:
-      - "seccomp:unconfined"
     user:
       name: syncthing
       uid:  "{{ syncthing_uid }}"

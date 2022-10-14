@@ -60,7 +60,16 @@
     log_driver: journald
     log_options:
       tag: "{{ service_name }}"
-    security_opts: "{{ security_opts | default([]) }}"
+    # seccomp:unconfined is required to run newer versions of the
+    # linuxserver/syncthing container on Debian Buster (and probably
+    # other containers published by linuxserver).
+    #
+    # See:
+    #
+    # https://github.com/mbentley/docker-timemachine/issues/92
+    # https://github.com/oznu/docker-homebridge/issues/461
+    security_opts: "{{ (security_opts | default([])) + ['seccomp:unconfined'] }}"
+
     env: "{{ docker_service_default_env_vars | combine(env | default({})) }}"
     published_ports: "{{ published_ports | default([]) }}"
     volumes: "{{ volumes | default([]) }}"
