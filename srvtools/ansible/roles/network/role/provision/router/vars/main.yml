@@ -128,3 +128,17 @@ port_forwards:
     destination:
       ip:   192.168.193.50
       port: 22
+
+  - description: miniserv web application gateway (http)
+    protocol:    tcp
+    source_port: 80
+    destination:
+      ip:   "{{ pi_hole_ip }}"
+      port: 80
+
+  - description: miniserv web application gateway (https)
+    protocol:    tcp
+    source_port: 443
+    destination:
+      ip:   "{{ pi_hole_ip }}"
+      port: 443
