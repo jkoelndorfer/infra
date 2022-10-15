@@ -33,6 +33,11 @@
       STAGING:    "false"
     directories:
       - "{{ swag_data_dir }}/config"
+    config:
+      # The linuxserver-docker-service role tries to look up templates in its own templates directory.
+      # To get around that, specify the full path to the vaultwarden template.
+      - src:  "{{ miniserv_role_path }}/files/vaultwarden.subdomain.conf"
+        dest: "{{ swag_data_dir }}/config/nginx/proxy-confs/vaultwarden.subdomain.conf"
     networks:
       - name: swag_vaultwarden
     published_ports:
