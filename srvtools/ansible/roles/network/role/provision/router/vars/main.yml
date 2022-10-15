@@ -109,6 +109,7 @@ static_dns:
       - miniserv.johnk.io
       - syncthing.johnk.io
       - unifi.johnk.io
+      - vaultwarden.johnk.io
 
   - ip: 172.17.17.17
     dns:
