@@ -12,6 +12,7 @@
 # Optional variables:
 # capabilities:    list of additional capabilities to grant the container, e.g. 'NET_ADMIN'
 # directories:     list of data directories to be created; directories will be owned by `user`/`group`
+# networks:        list of networks to attach this container to
 # published_ports: list of container ports to publish, as expected by the docker_container module
 # volumes:         list of volumes to attach to the container, as expected by the docker_container module
 # env:             additional environment variables to pass to the container; PUID, PGID, UMASK_SET, and TZ
@@ -54,6 +55,11 @@
     mode:  0750
   with_items: "{{ directories }}"
 
+- name: create service network
+  docker_network:
+    name: "{{ service_name }}"
+  when: networks is undefined
+
 - name: start service container
   docker_container:
     name:       "{{ service_name }}"
@@ -71,6 +77,7 @@
       #
       # But if we use that IP from the get-go, things work just fine.
       - "172.17.0.1"
+    networks: "{{ networks | default([{'name': service_name}]) }}"
 
     # seccomp:unconfined is required to run newer versions of the
     # linuxserver/syncthing container on Debian Buster (and probably
