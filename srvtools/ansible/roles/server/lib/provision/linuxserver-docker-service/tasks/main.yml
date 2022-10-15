@@ -10,6 +10,7 @@
 # group:           dictionary containing two items: name and gid
 
 # Optional variables:
+# config:          list of additional files to copy as container configuration
 # capabilities:    list of additional capabilities to grant the container, e.g. 'NET_ADMIN'
 # directories:     list of data directories to be created; directories will be owned by `user`/`group`
 # networks:        list of networks to attach this container to
@@ -59,6 +60,15 @@
   docker_network:
     name: "{{ service_name }}"
   when: networks is undefined
+
+- name: configure service
+  template:
+    src:   "{{ item.src | default(omit) }}"
+    dest:  "{{ item.dest }}"
+    owner: root
+    group: root
+    mode:  "{{ item.mode | default('0444') }}"
+  with_items: "{{ config | default([]) }}"
 
 - name: start service container
   docker_container:
