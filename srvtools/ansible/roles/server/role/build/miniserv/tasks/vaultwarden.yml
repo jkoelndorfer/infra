@@ -1,0 +1,16 @@
+---
+
+- name: persist vaultwarden docker image
+  copy:
+    dest:  "{{ metadata_dir }}/vaultwarden-docker-image"
+    owner: root
+    group: root
+    mode:  0444
+    content: "{{ vaultwarden_docker_image }}\n"
+  tags: [vaultwarden]
+
+- name: pull vaultwarden image
+  docker_image:
+    name:   "{{ vaultwarden_docker_image }}"
+    source: pull
+  tags: [vaultwarden]

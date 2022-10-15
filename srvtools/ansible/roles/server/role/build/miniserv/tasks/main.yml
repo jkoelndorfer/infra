@@ -24,3 +24,7 @@
 - name: include unifi build tasks
   include_tasks: unifi.yml
   tags: [unifi]
+
+- name: include vaultwarden build tasks
+  include_tasks: vaultwarden.yml
+  tags: [vaultwarden]
