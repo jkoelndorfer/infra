@@ -39,6 +39,57 @@
     mode:  0770
   tags: [vaultwarden]
 
+- name: configure vaultwarden backup
+  copy:
+    content: |
+      VAULTWARDEN_CONTAINER=vaultwarden
+      VAULTWARDEN_DATA_DIR={{ vaultwarden_data_dir | quote }}
+      VAULTWARDEN_SYNCTHING_DIR={{ [syncthing_data_dir, 'data', 'vaultwarden'] | path_join | quote }}
+    dest: /etc/vaultwarden-backup.conf
+    owner: root
+    group: root
+    mode:  "0444"
+  tags: [vaultwarden]
+
+- name: deploy vaultwarden backup script
+  copy:
+    src:   vaultwarden-backup
+    dest:  /usr/local/bin/vaultwarden-backup
+    owner: root
+    group: root
+    mode:  0555
+  tags: [vaultwarden]
+
+- name: deploy vaultwarden-backup systemd service
+  copy:
+    src:   vaultwarden-backup.service
+    dest:  /etc/systemd/system/vaultwarden-backup.service
+    owner: root
+    group: root
+    mode:  0444
+  tags: [vaultwarden]
+
+- name: deploy vaultwarden-backup systemd timer
+  copy:
+    src:   vaultwarden-backup.timer
+    dest:  /etc/systemd/system/vaultwarden-backup.timer
+    owner: root
+    group: root
+    mode:  0444
+  tags: [vaultwarden]
+
+- name: reload systemd units
+  systemd:
+    daemon_reload: yes
+  tags: [vaultwarden]
+
+- name: enable vaultwarden-backup timer
+  systemd:
+    name:    vaultwarden-backup.timer
+    state:   started
+    enabled: yes
+  tags: [vaultwarden]
+
 - name: start vaultwarden container
   docker_container:
     name:       "vaultwarden"
