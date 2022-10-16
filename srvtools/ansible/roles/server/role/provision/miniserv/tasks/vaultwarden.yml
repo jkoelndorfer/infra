@@ -103,7 +103,7 @@
       #
       # ADMIN_TOKEN: "{{ lookup('pipe', 'base64 /dev/urandom | head -c64') }}"
 
-      # DOMAIN:      "{{ vaultwarden_domain }}"
+      DOMAIN: "https://{{ vaultwarden_domain }}"
 
       # We have to make the port a non-privileged port because we're running as
       # an unprivileged user.
