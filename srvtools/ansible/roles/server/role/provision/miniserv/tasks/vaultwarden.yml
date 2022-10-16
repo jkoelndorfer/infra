@@ -15,6 +15,11 @@
     vaultwarden_docker_image: "{{ vaultwarden_image_lookup.stdout.rstrip() }}"
   tags: [vaultwarden]
 
+- name: lookup vaultwarden sendgrid API key
+  set_fact:
+    vaultwarden_sendgrid_api_key: "{{ lookup('aws_ssm', '/prod/vaultwarden/sendgrid_api_key') }}"
+  tags: [vaultwarden]
+
 - name: create vaultwarden group
   group:
     name: vaultwarden
@@ -111,6 +116,14 @@
       SIGNUPS_ALLOWED:    "false"
       SHOW_PASSWORD_HINT: "false"
       WEBSOCKET_ENABLED:  "true"
+
+      SMTP_HOST:           smtp.sendgrid.net
+      SMTP_PORT:           "587"
+      SMTP_SECURITY:       starttls
+      SMTP_FROM:           noreply@vaultwarden.johnk.io
+      SMTP_USERNAME:       apikey
+      SMTP_PASSWORD:       "{{ vaultwarden_sendgrid_api_key }}"
+      SMTP_AUTH_MECHANISM: Login
     networks:
       - name: bridge
       - name: swag_vaultwarden
