@@ -9,6 +9,11 @@
   include_role:
     name: server/lib/provision/docker
 
+- name: include docker setup tasks
+  include_tasks: docker.yml
+  tags:
+    - docker
+
 - name: include syncthing setup role
   include_role:
     name: server/lib/provision/linuxserver-docker-service

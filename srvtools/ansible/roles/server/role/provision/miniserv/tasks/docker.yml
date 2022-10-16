@@ -1,0 +1,23 @@
+---
+
+- name: determine docker bridge network host IP
+  set_fact:
+    docker_bridge_network_host_ip: "{{ ansible_docker0['ipv4']['address'] }}"
+  tags: [docker]
+
+- name: configure docker
+  copy:
+    dest:    /etc/docker/daemon.json
+    owner:   root
+    group:   root
+    mode:    0444
+    content: "{{ {'dns': [docker_bridge_network_host_ip]} | to_json }}\n"
+  register: docker_configuration_result
+  tags: [docker]
+
+- name: restart docker
+  systemd:
+    name:  docker
+    state: restarted
+  when: docker_configuration_result.changed
+  tags: [docker]

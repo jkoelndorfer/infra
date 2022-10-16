@@ -39,6 +39,7 @@
       - src:  "{{ miniserv_role_path }}/files/vaultwarden.subdomain.conf"
         dest: "{{ swag_data_dir }}/config/nginx/proxy-confs/vaultwarden.subdomain.conf"
     networks:
+      - name: bridge
       - name: swag_vaultwarden
     published_ports:
       - "80:80"
