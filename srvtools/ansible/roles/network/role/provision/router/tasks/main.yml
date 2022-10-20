@@ -1,5 +1,9 @@
 ---
 
+- name: include local-infra vars
+  include_vars: global/local-infra.yml
+  tags: [always]
+
 - name: include router dyndns configuration tasks
   include_tasks: dyndns.yml
   tags: [dyndns]

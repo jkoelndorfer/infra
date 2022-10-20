@@ -19,8 +19,7 @@ static_dhcp:
   - name: miniserv
     mac:  dc:a6:32:61:15:93
     ip:   "{{ pi_hole_ip }}"
-    dns:
-      - miniserv.lan
+    dns: "{{ ['miniserv.lan'] + (miniserv_ssl_domains.values() | list) }}"
 
   - name: ap-1f
     mac:  f4:92:bf:69:86:68
@@ -103,13 +102,6 @@ static_dns:
   - ip: "{{ router_ip }}"
     dns:
       - router0.lan
-
-  - ip: "{{ pi_hole_ip }}"
-    dns:
-      - miniserv.johnk.io
-      - syncthing.johnk.io
-      - unifi.johnk.io
-      - vaultwarden.johnk.io
 
   - ip: 172.17.17.17
     dns:
