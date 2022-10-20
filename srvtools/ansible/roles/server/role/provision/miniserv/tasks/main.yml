@@ -5,6 +5,10 @@
     miniserv_role_path: "{{ role_path }}"
   tags: [always]
 
+- name: include local-infra vars
+  include_vars: global/local-infra.yml
+  tags: [always]
+
 - name: include docker provision-time tasks
   include_role:
     name: server/lib/provision/docker

@@ -19,7 +19,6 @@ swag_gid: 2020
 
 swag_data_dir: "{{ server_data_dir }}/swag"
 
-vaultwarden_domain:   vaultwarden.johnk.io
 vaultwarden_data_dir: "{{ server_data_dir }}/vaultwarden"
 vaultwarden_port:     888
 vaultwarden_uid:      2030

@@ -27,10 +27,12 @@
     # See https://github.com/linuxserver/docker-swag#parameters
     # for a description of these parameters.
     env:
-      URL:        "{{ vaultwarden_domain }}"
-      EMAIL:      letsencrypt@johnk.io
-      VALIDATION: http
-      STAGING:    "false"
+      URL:             johnk.io
+      SUBDOMAINS:      "{{ miniserv_ssl_domains.values() | map('regex_replace', '\\..+$', '') | join(',') }}"
+      ONLY_SUBDOMAINS: "true"
+      EMAIL:           letsencrypt@johnk.io
+      VALIDATION:      http
+      STAGING:         "false"
     directories:
       - "{{ swag_data_dir }}/config"
     config:
