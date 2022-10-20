@@ -2,6 +2,7 @@ locals {
   environments = {
     dev = {
       home_cname_records = [
+        "miniserv",
         "pihole",
         "syncthing",
         "unifi",
@@ -10,6 +11,7 @@ locals {
     }
     prod = {
       home_cname_records = [
+        "miniserv",
         "pihole",
         "syncthing",
         "unifi",
