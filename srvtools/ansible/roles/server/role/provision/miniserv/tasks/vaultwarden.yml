@@ -35,20 +35,24 @@
     shell:   "{{ nologin_shell }}"
   tags: [vaultwarden]
 
-- name: create vaultwarden data directory
+- name: create vaultwarden data directories
   file:
-    path:  "{{ vaultwarden_data_dir }}"
+    path:  "{{ item }}"
     state: directory
     owner: root
     group: vaultwarden
     mode:  0770
   tags: [vaultwarden]
+  with_items:
+    - "{{ vaultwarden_data_dir }}"
+    - "{{ vaultwarden_data_dir }}/data"
+    - "{{ vaultwarden_data_dir }}/log"
 
 - name: configure vaultwarden backup
   copy:
     content: |
       VAULTWARDEN_CONTAINER=vaultwarden
-      VAULTWARDEN_DATA_DIR={{ vaultwarden_data_dir | quote }}
+      VAULTWARDEN_DATA_DIR={{ vaultwarden_data_dir + '/data' | quote }}
       VAULTWARDEN_SYNCTHING_DIR={{ [syncthing_data_dir, 'data', 'vaultwarden'] | path_join | quote }}
     dest: /etc/vaultwarden-backup.conf
     owner: root
@@ -132,7 +136,7 @@
     published_ports:
       - "{{ vaultwarden_port }}:8080"
     volumes:
-      - "{{ vaultwarden_data_dir }}:/data"
+      - "{{ vaultwarden_data_dir }}/data:/data"
     user: "{{ vaultwarden_uid }}:{{ vaultwarden_gid }}"
     restart_policy: unless-stopped
   tags: [vaultwarden]
