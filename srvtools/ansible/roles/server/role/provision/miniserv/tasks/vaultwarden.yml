@@ -121,6 +121,9 @@
       SHOW_PASSWORD_HINT: "false"
       WEBSOCKET_ENABLED:  "true"
 
+      EXTENDED_LOGGING: "true"
+      LOG_FILE:         /log/vaultwarden.log
+
       SMTP_HOST:           smtp.sendgrid.net
       SMTP_PORT:           "587"
       SMTP_SECURITY:       starttls
@@ -135,6 +138,7 @@
       - "seccomp:unconfined"
     volumes:
       - "{{ vaultwarden_data_dir }}/data:/data"
+      - "{{ vaultwarden_data_dir }}/log:/log"
     user: "{{ vaultwarden_uid }}:{{ vaultwarden_gid }}"
     restart_policy: unless-stopped
   tags: [vaultwarden]

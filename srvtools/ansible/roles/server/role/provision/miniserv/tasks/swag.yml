@@ -43,6 +43,12 @@
 
       - src:  "{{ miniserv_role_path }}/files/nginx-default.conf"
         dest: "{{ swag_data_dir }}/config/nginx/site-confs/default.conf"
+
+      - src:  "{{ miniserv_role_path }}/files/vaultwarden-fail.conf"
+        dest: "{{ swag_data_dir }}/config/fail2ban/filter.d/vaultwarden-fail.conf"
+
+      - src:  "{{ miniserv_role_path }}/files/jail.local"
+        dest: "{{ swag_data_dir }}/config/fail2ban/jail.local"
     networks:
       - name: bridge
       - name: swag_vaultwarden
@@ -51,5 +57,6 @@
       - "443:443"
     volumes:
       - "{{ swag_data_dir }}/config:/config"
+      - "{{ vaultwarden_data_dir }}/log:/vaultwarden-log:ro"
   tags:
     - swag
