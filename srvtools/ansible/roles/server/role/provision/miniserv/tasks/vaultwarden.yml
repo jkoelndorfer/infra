@@ -133,8 +133,6 @@
       - name: swag_vaultwarden
     security_opts:
       - "seccomp:unconfined"
-    published_ports:
-      - "{{ vaultwarden_port }}:8080"
     volumes:
       - "{{ vaultwarden_data_dir }}/data:/data"
     user: "{{ vaultwarden_uid }}:{{ vaultwarden_gid }}"
