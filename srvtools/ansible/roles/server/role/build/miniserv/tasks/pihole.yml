@@ -1,0 +1,16 @@
+---
+
+- name: persist pihole docker image
+  copy:
+    dest:  "{{ metadata_dir }}/pihole-docker-image"
+    owner: root
+    group: root
+    mode:  0444
+    content: "{{ pihole_docker_image }}\n"
+  tags: [pihole]
+
+- name: pull pihole image
+  docker_image:
+    name:   "{{ pihole_docker_image }}"
+    source: pull
+  tags: [pihole]

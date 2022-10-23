@@ -2,7 +2,7 @@
 
 edgeos_ansible_cfg: /config/config.ansible
 network_subnet: 192.168.192.0/20
-pi_hole_ip: 192.168.192.10
+pihole_ip: 192.168.192.10
 router_ip: 192.168.192.1
 
 dyndns_hostname:  "{{ lookup('aws_ssm', '/' + server_env + '/dyndns/hostname') }}"
@@ -18,7 +18,7 @@ upstream_dns:
 static_dhcp:
   - name: miniserv
     mac:  dc:a6:32:61:15:93
-    ip:   "{{ pi_hole_ip }}"
+    ip:   "{{ pihole_ip }}"
     dns: "{{ ['miniserv.lan'] + (miniserv_ssl_domains.values() | list) }}"
 
   - name: ap-1f
@@ -126,12 +126,12 @@ port_forwards:
     protocol:    tcp
     source_port: 80
     destination:
-      ip:   "{{ pi_hole_ip }}"
+      ip:   "{{ pihole_ip }}"
       port: 80
 
   - description: miniserv web application gateway (https)
     protocol:    tcp
     source_port: 443
     destination:
-      ip:   "{{ pi_hole_ip }}"
+      ip:   "{{ pihole_ip }}"
       port: 443

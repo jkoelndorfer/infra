@@ -8,7 +8,7 @@
 # on the issued certificate.
 miniserv_ssl_domains:
   miniserv:    miniserv.johnk.io
-  pi_hole:     pihole.johnk.io
+  pihole:      pihole.johnk.io
   syncthing:   syncthing.johnk.io
   unifi:       unifi.johnk.io
   vaultwarden: vaultwarden.johnk.io

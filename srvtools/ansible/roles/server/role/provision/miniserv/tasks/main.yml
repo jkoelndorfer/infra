@@ -82,10 +82,10 @@
   tags:
     - unifi
 
-- name: include pi-hole setup tasks
-  include_tasks: pi-hole.yml
+- name: include pihole setup tasks
+  include_tasks: pihole.yml
   tags:
-    - pi-hole
+    - pihole
 
 - name: include air quality setup tasks
   include_tasks: air-quality.yml

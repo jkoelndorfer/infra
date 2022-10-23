@@ -1,59 +1,59 @@
 ---
 
-- name: lookup pi-hole docker image
+- name: lookup pihole docker image
   shell:
     cmd: 'printf "$(< "$DOCKER_IMAGE_FILE")"'
     executable: /bin/bash
   environment:
-    DOCKER_IMAGE_FILE: "{{ metadata_dir }}/pi-hole-docker-image"
-  register: pi_hole_image_lookup
+    DOCKER_IMAGE_FILE: "{{ metadata_dir }}/pihole-docker-image"
+  register: pihole_image_lookup
   changed_when: false
-  tags: [pi-hole]
+  tags: [pihole]
 
-- name: set pi_hole_docker_image from lookup
+- name: set pihole_docker_image from lookup
   set_fact:
-    pi_hole_docker_image: "{{ pi_hole_image_lookup.stdout.rstrip() }}"
-  tags: [pi-hole]
+    pihole_docker_image: "{{ pi_hole_image_lookup.stdout.rstrip() }}"
+  tags: [pihole]
 
 # This directory needs to be heavily locked down because subdirectories
-# will be mode 0777. pi-hole's docker image does not currently support
-# specifying a UID and GID for pi-hole services.
+# will be mode 0777. pihole's docker image does not currently support
+# specifying a UID and GID for pihole services.
 #
-# See https://github.com/pi-hole/docker-pi-hole/issues/328.
-- name: create pi-hole data directory
+# See https://github.com/pihole/docker-pi-hole/issues/328.
+- name: create pihole data directory
   file:
-    path:  "{{ server_data_dir }}/pi-hole"
+    path:  "{{ server_data_dir }}/pihole"
     state: directory
     owner: root
     group: root
     mode:  0700
-  tags: [pi-hole]
+  tags: [pihole]
 
-- name: create pi-hole data subdirectories
+- name: create pihole data subdirectories
   file:
-    path:  "{{ server_data_dir }}/pi-hole/{{ item }}"
+    path:  "{{ server_data_dir }}/pihole/{{ item }}"
     state: directory
     owner: root
     group: root
     mode:  0777  # FeelsBadMan
   with_items:
     - dnsmasq
-    - pi-hole
-  tags: [pi-hole]
+    - pihole
+  tags: [pihole]
 
-- name: run pi-hole container
+- name: run pihole container
   docker_container:
-    name:  pi-hole
-    image: "{{ pi_hole_docker_image }}"
+    name:  pihole
+    image: "{{ pihole_docker_image }}"
     log_driver: journald
     log_options:
-      tag: pi-hole
+      tag: pihole
     restart_policy: unless-stopped
     env:
       TZ:   "{{ local_timezone }}"
       DNS1: "192.168.192.1"
       DNS2: "no"
-      VIRTUAL_HOST: "{{ miniserv_ssl_domains.pi_hole }}"
+      VIRTUAL_HOST: "{{ miniserv_ssl_domains.pihole }}"
     dns_servers:
       - "127.0.0.1"
     networks:
@@ -63,6 +63,6 @@
       - "53:53/udp"
       - "8053:8053"
     volumes:
-      - "{{ server_data_dir }}/pi-hole/pi-hole:/etc/pihole"
-      - "{{ server_data_dir }}/pi-hole/dnsmasq:/etc/dnsmasq.d"
-  tags: [pi-hole]
+      - "{{ server_data_dir }}/pihole/pi-hole:/etc/pihole"
+      - "{{ server_data_dir }}/pihole/dnsmasq:/etc/dnsmasq.d"
+  tags: [pihole]

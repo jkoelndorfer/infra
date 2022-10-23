@@ -115,7 +115,7 @@ service {
             authoritative enable
             subnet {{ network_subnet }} {
                 default-router {{ router_ip }}
-                dns-server {{ pi_hole_ip }}
+                dns-server {{ pihole_ip }}
                 lease 86400
                 start 192.168.194.10 {
                     stop 192.168.194.250
@@ -161,11 +161,11 @@ service {
                 address 192.168.201.0/24
             }
             inside-address {
-                address {{ pi_hole_ip }}
+                address {{ pihole_ip }}
                 port    53
             }
             destination {
-                address !{{ pi_hole_ip }}
+                address !{{ pihole_ip }}
                 port    53
             }
             type destination

@@ -21,12 +21,12 @@
     - swag
     - syncthing
 
-- name: configure swag/pi-hole network
+- name: configure swag/pihole network
   docker_network:
     name: swag_pihole
   tags:
     - swag
-    - pi-hole
+    - pihole
 
 - name: include secure web application gateway (swag) setup role
   include_role:
