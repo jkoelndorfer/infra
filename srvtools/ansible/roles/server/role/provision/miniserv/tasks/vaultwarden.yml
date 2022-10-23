@@ -62,7 +62,7 @@
 
 - name: deploy vaultwarden backup script
   copy:
-    src:   vaultwarden-backup
+    src:   vaultwarden-backup/vaultwarden-backup
     dest:  /usr/local/bin/vaultwarden-backup
     owner: root
     group: root
@@ -71,7 +71,7 @@
 
 - name: deploy vaultwarden-backup systemd service
   copy:
-    src:   vaultwarden-backup.service
+    src:   vaultwarden-backup/vaultwarden-backup.service
     dest:  /etc/systemd/system/vaultwarden-backup.service
     owner: root
     group: root
@@ -80,7 +80,7 @@
 
 - name: deploy vaultwarden-backup systemd timer
   copy:
-    src:   vaultwarden-backup.timer
+    src:   vaultwarden-backup/vaultwarden-backup.timer
     dest:  /etc/systemd/system/vaultwarden-backup.timer
     owner: root
     group: root

@@ -38,16 +38,16 @@
     config:
       # The linuxserver-docker-service role tries to look up templates in its own templates directory.
       # To get around that, specify the full path to the vaultwarden template.
-      - src:  "{{ miniserv_role_path }}/files/vaultwarden.subdomain.conf"
+      - src:  "{{ miniserv_role_path }}/files/swag/nginx/vaultwarden.subdomain.conf"
         dest: "{{ swag_data_dir }}/config/nginx/proxy-confs/vaultwarden.subdomain.conf"
 
-      - src:  "{{ miniserv_role_path }}/files/nginx-default.conf"
+      - src:  "{{ miniserv_role_path }}/files/swag/nginx/default.conf"
         dest: "{{ swag_data_dir }}/config/nginx/site-confs/default.conf"
 
-      - src:  "{{ miniserv_role_path }}/files/vaultwarden-fail.conf"
+      - src:  "{{ miniserv_role_path }}/files/swag/fail2ban/vaultwarden-fail.conf"
         dest: "{{ swag_data_dir }}/config/fail2ban/filter.d/vaultwarden-fail.conf"
 
-      - src:  "{{ miniserv_role_path }}/files/jail.local"
+      - src:  "{{ miniserv_role_path }}/files/swag/fail2ban/jail.local"
         dest: "{{ swag_data_dir }}/config/fail2ban/jail.local"
     networks:
       - name: bridge
