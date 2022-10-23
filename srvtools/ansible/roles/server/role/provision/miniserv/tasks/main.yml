@@ -18,6 +18,10 @@
   tags:
     - docker
 
+- name: include secure web application gateway (swag) setup tasks
+  include_tasks: swag.yml
+  tags: [always]  # to configure the docker networks that swag shares with other services
+
 - name: include syncthing setup role
   include_role:
     name: server/lib/provision/linuxserver-docker-service
@@ -75,12 +79,6 @@
       - "{{ unifi_data_dir }}/config:/config"
   tags:
     - unifi
-
-- name: include secure web application gateway (swag) setup tasks
-  include_tasks: swag.yml
-  tags:
-    - swag
-    - vaultwarden  # to configure the docker network that swag and vaultwarden share
 
 - name: include pi-hole setup tasks
   include_tasks: pi-hole.yml
