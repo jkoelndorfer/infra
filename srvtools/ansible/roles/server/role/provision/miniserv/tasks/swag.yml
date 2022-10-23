@@ -7,6 +7,13 @@
     - swag
     - vaultwarden
 
+- name: configure swag/unifi network
+  docker_network:
+    name: swag_unifi
+  tags:
+    - swag
+    - unifi
+
 - name: include secure web application gateway (swag) setup role
   include_role:
     name: server/lib/provision/linuxserver-docker-service
@@ -41,6 +48,9 @@
       - src:  "{{ miniserv_role_path }}/files/swag/nginx/vaultwarden.subdomain.conf"
         dest: "{{ swag_data_dir }}/config/nginx/proxy-confs/vaultwarden.subdomain.conf"
 
+      - src:  "{{ miniserv_role_path }}/files/swag/nginx/unifi-controller.subdomain.conf"
+        dest: "{{ swag_data_dir }}/config/nginx/proxy-confs/unifi-controller.subdomain.conf"
+
       - src:  "{{ miniserv_role_path }}/files/swag/nginx/default.conf"
         dest: "{{ swag_data_dir }}/config/nginx/site-confs/default.conf"
 
@@ -51,6 +61,7 @@
         dest: "{{ swag_data_dir }}/config/fail2ban/jail.local"
     networks:
       - name: bridge
+      - name: swag_unifi
       - name: swag_vaultwarden
     published_ports:
       - "80:80"
