@@ -40,8 +40,10 @@
       - "{{ syncthing_data_dir }}"
       - "{{ syncthing_data_dir }}/config"
       - "{{ syncthing_data_dir }}/data"
+    networks:
+      - name: bridge
+      - name: swag_syncthing
     published_ports:
-      - "127.0.0.1:8384:8384"
       - "22000:22000"
       - "21027:21027/udp"
     volumes:
