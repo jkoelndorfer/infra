@@ -21,6 +21,13 @@
     - swag
     - syncthing
 
+- name: configure swag/pi-hole network
+  docker_network:
+    name: swag_pihole
+  tags:
+    - swag
+    - pi-hole
+
 - name: include secure web application gateway (swag) setup role
   include_role:
     name: server/lib/provision/linuxserver-docker-service
@@ -61,6 +68,9 @@
       - src:  "{{ miniserv_role_path }}/files/swag/nginx/syncthing.subdomain.conf"
         dest: "{{ swag_data_dir }}/config/nginx/proxy-confs/syncthing.subdomain.conf"
 
+      - src:  "{{ miniserv_role_path }}/files/swag/nginx/pihole.subdomain.conf"
+        dest: "{{ swag_data_dir }}/config/nginx/proxy-confs/pihole.subdomain.conf"
+
       - src:  "{{ miniserv_role_path }}/files/swag/nginx/default.conf"
         dest: "{{ swag_data_dir }}/config/nginx/site-confs/default.conf"
 
@@ -71,6 +81,7 @@
         dest: "{{ swag_data_dir }}/config/fail2ban/jail.local"
     networks:
       - name: bridge
+      - name: swag_pihole
       - name: swag_syncthing
       - name: swag_unifi
       - name: swag_vaultwarden

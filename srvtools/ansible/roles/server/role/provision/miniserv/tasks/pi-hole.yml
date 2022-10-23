@@ -53,9 +53,12 @@
       TZ:   "{{ local_timezone }}"
       DNS1: "192.168.192.1"
       DNS2: "no"
-      VIRTUAL_HOST: "{{ inventory_hostname }}"
+      VIRTUAL_HOST: "{{ miniserv_ssl_domains.pi_hole }}"
     dns_servers:
       - "127.0.0.1"
+    networks:
+      - name: bridge
+      - name: swag_pihole
     published_ports:
       - "53:53/udp"
       - "8053:8053"
