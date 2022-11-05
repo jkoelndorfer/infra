@@ -87,7 +87,7 @@ interfaces {
     }
 }
 port-forward {
-    auto-firewall enable
+    auto-firewall disable
     hairpin-nat enable
     lan-interface eth5
     {% for i in port_forwards -%}
