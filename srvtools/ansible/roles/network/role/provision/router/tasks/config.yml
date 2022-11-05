@@ -56,6 +56,15 @@
     - /config/scripts
     - /config/scripts/post-config.d
 
+# This needs to execute here because it includes "role_path".
+#
+# If we put it into vars/main.yml, the path will be determined
+# in the context of the of the edgeos-template role. Yes, it's
+# dumb.
+- name: configure USA IPv4 ranges
+  set_fact:
+    usa_ipv4_ranges: "{{ lookup('file', role_path + '/files/usa-ipv4-ranges.txt') | split('\n') | reject('match', '^\\s*#') }}"
+
 - name: deploy edgeos configuration
   include_role:
     name: network/lib/provision/edgeos-template
@@ -65,6 +74,19 @@
     owner: root
     group: vyattacfg
     mode:  "0640"
+
+- name: deploy USA IPv4 ipset template
+  include_role:
+    name: network/lib/provision/edgeos-template
+  vars:
+    src:   saved-ipset.j2
+    dest:  /config/user-data/ipsets/usa-ipv4-ranges.ipset
+    owner: root
+    group: vyattacfg
+    mode:  "0644"
+    ipset_name:    usa-ipv4
+    ipset_family:  inet
+    ipset_entries: "{{ usa_ipv4_ranges }}"
 
 - name: deploy ipset restore script
   include_role:

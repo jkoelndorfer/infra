@@ -15,6 +15,34 @@ firewall {
     send-redirects enable
     source-validation disable
     syn-cookies enable
+
+    group {
+        network-group usa-ipv4 {
+        }
+    }
+
+    name WAN_INBOUND {
+        default-action drop
+        rule 500 {
+            action accept
+            description "Allow responses to internally-initiated traffic"
+            log disable
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 600 {
+            action accept
+            description "Allow inbound connections from US traffic"
+            log disable
+            source {
+                group {
+                    network-group usa-ipv4
+                }
+            }
+        }
+    }
 }
 interfaces {
     ethernet eth0 {
@@ -56,6 +84,12 @@ interfaces {
             name-server auto
             password {{ centurylink_pppoe_password }}
             user-id {{ centurylink_pppoe_username }}
+
+            firewall {
+                in {
+                    name WAN_INBOUND
+                }
+            }
         }
         speed auto
     }
