@@ -44,6 +44,18 @@
       -e 'server_admin_ssh_pubkey="ssh-rsa ..."'
   tags: [always]
 
+- name: create requisite directories for config
+  edgeos_command:
+    commands:
+      - "sudo mkdir -p {{ item | quote }}"
+      - "sudo chown root:vyattacfg {{ item | quote }}"
+      - "sudo chmod 0775 {{ item | quote }}"
+  with_items:
+    - /config/user-data
+    - /config/user-data/ipsets
+    - /config/scripts
+    - /config/scripts/post-config.d
+
 - name: deploy edgeos configuration
   include_role:
     name: network/lib/provision/edgeos-template
@@ -54,12 +66,23 @@
     group: vyattacfg
     mode:  "0640"
 
+- name: deploy ipset restore script
+  include_role:
+    name: network/lib/provision/edgeos-template
+  vars:
+    src:   restore-ipsets
+    dest:  /config/scripts/post-config.d/restore-ipsets
+    owner: root
+    group: vyattacfg
+    mode:  "0755"
+
 - name: load edgeos config
   edgeos_command:
     commands:
       - "configure"
       - "load {{ edgeos_ansible_cfg | quote }}"
       - "commit"
+      - 'for i in /config/scripts/post-config.d/*; do sudo "$i"; done'
 
 - name: confirm running config is ok
   pause:
