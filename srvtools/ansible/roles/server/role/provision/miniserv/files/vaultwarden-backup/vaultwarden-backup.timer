@@ -10,3 +10,6 @@ After=network.target
 OnCalendar=23:00
 AccuracySec=10m
 Persistent=true
+
+[Install]
+WantedBy=multi-user.target
