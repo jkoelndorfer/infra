@@ -28,9 +28,12 @@ services:
   directories to S3 using [duplicity][3] and prunes old
   backups.
 * A statically generated [blog][4].
+* A [Vaultwarden][5] ([Bitwarden][6] clone) installation.
 
 
 [1]: https://sourceforge.net/p/ddclient/wiki/protocols/#dyndns2
 [2]: https://syncthing.net/
 [3]: http://duplicity.nongnu.org/
 [4]: https://www.johnk.io
+[5]: https://github.com/dani-garcia/vaultwarden
+[6]: https://bitwarden.com/
