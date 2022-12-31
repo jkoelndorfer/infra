@@ -1,0 +1,11 @@
+[Unit]
+Description=Backup Timer
+After=network.target
+
+[Timer]
+OnCalendar=04:00
+AccuracySec=10m
+Persistent=true
+
+[Install]
+WantedBy=multi-user.target

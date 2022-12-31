@@ -18,6 +18,11 @@
   tags:
     - docker
 
+- name: include backup tasks
+  include_tasks: backup.yml
+  tags:
+    - backup
+
 - name: include secure web application gateway (swag) setup tasks
   include_tasks: swag.yml
   tags: [always]  # to configure the docker networks that swag shares with other services

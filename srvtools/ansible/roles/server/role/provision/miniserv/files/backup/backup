@@ -1,0 +1,137 @@
+#!/bin/bash
+#
+# Given the path to a backup config file, performs a backup.
+#
+# Note: there are two types of config files in play here.
+# One is a "backup config file", which is the input to this
+# script. The other is the config file passed to the backup
+# utility, rclone (https://github.com/rclone/rclone).
+#
+# The backup config file contains information about the
+# source and destination. rclone's config file is quite
+# high-level, so we bundle it with this backup script
+# directly.
+
+set -o pipefail
+
+backup_config_path=$1
+restart_syncthing=0
+
+RC_OK=0
+RC_INVALID_ARGS=1
+RC_BAD_CONFIG=2
+RC_TEMPFILE_ERROR=3
+
+if [[ -z "$backup_config_path" ]]; then
+    printf 'first argument be the path to the backup config\n' >&2
+    exit "$RC_INVALID_ARGS"
+fi
+if ! [[ -f "$backup_config_path" ]]; then
+    printf 'error: no such file or directory: %s\n' "$backup_config_path" >&2
+    exit "$RC_BAD_CONFIG"
+fi
+if [[ -z "$ENV" ]]; then
+    export ENV='prod'
+fi
+if [[ -z "$AWS_ACCESS_KEY_ID" ]]; then
+    printf 'error: missing required AWS_ACCESS_KEY_ID in environment\n' >&2
+    exit "$RC_BAD_CONFIG"
+fi
+if [[ -z "$AWS_SECRET_ACCESS_KEY" ]]; then
+    printf 'error: missing required AWS_SECRET_ACCESS_KEY in environment\n' >&2
+    exit "$RC_BAD_CONFIG"
+fi
+if [[ -z "$AWS_DEFAULT_REGION" ]]; then
+    export AWS_DEFAULT_REGION='us-east-1'
+fi
+
+unset BACKUP_WORKING_DIR BACKUP_SRC BACKUP_DEST BW_LIMIT
+if ! source "$backup_config_path"; then
+    printf 'error: failed reading config: %s\n' "$backup_config_path" >&2
+    exit "$RC_BAD_CONFIG"
+fi
+for reqd_param in BACKUP_WORKING_DIR BACKUP_SRC BACKUP_DEST BW_LIMIT; do
+    if [[ -z "${!reqd_param}" ]]; then
+        printf 'error: missing required config parameter: %s\n' "$reqd_param" >&2
+        exit "$RC_BAD_CONFIG"
+    fi
+done
+
+function exec_v() {
+    printf '+ %s\n' "$*" >&2
+    "$@"
+}
+
+function cleanup() {
+    if [[ -n "$rclone_config_path" ]]; then
+        rm -f "$rclone_config_path"
+    fi
+    if [[ -n "$backup_report_file" ]]; then
+        rm -f "$backup_report_file"
+    fi
+    if [[ "$restart_syncthing" == '1' ]]; then
+        exec_v docker start syncthing
+    fi
+}
+
+function perform_backup() {
+    read -r -d '' rclone_config <<EOF
+[s3]
+type = s3
+provider = AWS
+env_auth = true
+region = $AWS_DEFAULT_REGION
+acl = private
+server_side_encryption = AES256
+storage_class = STANDARD
+EOF
+
+    rclone_config_path=$(mktemp --tmpdir 'rclone-config.XXXXXX')
+    if [[ -z "$rclone_config_path" ]]; then
+        printf 'error: failed creating temporary file for rclone config\n' >&2
+        exit "$RC_TEMPFILE_ERROR"
+    fi
+    printf '%s\n' "$rclone_config" > "$rclone_config_path"
+
+    printf 'backup start @ %s\n' "$(date --rfc-3339=seconds)"
+    exec_v docker stop syncthing 2>&1
+    restart_syncthing=1
+    if ! exec_v cd "$BACKUP_WORKING_DIR"; then
+        printf 'fatal: unable to change to BACKUP_WORKING_DIR "%s"\n' "$BACKUP_WORKING_DIR" >&2
+        return 1
+    fi
+    if ! [[ -d "$BACKUP_SRC" ]]; then
+        printf 'fatal: BACKUP_SRC "%s" does not exist\n' "$BACKUP_SRC" >&2
+        return 1
+    fi
+    exec_v rclone -v -l \
+        --bwlimit "$BW_LIMIT" \
+        --checksum \
+        --stats=0 \
+        --delete-during \
+        --config "$rclone_config_path" \
+        sync "$BACKUP_SRC" "$BACKUP_DEST" 2>&1
+    exec_v docker start syncthing 2>&1
+    restart_syncthing=0
+    printf 'backup end @ %s\n' "$(date --rfc-3339=seconds)"
+}
+
+function send_backup_report() {
+    local report=$1
+
+    local backup_date=$(date '+%Y-%m-%d')
+    local backup_report_topic_arn=$(/opt/srvtools/aws/ssm-param --name "/$ENV/backup/backup_sns_topic_arn")
+    aws sns publish \
+        --topic-arn "$backup_report_topic_arn" \
+        --subject "Backup Report $backup_date" \
+        --message "$report"
+}
+
+function main() {
+    trap cleanup EXIT
+    local backup_report_file=$(mktemp --tmpdir 'backup-report.XXXXXX')
+    perform_backup 2>&1 | tee "$backup_report_file"
+    send_backup_report "$(< "$backup_report_file")"
+}
+
+main
