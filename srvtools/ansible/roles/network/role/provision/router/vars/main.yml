@@ -25,6 +25,10 @@ wireguard_peers:
     public_key: "eFWVoa6tdVREtOp+XV2NSHfX//iRBEJavFmRYjr0u2Y="
     ip_address: "192.168.222.10"
 
+  - name: val-phone
+    public_key: "1yvoLDRoZbbJuixL+np2kxJLHtGjynV8094VM01AsBo="
+    ip_address: "192.168.222.50"
+
 upstream_dns:
   - 208.67.222.222
   - 208.67.220.220
