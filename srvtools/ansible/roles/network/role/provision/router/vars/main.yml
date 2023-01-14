@@ -122,31 +122,4 @@ static_dns:
     dns:
       - modem.lan
 
-port_forwards:
-  - description: syncthing
-    protocol:    tcp
-    source_port: 22000
-    destination:
-      ip:   192.168.192.10
-      port: 22000
-
-  - description: desktop ssh
-    protocol:    tcp
-    source_port: 225
-    destination:
-      ip:   192.168.193.50
-      port: 22
-
-  - description: miniserv web application gateway (http)
-    protocol:    tcp
-    source_port: 80
-    destination:
-      ip:   "{{ pihole_ip }}"
-      port: 80
-
-  - description: miniserv web application gateway (https)
-    protocol:    tcp
-    source_port: 443
-    destination:
-      ip:   "{{ pihole_ip }}"
-      port: 443
+port_forwards: []
