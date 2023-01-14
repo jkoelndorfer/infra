@@ -29,6 +29,10 @@ wireguard_peers:
     public_key: "1yvoLDRoZbbJuixL+np2kxJLHtGjynV8094VM01AsBo="
     ip_address: "192.168.222.50"
 
+  - name: janiah-phone
+    public_key: "egEyTa4MS+JOYzp3UiR4nKINQb7Dduo1aGi2DX2Ovl4="
+    ip_address: "192.168.222.60"
+
 upstream_dns:
   - 208.67.222.222
   - 208.67.220.220
