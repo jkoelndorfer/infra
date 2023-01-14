@@ -101,6 +101,18 @@ interfaces {
     }
     loopback lo {
     }
+    wireguard wg0 {
+        address {{ wireguard_server_ip }}
+        listen-port {{ wireguard_listen_port }}
+        route-allowed-ips true
+        private-key /config/wireguard/wg.key
+
+        {% for p in wireguard_peers %}
+        peer {{ p.public_key }} {
+            allowed-ips {{ p.ip_address }}/32
+        }
+        {% endfor -%}
+    }
 }
 port-forward {
     auto-firewall disable

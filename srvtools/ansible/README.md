@@ -26,7 +26,7 @@ Router Provisioning
 Run the router provisioning playbook like so:
 
 ```
-> ansible-playbook router-provision.yml -e centurylink_pppoe_username=<FILL IN> -e centurylink_pppoe_password=<FILL IN> -e server_admin_password=<FILL IN>
+> ansible-playbook router-provision.yml -e centurylink_pppoe_username=<FILL IN> -e centurylink_pppoe_password=<FILL IN> -e server_admin_password=<FILL IN> -e wireguard_private_key=<FILL IN>
 ```
 
 The values for `centurylink_pppoe_username`, `centurylink_pppoe_password`,

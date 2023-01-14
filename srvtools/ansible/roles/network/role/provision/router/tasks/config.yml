@@ -29,6 +29,8 @@
     - name:  server_admin_ssh_pubkey
       value: "{{ server_admin_ssh_pubkey }}"
 
+    - name:  wireguard_private_key
+      value: "{{ wireguard_private_key }}"
   tags: [always]
 
 # When specifying Ansible variables via -e, the value itself has to be quoted,
@@ -55,6 +57,12 @@
     - /config/user-data/ipsets
     - /config/scripts
     - /config/scripts/post-config.d
+    - /config/wireguard
+
+- name: deploy wireguard private key
+  edgeos_command:
+    commands:
+      - 'printf "%s\n" {{ wireguard_private_key | quote }} > /config/wireguard/wg.key'
 
 # This needs to execute here because it includes "role_path".
 #
