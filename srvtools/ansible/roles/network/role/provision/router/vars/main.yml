@@ -11,6 +11,20 @@ dyndns_username:  "{{ lookup('aws_ssm', '/' + server_env + '/dyndns/creds/home/u
 dyndns_password:  "{{ lookup('aws_ssm', '/' + server_env + '/dyndns/creds/home/password') }}"
 dyndns_wan_iface: pppoe0
 
+wireguard_cache_dir: /var/cache/wireguard
+wireguard_config_dir: /config/wireguard
+wireguard_package:
+  dest:     "{{ wireguard_cache_dir }}/wireguard.deb"
+  url:      https://github.com/WireGuard/wireguard-vyatta-ubnt/releases/download/1.0.20220627-1/e300-v2-v1.0.20220627-v1.0.20210914.deb
+  checksum: 1e24168bc31f492906a834fdb959e5f672798de723e058890a3ae14aa20179c49fb06c793250fb216783d3d56226303e14b81337affd10958cc3cfd220f1a4d8
+wireguard_server_ip: "192.168.222.1/24"
+wireguard_listen_port: 51820
+
+wireguard_peers:
+  - name: johnk
+    public_key: "eFWVoa6tdVREtOp+XV2NSHfX//iRBEJavFmRYjr0u2Y="
+    ip_address: "192.168.222.10"
+
 upstream_dns:
   - 208.67.222.222
   - 208.67.220.220
@@ -102,36 +116,10 @@ static_dns:
   - ip: "{{ router_ip }}"
     dns:
       - router0.lan
+      - vpn.johnk.io
 
   - ip: 172.17.17.17
     dns:
       - modem.lan
 
-port_forwards:
-  - description: syncthing
-    protocol:    tcp
-    source_port: 22000
-    destination:
-      ip:   192.168.192.10
-      port: 22000
-
-  - description: desktop ssh
-    protocol:    tcp
-    source_port: 225
-    destination:
-      ip:   192.168.193.50
-      port: 22
-
-  - description: miniserv web application gateway (http)
-    protocol:    tcp
-    source_port: 80
-    destination:
-      ip:   "{{ pihole_ip }}"
-      port: 80
-
-  - description: miniserv web application gateway (https)
-    protocol:    tcp
-    source_port: 443
-    destination:
-      ip:   "{{ pihole_ip }}"
-      port: 443
+port_forwards: []

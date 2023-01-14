@@ -101,23 +101,17 @@ interfaces {
     }
     loopback lo {
     }
-    openvpn vtun0 {
-        device-type tap
-        disable
-        mode server
-        openvpn-option --client-to-client
-        openvpn-option "--server-bridge {{ router_ip }} 255.255.0.0 192.168.202.10 192.168.202.100"
-        server {
-            name-server {{ router_ip }}
-            subnet {{ network_subnet }}
+    wireguard wg0 {
+        address {{ wireguard_server_ip }}
+        listen-port {{ wireguard_listen_port }}
+        route-allowed-ips true
+        private-key /config/wireguard/wg.key
+
+        {% for p in wireguard_peers %}
+        peer {{ p.public_key }} {
+            allowed-ips {{ p.ip_address }}/32
         }
-        tls {
-            /* TODO: Persist OpenVPN CA certs, keys, configuration somewhere. */
-            ca-cert-file /config/openvpn/ca/ca.crt
-            cert-file /config/openvpn/server/server.crt
-            dh-file /config/openvpn/dh.pem
-            key-file /config/openvpn/server/server.key
-        }
+        {% endfor -%}
     }
 }
 port-forward {

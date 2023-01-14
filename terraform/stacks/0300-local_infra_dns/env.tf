@@ -7,6 +7,7 @@ locals {
         "syncthing",
         "unifi",
         "vaultwarden",
+        "vpn",
       ]
     }
     prod = {
@@ -16,6 +17,7 @@ locals {
         "syncthing",
         "unifi",
         "vaultwarden",
+        "vpn",
       ]
     }
   }

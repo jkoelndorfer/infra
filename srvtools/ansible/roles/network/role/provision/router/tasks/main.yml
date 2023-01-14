@@ -8,6 +8,13 @@
   include_tasks: dyndns.yml
   tags: [dyndns]
 
+- name: install wireguard
+  include_tasks:
+    file: wireguard.yml
+    apply:
+      tags: [wireguard]
+  tags: [wireguard]
+
 - name: include router configuration tasks
   include_tasks: config.yml
   tags: [config]
