@@ -101,24 +101,6 @@ interfaces {
     }
     loopback lo {
     }
-    openvpn vtun0 {
-        device-type tap
-        disable
-        mode server
-        openvpn-option --client-to-client
-        openvpn-option "--server-bridge {{ router_ip }} 255.255.0.0 192.168.202.10 192.168.202.100"
-        server {
-            name-server {{ router_ip }}
-            subnet {{ network_subnet }}
-        }
-        tls {
-            /* TODO: Persist OpenVPN CA certs, keys, configuration somewhere. */
-            ca-cert-file /config/openvpn/ca/ca.crt
-            cert-file /config/openvpn/server/server.crt
-            dh-file /config/openvpn/dh.pem
-            key-file /config/openvpn/server/server.key
-        }
-    }
 }
 port-forward {
     auto-firewall disable
