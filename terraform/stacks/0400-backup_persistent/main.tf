@@ -5,6 +5,48 @@ module "s3_bucket" {
   category   = "backup"
   env        = local.env.name
   versioning = "false"
+
+  lifecycle_rules = [
+    {
+      id     = "deep-archive"
+      prefix = "deep-archive/"
+
+      transitions = [
+        {
+          days          = 30
+          storage_class = "DEEP_ARCHIVE"
+        },
+      ]
+
+      noncurrent_version_transitions = []
+
+      noncurrent_version_expiration = {
+        days = 1
+      }
+    },
+    {
+      id     = "rclone-syncthing-backups"
+      prefix = "syncthing/rclone/"
+
+      transitions = [
+        {
+          days          = 30
+          storage_class = "STANDARD_IA"
+        },
+      ]
+
+      noncurrent_version_transitions = [
+        {
+          days          = 30
+          storage_class = "STANDARD_IA"
+        },
+      ]
+
+      noncurrent_version_expiration = {
+        days = 90
+      }
+    }
+  ]
 }
 
 module "ebs_volume" {
