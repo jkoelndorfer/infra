@@ -17,4 +17,44 @@ resource "aws_s3_bucket" "bucket" {
       }
     }
   }
+
+  dynamic "lifecycle_rule" {
+    for_each = var.lifecycle_rules
+    iterator = l
+
+    content {
+      id      = l.value.id
+      prefix  = l.value.prefix
+      enabled = true
+
+      dynamic "transition" {
+        for_each = l.value.transitions
+        iterator = t
+
+        content {
+          days          = t.value.days
+          storage_class = t.value.storage_class
+        }
+      }
+
+      dynamic "noncurrent_version_transition" {
+        for_each = l.value.noncurrent_version_transitions
+        iterator = t
+
+        content {
+          days          = t.value.days
+          storage_class = t.value.storage_class
+        }
+      }
+
+      dynamic "noncurrent_version_expiration" {
+        for_each = [l.value.noncurrent_version_expiration]
+        iterator = e
+
+        content {
+          days = e.value.days
+        }
+      }
+    }
+  }
 }
