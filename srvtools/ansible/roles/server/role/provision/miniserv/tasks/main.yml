@@ -67,7 +67,7 @@
       name: unifi
       gid: "{{ unifi_gid }}"
     directories:
-      - "{{ unifi_data_dir }}/config:/config"
+      - "{{ unifi_data_dir }}/config/config"
     networks:
       - name: bridge
       - name: swag_unifi
