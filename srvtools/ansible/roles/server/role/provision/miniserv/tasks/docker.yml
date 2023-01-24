@@ -1,5 +1,12 @@
 ---
 
+# This is only needed on first provision, when docker
+# is not already running.
+- name: discover ansible_docker0 facts
+  setup:
+    filter:
+      - ansible_docker0
+
 - name: determine docker bridge network host IP
   set_fact:
     docker_bridge_network_host_ip: "{{ ansible_docker0['ipv4']['address'] }}"
