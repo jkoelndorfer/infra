@@ -83,7 +83,7 @@
     - unifi
 
 - name: include pihole setup tasks
-  include_tasks: pihole.yml
+  include_tasks: pi-hole.yml
   tags:
     - pihole
 

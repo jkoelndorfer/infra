@@ -6,7 +6,7 @@
     executable: /bin/bash
   environment:
     DOCKER_IMAGE_FILE: "{{ metadata_dir }}/pihole-docker-image"
-  register: pihole_image_lookup
+  register: pi_hole_image_lookup
   changed_when: false
   tags: [pihole]
 
