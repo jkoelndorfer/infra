@@ -71,8 +71,8 @@ interfaces {
         speed auto
     }
     ethernet eth4 {
-        address 172.17.17.1/24
-        description "CenturyLink Modem @ 172.17.17.17"
+        address {{ vars.router_ip_modem_net_cidr }}
+        description "CenturyLink Modem @ {{ secrets.hosts.modem.ip }}"
         duplex auto
         poe {
             output off
@@ -82,8 +82,8 @@ interfaces {
             description "CenturyLink Internet"
             mtu 1492
             name-server auto
-            password {{ centurylink_pppoe_password }}
-            user-id {{ centurylink_pppoe_username }}
+            user-id {{ secrets.centurylink.pppoe_username }}
+            password {{ secrets.centurylink.pppoe_password }}
 
             firewall {
                 in {
@@ -94,7 +94,7 @@ interfaces {
         speed auto
     }
     ethernet eth5 {
-        address {{ router_ip }}/16
+        address {{ vars.router_ip_cidr }}
         description "EdgeSwitch 24"
         duplex auto
         speed auto
@@ -102,34 +102,34 @@ interfaces {
     loopback lo {
     }
     wireguard wg0 {
-        address {{ wireguard_server_ip }}
-        listen-port {{ wireguard_listen_port }}
+        address {{ vars.wireguard_router_ip_cidr }}
+        listen-port {{ vars.wireguard_listen_port }}
         route-allowed-ips true
-        private-key /config/wireguard/wg.key
+        private-key {{ vars.wireguard_key_path }}
 
-        {% for p in wireguard_peers %}
-        peer {{ p.public_key }} {
-            allowed-ips {{ p.ip_address }}/32
+        {% for p in secrets.wireguard_peers -%}
+        peer {{ p.pubkey }} {
+            allowed-ips {{ p.ip }}/32
         }
-        {% endfor -%}
+        {% endfor %}
     }
 }
 port-forward {
     auto-firewall disable
     hairpin-nat enable
     lan-interface eth5
-    {% for i in port_forwards -%}
+    {% for i in secrets.port_forwards -%}
     rule {{ loop.index }} {
         description "{{ i.description }}"
         forward-to {
-            address {{ i.destination.ip }}
-            port {{ i.destination.port }}
+            address {{ i.dest_ip }}
+            port {{ i.dest_port }}
         }
-        original-port {{ i.source_port }}
+        original-port {{ i.src_port }}
         protocol {{ i.protocol }}
     }
     {% endfor -%}
-    wan-interface pppoe0
+    wan-interface {{ vars.wan_iface }}
 }
 protocols {
     static {
@@ -141,14 +141,14 @@ service {
         hostfile-update disable
         shared-network-name lan {
             authoritative enable
-            subnet {{ network_subnet }} {
-                default-router {{ router_ip }}
-                dns-server {{ pihole_ip }}
+            subnet {{ vars.lan_network }} {
+                default-router {{ vars.router_ip }}
+                dns-server {{ secrets.hosts.miniserv.ip }}
                 lease 86400
-                start 192.168.194.10 {
-                    stop 192.168.194.250
+                start {{ vars.dhcp_start }} {
+                    stop {{ vars.dhcp_end }}
                 }
-                {% for i in static_dhcp -%}
+                {% for i in secrets.static_dhcp -%}
                 static-mapping {{ i.name }} {
                     ip-address   {{ i.ip }}
                     mac-address  {{ i.mac }}
@@ -164,17 +164,17 @@ service {
             cache-size 10000
             listen-on vtun0
             listen-on eth5
-            {% for i in upstream_dns -%}
+            {% for i in vars.upstream_dns -%}
             name-server {{ i }}
             {% endfor -%}
-            {% for i in static_dns -%}
+            {% for i in secrets.dns -%}
             {% for d in i.dns -%}
             options address=/{{ d }}/{{ i.ip }}
             {% endfor -%}
             {% endfor -%}
 
-            {% for i in static_dhcp -%}
-            {% for d in i.get("dns", []) -%}
+            {% for i in secrets.static_dhcp -%}
+            {% for d in i.dns -%}
             options address=/{{ d }}/{{ i.ip }}
             {% endfor -%}
             {% endfor -%}
@@ -186,31 +186,31 @@ service {
             inbound-interface eth5
             protocol tcp_udp
             source {
-                address 192.168.201.0/24
+                address {{ vars.bad_citizens_subnet }}
             }
             inside-address {
-                address {{ pihole_ip }}
+                address {{ secrets.hosts.miniserv.ip }}
                 port    53
             }
             destination {
-                address !{{ pihole_ip }}
+                address !{{ secrets.hosts.miniserv.ip }}
                 port    53
             }
             type destination
         }
         rule 7000 {
             description "NAT: LAN <-> Internet"
-            outbound-interface pppoe0
+            outbound-interface {{ vars.wan_iface }}
             protocol all
             source {
-                address {{ network_subnet }}
+                address {{ vars.lan_network }}
             }
             type masquerade
         }
     }
     ssh {
         disable-password-authentication
-        listen-address 192.168.192.1
+        listen-address {{ vars.router_ip }}
         port 22
         protocol-version v2
     }
@@ -218,21 +218,20 @@ service {
 system {
     host-name router0
     login {
-        user {{ server_admin_username }} {
+        user {{ secrets.admin.username }} {
             authentication {
-                encrypted-password {{ server_admin_password | password_hash('sha256', (65534 | random(seed=inventory_hostname) | string)) }}
+                encrypted-password {{ secrets.admin.encrypted_password()  }}
                 plaintext-password ""
-                public-keys {{ server_admin_username }}@main {
-                    {% set type, key = server_admin_ssh_pubkey.split(' ') -%}
-                    type {{ type }}
-                    key {{ key }}
+                public-keys {{ secrets.admin.username }}@main {
+                    type {{ secrets.admin.pubkey_type }}
+                    key {{ secrets.admin.pubkey_key }}
                 }
             }
-            full-name "{{ server_admin_comment }}"
+            full-name "{{ secrets.admin.full_name }}"
             level admin
         }
     }
-    name-server {{ upstream_dns[0] }}
+    name-server {{ vars.upstream_dns[0] }}
     ntp {
         server 0.ubnt.pool.ntp.org {
         }

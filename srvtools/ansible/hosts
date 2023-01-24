@@ -3,8 +3,5 @@ localhost ansible_connection=local
 [servers]
 miniserv.johnk.io
 
-[network]
-router0.lan ansible_connection=network_cli ansible_host=192.168.192.1
-
 [test]
 vagrant
