@@ -4,7 +4,7 @@ module "s3_bucket" {
   bucket     = "backups"
   category   = "backup"
   env        = local.env.name
-  versioning = "false"
+  versioning = "true"
 
   lifecycle_rules = [
     {
