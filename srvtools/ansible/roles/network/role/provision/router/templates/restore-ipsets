@@ -1,5 +1,0 @@
-#!/bin/sh
-
-find /config/user-data/ipsets -type f | while read f; do
-    sudo ipset restore -f "$f"
-done
