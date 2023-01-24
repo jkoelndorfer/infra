@@ -3,7 +3,7 @@
 pihole_docker_image:      pihole/pihole:v5.8.1
 swag_docker_image:        linuxserver/swag:1.31.0-ls155
 syncthing_docker_image:   linuxserver/syncthing:v1.21.0-ls83
-unifi_docker_image:       linuxserver/unifi-controller:6.1.71-ls105
+unifi_docker_image:       linuxserver/unifi-controller:7.3.76-ls174
 vaultwarden_docker_image: vaultwarden/server:1.27.0
 
 aqgo:
