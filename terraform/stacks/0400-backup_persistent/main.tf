@@ -45,7 +45,19 @@ module "s3_bucket" {
       noncurrent_version_expiration = {
         days = 90
       }
-    }
+    },
+    {
+      id     = "rclone-duplicity-backups"
+      prefix = "syncthing/duplicity/"
+
+      transitions = []
+
+      noncurrent_version_transitions = []
+
+      noncurrent_version_expiration = {
+        days = 1
+      }
+    },
   ]
 }
 
