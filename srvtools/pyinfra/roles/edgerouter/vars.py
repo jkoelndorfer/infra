@@ -32,7 +32,7 @@ dhcp_start = "192.168.194.10"
 dhcp_end = "192.168.194.250"
 
 # Subnet where bad citizens end up. Examples include Roku TVs,
-# which ignore DHCP-prescribed
+# which ignore DHCP-prescribed DNS.
 bad_citizens_subnet = ip_network("192.168.201.0/24")
 
 upstream_dns = [
