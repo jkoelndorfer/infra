@@ -1,0 +1,21 @@
+[Unit]
+Description={{ ctr.name }} Container
+{% if restart != "no" -%}
+StartLimitIntervalSec={{ (ctr.max_restarts * ctr.restart_sec) + (ctr.restart_sec / 2) }}
+StartLimitBurst={{ ctr.max_restarts }}
+{%- endif %}
+
+[Service]
+Type=simple
+ExecStart=podman run \
+    --env-file {{ ctr_env_file }} \
+    {% for v in ctr.volumes -%}
+    -v {{ v.src }}:{{ v.dest }} \
+    {%- endfor %}
+    --network {{ ctr.network }} \
+    --name {{ ctr.name }} \
+    {{ image }}
+Restart={{ ctr.restart }}
+{% if ctr.restart != "no" -%}
+RestartSec={{ ctr.restart_sec }}
+{%- endif %}
