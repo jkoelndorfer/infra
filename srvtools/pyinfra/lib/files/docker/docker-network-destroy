@@ -1,0 +1,79 @@
+#!/bin/bash
+
+set -o pipefail
+
+# This script takes a docker network and ensures that it is
+# destroyed by disconnecting all containers attached to it
+# and executing `docker network rm -f`.
+
+# From sysexits: https://man.openbsd.org/sysexits
+EX_OK=0
+EX_USAGE=64
+EX_UNAVAILABLE=69
+
+function fatal() {
+	local code=$1
+	shift
+	local msg=$1
+	shift
+	p "fatal: $msg" "$@" >&2
+	exit "$code"
+}
+
+function p() {
+	local str_tmpl=$1
+	shift
+	printf "${str_tmpl}\n" "$@"
+}
+
+docker_network=$1
+
+if [[ -z "$docker_network" ]]; then
+	fatal "$EX_USAGE" 'docker network must be passed as first argument'
+fi
+
+# If the Docker network exists, this command will output the name of the network.
+# If the Docker network does not exist, this command will produce no output and exit with code 0.
+network_list=$(docker network ls --filter name="$docker_network" --format '{{ .Name }}')
+if [[ "$?" != 0 ]]; then
+	fatal "$EX_UNAVAILABLE" 'failed determining if network %s exists' "$docker_network"
+fi
+
+if [[ -z "$network_list" ]]; then
+	# If the network does not exist, we have nothing to do.
+	exit "$EX_OK"
+fi
+
+docker_network_containers=$(
+	docker network inspect \
+		--format='{{ range $k, $v := .Containers }}{{ printf "%s\n" $v.Name }}{{ end }}' \
+		"$docker_network"
+)
+if [[ "$?" != 0 ]]; then
+	fatal "$EX_UNAVAILABLE" 'failed getting containers in network %s' "$docker_network"
+fi
+
+# The format passed `docker network inspect` above will produce
+# an extra newline at the end of the output, so we use `grep` to
+# nix it.
+#
+# I made an effort at creating a Go template that didn't produce an
+# extra trailing newline, but was not successful.
+docker_network_containers=$(grep -v -E '^\s*$' <<<"$docker_network_containers")
+
+script_rc=$EX_OK
+if [[ -n "$docker_network_containers" ]]; then
+	while read -r ctr_name; do
+		if ! docker network disconnect "$docker_network" "$ctr_name"; then
+			p 'failed disconnecting container %s from network %s' \
+				"$ctr_name" "$docker_network" >&2
+			script_rc=$EX_UNAVAILABLE
+		fi
+	done <<<"$docker_network_containers"
+fi
+
+if ! docker network rm "$docker_network"; then
+	fatal "$EX_UNAVAILABLE" 'failed removing network %s' "$docker_network"
+fi
+
+exit "$script_rc"

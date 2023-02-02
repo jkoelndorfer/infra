@@ -1,0 +1,3 @@
+{% for env_var, value in ctr_env.items() -%}
+{{ env_var }}={{ shell_quote(value) }}
+{% endfor -%}

@@ -1,0 +1,78 @@
+#!/bin/bash
+
+# This script runs a Docker container using `docker run`, connects
+# the container to multiple networks, and then foregrounds the
+# container process.
+
+set -m
+
+function fatal() {
+	local msg=$1
+	shift
+	p "fatal: $msg" "$@" >&2
+	exit 1
+}
+
+function p() {
+	local str_tmpl=$1
+	shift
+	printf "${str_tmpl}\n" "$@"
+}
+
+function v() {
+	p '+ %s' "$*" >&2
+	"$@"
+}
+
+function cleanup() {
+	if [[ -n "$docker_run_pid" ]]; then
+		kill "$docker_run_pid"
+	fi
+}
+
+docker_networks=()
+
+while [[ "$#" -gt 0 ]]; do
+	case "$1" in
+		--)
+			shift
+			break
+			;;
+		*)
+			docker_networks=("${docker_networks[@]}" "$1")
+			shift
+			;;
+	esac
+done
+
+ctr_name=''
+i=1
+while [[ "$i" -le "$#" ]]; do
+	if [[ "${!i}" == '--name' ]]; then
+		i=$((i + 1))
+		ctr_name=${!i}
+		break
+	fi
+	i=$((i + 1))
+done
+if [[ -z "$ctr_name" ]]; then
+	fatal 'could not determine container name' >&2
+fi
+
+p 'starting container %s with networks: %s' "$ctr_name" "${docker_networks[*]}" >&2
+v docker run --network="${docker_networks[0]}" "$@" &
+docker_run_pid=$!
+trap cleanup SIGINT SIGTERM EXIT
+
+while [[ "$(jobs -p | wc -l)" -gt 0 ]] && ! docker inspect "$ctr_name" &>/dev/null; do
+	sleep 0.25
+done
+if ! docker inspect "$ctr_name" &>/dev/null; then
+	fatal 'failed starting container %s' "$ctr_name" >&2
+fi
+
+for network in "${docker_networks[@]:1}"; do
+	v docker network connect "$network" "$ctr_name"
+done
+
+fg

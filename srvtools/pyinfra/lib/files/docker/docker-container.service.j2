@@ -1,0 +1,34 @@
+[Unit]
+Description={{ ctr.name }} Container
+{% if ctr.restart != "no" -%}
+StartLimitIntervalSec={{ (ctr.max_restarts * ctr.restart_sec) + 1 }}
+StartLimitBurst={{ ctr.max_restarts }}
+{%- endif %}
+Requires=docker.service {{ ctr.networks | map(attribute='systemd_service_name') | join(' ') }}
+Wants=network-online.target
+After=docker.service network-online.target {{ ctr.networks | map(attribute='systemd_service_name') | join(' ') }}
+
+[Service]
+Type=simple
+ExecStart=docker-multinet-run {{ ctr.networks | map(attribute='name') | join(' ') }} -- \
+    --rm \
+    --restart=no \
+    --env-file {{ ctr_env_file }} \
+    {% for v in ctr.volumes -%}
+    --volume {{ v.src }}:{{ v.dest }}:{{ v.mode }} \
+    {% endfor -%}
+    {% for p in ctr.ports -%}
+    --publish {{ p }} \
+    {% endfor -%}
+    --name {{ ctr.name }} \
+    {{ ctr.image }}
+ExecStop=docker stop {{ ctr.name }}
+ExecStopPost=docker rm -f {{ ctr.name }}
+Restart={{ ctr.restart }}
+{% if ctr.restart != "no" -%}
+RestartSec={{ ctr.restart_sec }}
+{%- endif %}
+TimeoutStopSec=3
+
+[Install]
+WantedBy=multi-user.target
