@@ -8,6 +8,8 @@ This module contains variables for the edgerouter role.
 from ipaddress import ip_network
 from os import path
 
+from lib.vars import home_lan_network, home_router_ip, home_router_ip_cidr
+
 config_dir = "/config"
 router_runtime_cfg = path.join(config_dir, "config.pyinfra")
 router_boot_cfg = path.join(config_dir, "config.boot")
@@ -18,11 +20,9 @@ post_config_d_dir = path.join(config_dir, "scripts", "post-config.d")
 config_user = "root"
 config_group = "vyattacfg"
 
-lan_network = ip_network("192.168.192.0/20")
-
-# The router is always the first address in the network.
-router_ip = next(lan_network.hosts())
-router_ip_cidr = f"{router_ip}/{lan_network.prefixlen}"
+lan_network = home_lan_network
+router_ip = home_router_ip
+router_ip_cidr = home_router_ip_cidr
 
 modem_network = ip_network("172.17.17.0/24")
 router_ip_modem_net = next(modem_network.hosts())
