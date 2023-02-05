@@ -10,35 +10,10 @@ from typing import List, Mapping, Tuple
 
 from pyinfra.operations import files, systemd
 
+from .model.container import Container
 from . import vars
 
-
-class Volume:
-    def __init__(self, src: str, dest: str) -> None:
-        self.src = src
-        self.dest = dest
-
-
-class Container:
-    def __init__(
-        self,
-        name: str,
-        image: str,
-        environment: Mapping[str, str],
-        volumes: List[Volume],
-        network: str,
-        restart: str,
-        max_restarts: int,
-        restart_sec: int,
-    ) -> None:
-        self.name = name
-        self.image = image
-        self.environment = environment
-        self.volumes = volumes
-        self.network = network
-        self.restart = restart
-        self.max_restarts = max_restarts
-        self.restart_sec = restart_sec
+_podman_initialized = False
 
 
 def podman_init():
@@ -52,6 +27,11 @@ def podman_init():
 
 
 def podman_ctr(container: Container):
+    global _podman_initialized
+    if not _podman_initialized:
+        podman_init()
+        _podman_initialized = True
+
     systemd_unit_src_file = path.join(vars.files_dir, "podman-container.j2")
     service_name = container.name
     ctr_env_file = path.join(vars.ctr_env_dir, container.name)

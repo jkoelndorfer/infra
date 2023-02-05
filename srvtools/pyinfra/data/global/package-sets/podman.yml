@@ -1,0 +1,5 @@
+---
+
+podman:
+  Arch: podman
+  Debian: podman
