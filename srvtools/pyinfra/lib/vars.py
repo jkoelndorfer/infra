@@ -28,10 +28,12 @@ home_router_ip_cidr = f"{home_router_ip}/{home_lan_network.prefixlen}"
 # The router needs to have a DNS record for each of these domains
 # pointing at miniserv. Of course, miniserv needs these to properly
 # configure its web gateway.
-miniserv_domains = [
-    "miniserv.johnk.io",
-    "pihole.johnk.io",
-    "syncthing.johnk.io",
-    "unifi.johnk.io",
-    "vaultwarden.johnk.io",
-]
+dns_zone = "johnk.io"
+miniserv_domains_by_service = {
+    "miniserv": f"miniserv.{dns_zone}",
+    "pihole": f"pihole.{dns_zone}",
+    "syncthing": f"syncthing.{dns_zone}",
+    "unifi": f"unifi.{dns_zone}",
+    "vaultwarden": f"vaultwarden.{dns_zone}",
+}
+miniserv_domains = list(miniserv_domains_by_service.values())

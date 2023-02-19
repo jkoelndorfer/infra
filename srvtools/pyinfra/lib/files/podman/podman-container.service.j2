@@ -1,0 +1,32 @@
+[Unit]
+Description={{ ctr.name }} Container
+{% if ctr.restart != "no" -%}
+StartLimitIntervalSec={{ (ctr.max_restarts * ctr.restart_sec) + 1 }}
+StartLimitBurst={{ ctr.max_restarts }}
+{%- endif %}
+Wants=network-online.target{%- if ctr.networks | length > 0 %} {% for network in ctr.networks %}{{ network_service_name(network) }} {% endfor %}{%- endif %}
+After=network-online.target{%- if ctr.networks | length > 0 %} {% for network in ctr.networks %}{{ network_service_name(network) }} {% endfor %}{%- endif %}
+
+[Service]
+Type=simple
+ExecStart=podman run \
+    --replace=true \
+    --env-file {{ ctr_env_file }} \
+    --rm \
+    --network {{ ctr.networks | map(attribute='name') | join(',') }} \
+    --network-alias {{ ctr.name }} \
+    {% for v in ctr.volumes -%}
+    --volume {{ v.src }}:{{ v.dest }}:{{ v.mode }} \
+    {% endfor -%}
+    {% for p in ctr.ports -%}
+    --publish {{ p }} \
+    {% endfor -%}
+    --name {{ ctr.name }} \
+    {{ ctr.image }}
+Restart={{ ctr.restart }}
+{% if ctr.restart != "no" -%}
+RestartSec={{ ctr.restart_sec }}
+{%- endif %}
+
+[Install]
+WantedBy=multi-user.target

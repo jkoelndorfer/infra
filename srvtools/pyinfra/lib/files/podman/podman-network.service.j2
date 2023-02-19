@@ -1,0 +1,15 @@
+[Unit]
+Description={{ network.name }} Podman Network
+Before=network-online.target
+
+[Service]
+Type=oneshot
+ExecStartPre=bash -c "podman network rm -f {{ shell_quote(network.name) }}; exit 0"
+ExecStartPre=rm -rf /var/lib/cni/networks/{{ shell_quote(network.name) }}
+ExecStart=podman network create \
+    --subnet {{ network.network.with_prefixlen }} \
+    --gateway {{ network.gateway_address }} \
+    {{ network.name }}
+ExecStop=podman network rm -f {{ network.name }}
+ExecStop=rm -rf /var/lib/cni/networks/{{ shell_quote(network.name) }}
+RemainAfterExit=yes

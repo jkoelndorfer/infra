@@ -5,7 +5,27 @@ lib/model/container
 This module contains container object models.
 """
 
-from typing import Callable, List, Mapping, Optional
+from ipaddress import IPv4Address, IPv4Network
+from typing import Any, Callable, List, Mapping, Optional
+
+
+class ContainerNetwork:
+    def __init__(self, name: str, network: IPv4Network) -> None:
+        self.name = name
+        self.network = network
+
+    @property
+    def gateway_address(self) -> IPv4Address:
+        # The gateway is the first address in the network, by convention.
+        return next(self.network.hosts())
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.name}, {str(self.network)})"
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, self.__class__):
+            return False
+        return self.name == other.name and self.network == other.network
 
 
 class Volume:
@@ -20,9 +40,9 @@ class Container:
         self,
         name: str,
         image: str,
-        get_environment: Callable[["Container"], Mapping[str, str]],
+        get_environment: Callable[[], Mapping[str, str]],
         volumes: List[Volume],
-        networks: List[str],
+        networks: List[ContainerNetwork],
         ports: List[str],
         uid: Optional[int],
         gid: Optional[int],
@@ -58,3 +78,23 @@ class Container:
         # seem worth it.
         self.max_restarts = max_restarts
         self.restart_sec = restart_sec
+
+    @classmethod
+    def restarting(
+        cls,
+        name: str,
+        image: str,
+        get_environment: Callable[[], Mapping[str, str]],
+        volumes: List[Volume],
+        networks: List[ContainerNetwork],
+        ports: List[str],
+        uid: Optional[int],
+        gid: Optional[int],
+    ) -> "Container":
+        """
+        Creates a `Container` with some sensible defaults for restarting.
+        """
+        return cls(
+            name, image, get_environment, volumes, networks,
+            ports, uid, gid, restart="always", max_restarts=3, restart_sec=3,
+        )
