@@ -7,7 +7,7 @@ This module contains provision logic for the miniserv role.
 
 from os import path
 
-from lib.podman import podman_ctr
+from lib.provision.podman import podman_ctr
 
 from .containers import service_containers
 from .containerlib import container_data_dir

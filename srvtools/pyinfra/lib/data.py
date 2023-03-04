@@ -53,8 +53,8 @@ def load_package_set(package_set_name: str) -> PackageSet:
         raise Exception(f"failed to load package set {package_set_name}") from e
 
     pkg_set = PackageSet()
-    for common_pkg_name, pkgs_by_distro in raw.values():
-        for distro_name, pkgs in pkgs_by_distro.values():
+    for common_pkg_name, pkgs_by_distro in raw.items():
+        for distro_name, pkgs in pkgs_by_distro.items():
             if distro_name == "Debian":
                 m = pkg_set.add_debian_package
             elif distro_name == "Arch":

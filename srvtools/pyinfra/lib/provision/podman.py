@@ -1,8 +1,8 @@
 """
-lib/podman
-----------
+lib/provision/podman
+--------------------
 
-This module contains podman-related deployment code.
+This module contains podman-related provisioning code.
 """
 
 from os import path
@@ -11,8 +11,8 @@ from typing import Any, Dict
 
 from pyinfra.operations import files, systemd
 
-from .model.container import Container, ContainerNetwork
-from . import vars
+from ..model.container import Container, ContainerNetwork
+from .. import vars
 
 _podman_initialized = False
 
@@ -31,12 +31,13 @@ _podman_networks: Dict[str, ContainerNetwork] = dict()
 # be restarted.
 _podman_network_changes: Dict[str, Any] = dict()
 
-podman_files_dir = path.join(vars.files_dir, "podman")
+ctr_env_dir = "/usr/local/etc/ctr-env"
+
 
 def podman_init():
     files.directory(
-        name="podman container env directory",
-        path=vars.ctr_env_dir,
+        name="[podman] configure container env directory",
+        path=ctr_env_dir,
         present=True,
         user="root",
         group="root",
@@ -59,10 +60,10 @@ def podman_ctr(ctr: Container):
         ctr_env["PGID"] = str(ctr.gid)
     ctr_env.update({k: str(v) for k, v in ctr.get_environment().items()})
 
-    ctr_env_file = path.join(vars.ctr_env_dir, ctr.name)
+    ctr_env_file = path.join(ctr_env_dir, ctr.name)
     ctr_env_template = files.template(
-        name=f"podman container env file: {ctr.name}",
-        src=path.join(podman_files_dir, "container-env.j2"),
+        name=f"[podman] container env file: {ctr.name}",
+        src=path.join(vars.podman_files_dir, "container-env.j2"),
         dest=ctr_env_file,
         user="root",
         group="root",
@@ -86,8 +87,8 @@ def podman_ctr(ctr: Container):
             ctr_restarted = True
 
     ctr_systemd_unit_template = files.template(
-        name=f"podman container systemd unit: {ctr.name}",
-        src=path.join(podman_files_dir, "podman-container.service.j2"),
+        name=f"[podman] container systemd unit: {ctr.name}",
+        src=path.join(vars.podman_files_dir, "podman-container.service.j2"),
         dest=path.join(vars.systemd_unit_dir, f"{service_name}.service"),
         user="root",
         group="root",
@@ -106,7 +107,7 @@ def podman_ctr(ctr: Container):
     # right, first.
     return
     systemd.service(
-        name=f"podman container service restart: {ctr.name}",
+        name=f"[podman] container service restart: {ctr.name}",
         service=service_name,
         running=True,
         restarted=ctr_restarted,
@@ -130,7 +131,7 @@ def _podman_network(network: ContainerNetwork) -> bool:
 
     network_systemd_template = files.template(
         name=f"podman network systemd unit: {network.name}",
-        src=path.join(podman_files_dir, "podman-network.service.j2"),
+        src=path.join(vars.podman_files_dir, "podman-network.service.j2"),
         dest=path.join(vars.systemd_unit_dir, _podman_network_service_name(network)),
         user="root",
         group="root",

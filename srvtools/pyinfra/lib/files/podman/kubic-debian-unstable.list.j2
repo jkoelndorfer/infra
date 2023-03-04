@@ -1,0 +1,4 @@
+# Configure Kubic repository to provide a more recent Podman.
+#
+# See https://podman.io/getting-started/installation
+deb [arch={{ dpkg_architecture }} signed-by={{ kubic_gpg_key_path }}] https://download.opensuse.org/repositories/devel:kubic:libcontainers:unstable/Debian_Unstable/ /

@@ -9,9 +9,9 @@ from pyinfra.operations import apt, server
 
 from lib.build.common import build_common
 from lib.build.podman import setup_podman
-from . import vars
+from . import containers
 
 
 def build():
     build_common()
-    setup_podman(ctrs=vars.containers)
+    setup_podman(ctrs=containers.service_containers)

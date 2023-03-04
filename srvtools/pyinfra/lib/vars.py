@@ -5,12 +5,20 @@ lib/vars
 This module contains common variables.
 """
 
+from pyinfra import host
+
 from ipaddress import ip_network
 from os import path
 
-files_dir = path.join(path.dirname(__file__), "files")
+from .facts import DistroId
 
-ctr_env_dir = "/usr/local/etc/ctr-env"
+distro_id: str = host.get_fact(DistroId)  # pyright: ignore
+
+apt_sources_list_d = "/etc/apt/sources.list.d"
+
+files_dir = path.join(path.dirname(__file__), "files")
+podman_files_dir = path.join(files_dir, "podman")
+
 timezone = "America/Chicago"
 systemd_unit_dir = "/etc/systemd/system"
 
