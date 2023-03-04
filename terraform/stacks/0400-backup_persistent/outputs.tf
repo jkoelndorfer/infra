@@ -6,14 +6,6 @@ output "s3_bucket" {
   description = "S3 bucket containing backups"
 }
 
-output "ebs_volume" {
-  value = {
-    for k, v in module.ebs_volume.ebs_volume :
-    k => v if contains(["availability_zone", "arn", "id"], k)
-  }
-  description = "the EBS volume containing syncthing data"
-}
-
 output "sns_topic" {
   value = {
     for k, v in aws_sns_topic.backup_notifications :
