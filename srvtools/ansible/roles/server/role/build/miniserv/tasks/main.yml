@@ -4,6 +4,19 @@
   include_role:
     name: server/lib/build/docker
 
+- name: create build cache
+  file:
+    path:  "{{ build_cache_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode:  0755
+  tags: [always]
+
+- name: include backup build tasks
+  include_tasks: backup.yml
+  tags: [backup]
+
 - name: include air quality build tasks
   include_tasks: air-quality.yml
   tags: [air-quality]
