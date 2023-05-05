@@ -17,7 +17,8 @@ distro_id: str = host.get_fact(DistroId)  # pyright: ignore
 apt_sources_list_d = "/etc/apt/sources.list.d"
 
 files_dir = path.join(path.dirname(__file__), "files")
-podman_files_dir = path.join(files_dir, "podman")
+ctr_files_dir = path.join(files_dir, "container")
+docker_files_dir = path.join(files_dir, "docker")
 
 timezone = "America/Chicago"
 systemd_unit_dir = "/etc/systemd/system"

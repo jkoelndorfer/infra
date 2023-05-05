@@ -72,8 +72,6 @@ def stage_package_signing_gpg_key(name: str, url: str, sha256sum: str):
     """
     Stages a package signing key within the package_signing_keys_dir, but
     does not configure the package manager to trust the signing key.
-
-    Assumes that the key at url is in OpenPGP binary format.
     """
     _configure_package_signing_key_staging_dir()
     dest = f"{package_signing_key_staging_dir}/{name}.key"

@@ -140,6 +140,10 @@ def swag_environment():
         "STAGING": "false",
     }
 
+
+# NOTE: It's important that this container is defined _last_,
+# so that swag_networks() can return all the requisite networks
+# defined by previous containers.
 swag_container = Container.restarting(
     name="swag",
     image="docker.io/linuxserver/swag:1.31.0-ls155",
