@@ -4,9 +4,9 @@ Description={{ ctr.name }} Container
 StartLimitIntervalSec={{ (ctr.max_restarts * ctr.restart_sec) + 1 }}
 StartLimitBurst={{ ctr.max_restarts }}
 {%- endif %}
-Requires=docker.service
+Requires=docker.service {{ ctr.networks | map(attribute='systemd_service_name') | join(' ') }}
 Wants=network-online.target
-After=docker.service network-online.target
+After=docker.service network-online.target {{ ctr.networks | map(attribute='systemd_service_name') | join(' ') }}
 
 [Service]
 Type=simple

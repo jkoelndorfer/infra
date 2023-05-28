@@ -19,6 +19,10 @@ class ContainerNetwork:
         # The gateway is the first address in the network, by convention.
         return next(self.network.hosts())
 
+    @property
+    def systemd_service_name(self) -> str:
+        return f"docker-network-{self.name}.service"
+
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.name}, {str(self.network)})"
 

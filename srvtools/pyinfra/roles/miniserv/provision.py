@@ -7,18 +7,28 @@ This module contains provision logic for the miniserv role.
 
 from os import path
 
-from lib.provision.podman import podman_ctr
+from lib.provision.docker import docker_ctr, docker_network
 
 from .containers import service_containers
-from .containerlib import container_data_dir
+from .containerlib import container_data_dir, swag_networks
 
 
 def provision():
+    provision_container_networks()
     provision_service_containers()
+
+
+def provision_container_networks():
+    for network in swag_networks():
+        if network.name != "swag-unifi":
+            continue
+        docker_network(network)
 
 
 def provision_service_containers():
     for ctr in service_containers:
+        if ctr.name != "unifi":
+            continue
         for v in ctr.volumes:
             # For container volumes that are "relative", automatically
             # ensure they are placed under that container's designated
@@ -32,4 +42,4 @@ def provision_service_containers():
             # to live in a known location on the filesystem.
             if not path.isabs(v.src):
                 v.src = path.join(container_data_dir(ctr.name), v.src)
-        podman_ctr(ctr)
+        docker_ctr(ctr)

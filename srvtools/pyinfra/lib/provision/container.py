@@ -7,7 +7,7 @@ This module contains container-related provisioning code.
 
 from os import path
 from shlex import quote as shell_quote
-from typing import Any
+from typing import Any, Tuple
 
 from pyinfra.operations import files
 
@@ -50,7 +50,7 @@ def container_env_file(ctr: Container) -> Tuple[str, Any]:
 
     op = files.template(
         name=f"[container] env file: {ctr.name}",
-        src=path.join(vars.ctr_files_dir, "container-env.j2"),
+        src=path.join(ctr_files_dir, "container-env.j2"),
         dest=ctr_env_file_path,
         user="root",
         group="root",
