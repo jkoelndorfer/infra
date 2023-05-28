@@ -23,11 +23,12 @@ ExecStart=docker-multinet-run {{ ctr.networks | map(attribute='name') | join(' '
     --name {{ ctr.name }} \
     {{ ctr.image }}
 ExecStop=docker stop {{ ctr.name }}
-ExecStop=docker rm -f {{ ctr.name }}
+ExecStopPost=docker rm -f {{ ctr.name }}
 Restart={{ ctr.restart }}
 {% if ctr.restart != "no" -%}
 RestartSec={{ ctr.restart_sec }}
 {%- endif %}
+TimeoutStopSec=3
 
 [Install]
 WantedBy=multi-user.target

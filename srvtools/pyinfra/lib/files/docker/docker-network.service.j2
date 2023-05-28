@@ -6,13 +6,13 @@ After=docker.service network-online.target
 
 [Service]
 Type=oneshot
+ExecStartPre=docker-network-destroy {{ network.name }}
 ExecStart=docker network create {{ network.name }} \
     --driver=bridge \
     --subnet={{ str(network.network) }} \
     --gateway={{ str(network.gateway_address) }}
-ExecStop=docker network rm {{ network.name }}
+ExecStop=docker-network-destroy {{ network.name }}
 RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target
-

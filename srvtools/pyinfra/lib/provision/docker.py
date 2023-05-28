@@ -32,11 +32,22 @@ def docker_init():
         _sudo=True,
     )
 
+    files.put(
+        name="[docker] docker-network-destroy",
+        src=path.join(vars.docker_files_dir, "docker-network-destroy"),
+        dest="/usr/local/sbin/docker-network-destroy",
+        user="root",
+        group="root",
+        mode="0555",
+        _sudo=True,
+    )
+
 
 def docker_network(network: ContainerNetwork) -> bool:
     """
     Configures the container network given by `network`.
     """
+    docker_init()
     network_systemd_unit = files.template(
         name=f"[docker] network systemd unit: {network.name}",
         src=path.join(vars.docker_files_dir, "docker-network.service.j2"),

@@ -6,9 +6,28 @@
 
 set -m
 
+function fatal() {
+	local msg=$1
+	shift
+	p "fatal: $msg" "$@" >&2
+	exit 1
+}
+
+function p() {
+	local str_tmpl=$1
+	shift
+	printf "${str_tmpl}\n" "$@"
+}
+
 function v() {
-	printf '+ %s\n' "$*" >&2
+	p '+ %s' "$*" >&2
 	"$@"
+}
+
+function cleanup() {
+	if [[ -n "$docker_run_pid" ]]; then
+		kill "$docker_run_pid"
+	fi
 }
 
 docker_networks=()
@@ -29,32 +48,27 @@ done
 ctr_name=''
 i=1
 while [[ "$i" -le "$#" ]]; do
-	case "${!i}" in
-		--name)
-			i=$((i + 1))
-			printf '${!i} = %s\n' "${!i}" >&2
-			ctr_name=${!i}
-			break
-			;;
-		*)
-			i=$((i + 1))
-			;;
-	esac
+	if [[ "${!i}" == '--name' ]]; then
+		i=$((i + 1))
+		ctr_name=${!i}
+		break
+	fi
+	i=$((i + 1))
 done
 if [[ -z "$ctr_name" ]]; then
-	printf 'fatal: could not determine container name\n' >&2
-	exit 1
+	fatal 'could not determine container name' >&2
 fi
 
-printf 'starting container %s with networks: %s\n' "$ctr_name" "${docker_networks[*]}" >&2
+p 'starting container %s with networks: %s' "$ctr_name" "${docker_networks[*]}" >&2
 v docker run --network="${docker_networks[0]}" "$@" &
+docker_run_pid=$!
+trap cleanup SIGINT SIGTERM EXIT
 
 while [[ "$(jobs -p | wc -l)" -gt 0 ]] && ! docker inspect "$ctr_name" &>/dev/null; do
 	sleep 0.25
 done
 if ! docker inspect "$ctr_name" &>/dev/null; then
-	printf 'failed starting container %s\n' "$ctr_name" >&2
-	exit 1
+	fatal 'failed starting container %s' "$ctr_name" >&2
 fi
 
 for network in "${docker_networks[@]:1}"; do
