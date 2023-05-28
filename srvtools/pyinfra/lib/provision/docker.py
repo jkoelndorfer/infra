@@ -78,7 +78,7 @@ def docker_ctr(ctr: Container) -> bool:
     container_init()
     docker_init()
 
-    ctr_env_file, _ = container_env_file(ctr)
+    ctr_env_file, ctr_env_file_op = container_env_file(ctr)
     systemd_service_name = f"{ctr.name}.service"
     ctr_systemd_unit = files.template(
         name=f"[docker] container systemd unit: {ctr.name}",
@@ -95,7 +95,7 @@ def docker_ctr(ctr: Container) -> bool:
         name=f"[docker] systemd service: {ctr.name}",
         service=systemd_service_name,
         running=True,
-        restarted=ctr_systemd_unit.changed,
+        restarted=ctr_systemd_unit.changed or ctr_env_file_op.changed,
         daemon_reload=ctr_systemd_unit.changed,
         _sudo=True,
     )  # pyright: ignore
