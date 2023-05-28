@@ -1,0 +1,12 @@
+[Unit]
+Description=Vaultwarden Backup
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/vaultwarden-backup
+Type=oneshot
+Restart=no
+EnvironmentFile=/etc/vaultwarden-backup.conf
+
+[Install]
+WantedBy=multi-user.target

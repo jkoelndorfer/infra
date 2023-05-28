@@ -1,0 +1,11 @@
+[Unit]
+Description=Vaultwarden Backup Timer
+After=network.target
+
+[Timer]
+OnCalendar={{ backup_time }}
+AccuracySec=10m
+Persistent=true
+
+[Install]
+WantedBy=multi-user.target
