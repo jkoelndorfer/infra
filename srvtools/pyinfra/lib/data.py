@@ -10,11 +10,13 @@ from os import path
 import re
 from typing import Mapping
 
+import boto3
 import yaml
 
 from .model.packages import PackageSet
 
 
+_ssm_client = None
 _pyinfra_root = path.abspath(
     path.join(path.dirname(__file__), "..")
 )
@@ -95,3 +97,16 @@ def load_yaml_data(data_path: str) -> Mapping:
     YAML, and returns the resulting object.
     """
     return yaml.safe_load(load_data(data_path, strip_comments=False))
+
+
+# TODO: Support StringList? I don't use StringList anywhere.
+def ssm_parameter_value(name: str) -> str:
+    """
+    Gets the value of an AWS SSM Parameter with the given name.
+    """
+    # boto3 clients are expensive to create, so only create it if we need to.
+    global _ssm_client
+    if _ssm_client is None:
+        _ssm_client = boto3.client("ssm")
+    response = _ssm_client.get_parameter(Name=name, WithDecryption=True)
+    return response["Parameter"]["Value"]

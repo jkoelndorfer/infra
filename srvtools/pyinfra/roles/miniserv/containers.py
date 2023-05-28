@@ -7,6 +7,7 @@ This module defines the containers that run on miniserv.
 
 from os import path
 
+from lib.data import ssm_parameter_value
 from lib.model.container import Container, Volume as V
 from lib.vars import dns_zone, home_router_ip, miniserv_domains, miniserv_domains_by_service, timezone
 from .containerlib import container_data_dir, swag_networks, web_networks
@@ -104,7 +105,7 @@ def vaultwarden_env():
         "SMTP_SECURITY": "starttls",
         "SMTP_FROM": f"noreply@{vaultwarden_domain}",
         "SMTP_USERNAME": "apikey",
-        "SMTP_PASSWORD": "TODO",
+        "SMTP_PASSWORD": ssm_parameter_value('/prod/vaultwarden/sendgrid_api_key'),
         "SMTP_AUTH_MECHANISM": "Login",
     }
 
