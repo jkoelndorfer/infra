@@ -1,0 +1,64 @@
+#!/bin/bash
+
+# This script runs a Docker container using `docker run`, connects
+# the container to multiple networks, and then foregrounds the
+# container process.
+
+set -m
+
+function v() {
+	printf '+ %s\n' "$*" >&2
+	"$@"
+}
+
+docker_networks=()
+
+while [[ "$#" -gt 0 ]]; do
+	case "$1" in
+		--)
+			shift
+			break
+			;;
+		*)
+			docker_networks=("${docker_networks[@]}" "$1")
+			shift
+			;;
+	esac
+done
+
+ctr_name=''
+i=1
+while [[ "$i" -le "$#" ]]; do
+	case "${!i}" in
+		--name)
+			i=$((i + 1))
+			printf '${!i} = %s\n' "${!i}" >&2
+			ctr_name=${!i}
+			break
+			;;
+		*)
+			i=$((i + 1))
+			;;
+	esac
+done
+if [[ -z "$ctr_name" ]]; then
+	printf 'fatal: could not determine container name\n' >&2
+	exit 1
+fi
+
+printf 'starting container %s with networks: %s\n' "$ctr_name" "${docker_networks[*]}" >&2
+v docker run --network="${docker_networks[0]}" "$@" &
+
+while [[ "$(jobs -p | wc -l)" -gt 0 ]] && ! docker inspect "$ctr_name" &>/dev/null; do
+	sleep 0.25
+done
+if ! docker inspect "$ctr_name" &>/dev/null; then
+	printf 'failed starting container %s\n' "$ctr_name" >&2
+	exit 1
+fi
+
+for network in "${docker_networks[@]:1}"; do
+	v docker network connect "$network" "$ctr_name"
+done
+
+fg

@@ -10,12 +10,10 @@ After=docker.service network-online.target {{ ctr.networks | map(attribute='syst
 
 [Service]
 Type=simple
-ExecStart=docker run \
+ExecStart=docker-multinet-run {{ ctr.networks | map(attribute='name') | join(' ') }} -- \
     --rm \
     --restart=no \
     --env-file {{ ctr_env_file }} \
-    --network {{ ctr.networks | map(attribute='name') | join(',') }} \
-    --network-alias {{ ctr.name }} \
     {% for v in ctr.volumes -%}
     --volume {{ v.src }}:{{ v.dest }}:{{ v.mode }} \
     {% endfor -%}
@@ -24,6 +22,8 @@ ExecStart=docker run \
     {% endfor -%}
     --name {{ ctr.name }} \
     {{ ctr.image }}
+ExecStop=docker stop {{ ctr.name }}
+ExecStop=docker rm -f {{ ctr.name }}
 Restart={{ ctr.restart }}
 {% if ctr.restart != "no" -%}
 RestartSec={{ ctr.restart_sec }}

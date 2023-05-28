@@ -20,15 +20,11 @@ def provision():
 
 def provision_container_networks():
     for network in swag_networks():
-        if network.name != "swag-unifi":
-            continue
         docker_network(network)
 
 
 def provision_service_containers():
     for ctr in service_containers:
-        if ctr.name != "unifi":
-            continue
         for v in ctr.volumes:
             # For container volumes that are "relative", automatically
             # ensure they are placed under that container's designated
