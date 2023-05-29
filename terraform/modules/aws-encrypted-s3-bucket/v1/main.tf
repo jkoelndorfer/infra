@@ -27,6 +27,10 @@ resource "aws_s3_bucket" "bucket" {
       prefix  = l.value.prefix
       enabled = true
 
+      expiration {
+        expired_object_delete_marker = false
+      }
+
       dynamic "transition" {
         for_each = l.value.transitions
         iterator = t
