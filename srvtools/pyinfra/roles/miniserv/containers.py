@@ -7,7 +7,7 @@ This module defines the containers that run on miniserv.
 
 from os import path
 
-from lib.data import ssm_parameter_value
+from lib.aws import ssm_parameter_value
 from lib.model.container import Container, Volume as V
 from lib.vars import dns_zone, home_router_ip, miniserv_domains, miniserv_domains_by_service, timezone
 from .containerlib import container_data_dir, swag_networks, web_networks
