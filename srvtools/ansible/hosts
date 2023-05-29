@@ -1,7 +1,0 @@
-localhost ansible_connection=local
-
-[servers]
-miniserv.johnk.io
-
-[test]
-vagrant

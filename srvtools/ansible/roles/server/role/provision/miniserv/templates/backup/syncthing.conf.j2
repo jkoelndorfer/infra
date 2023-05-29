@@ -1,8 +1,0 @@
-BACKUP_WORKING_DIR={{ syncthing_data_dir | quote }}
-BACKUP_SRC=data/
-BACKUP_DEST={{ lookup('aws_ssm', '/' + server_env + '/backup/rclone_dest') | quote }}
-
-# 1 megabyte/sec up, 12 megabyte/sec down
-LIMITED_BW="1M:12M"
-
-BW_LIMIT="00:00,off 07:00,$LIMITED_BW"

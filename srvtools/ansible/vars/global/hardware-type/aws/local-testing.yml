@@ -1,9 +1,0 @@
----
-
-ec2_availability_zone: us-east-1a
-ec2_region: "{{ ec2_availability_zone[:-1] }}"
-
-server_aws_asg: ~
-server_id:      i-ffffffff012345678
-server_name:    dev-local-test-aws
-server_model:   t3.localtest
