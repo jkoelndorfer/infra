@@ -1,0 +1,12 @@
+[Unit]
+Description=Backup
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/backup /etc/backup/syncthing.conf
+Type=oneshot
+Restart=no
+EnvironmentFile=/etc/backup/env.conf
+
+[Install]
+WantedBy=multi-user.target

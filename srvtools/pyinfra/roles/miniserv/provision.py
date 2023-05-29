@@ -52,12 +52,57 @@ def vaultwarden_data_volume_dir() -> str:
 def provision():
     provision_container_networks()
     provision_service_containers()
+    provision_rclone_backup()
     provision_vaultwarden_backup()
 
 
 def provision_container_networks():
     for network in swag_networks():
         docker_network(network)
+
+
+def provision_rclone_backup():
+    backup_files_dir = path.join(vars.files_dir, "backup")
+
+    files.put(
+        name="[rclone] install backup script",
+        src=path.join(backup_files_dir, "backup"),
+        dest="/usr/local/bin/backup",
+        user="root",
+        group="root",
+        mode="0555",
+        _sudo=True,
+    )
+
+    backup_service = files.put(
+        name="[rclone] backup service systemd unit",
+        src=path.join(backup_files_dir, "backup.service"),
+        dest=path.join(gvars.systemd_unit_dir, "backup.service"),
+        user="root",
+        group="root",
+        mode="0444",
+        _sudo=True,
+    )
+
+    backup_timer = files.template(
+        name="[rclone] backup timer systemd unit",
+        src=path.join(backup_files_dir, "backup.timer.j2"),
+        dest=path.join(gvars.systemd_unit_dir, "backup.timer"),
+        user="root",
+        group="root",
+        mode="0444",
+        backup_time=vars.syncthing_backup_time,
+        _sudo=True,
+    )  # pyright: ignore
+
+    systemd.service(
+        name="[rclone] start backup timer",
+        service="backup.timer",
+        running=True,
+        restarted=backup_timer.changed,
+        daemon_reload=backup_service.changed or backup_timer.changed,
+        _sudo=True,
+    )  # pyright: ignore
 
 
 def provision_service_containers():
