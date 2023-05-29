@@ -1,7 +1,0 @@
----
-
-syncthing_port: 22000
-syncthing_gui_port: 8384
-syncthing_uid: 4000
-syncthing_gid: 4000
-syncthing_run_backup: "{{ server_extra['syncthing_run_backup'] }}"

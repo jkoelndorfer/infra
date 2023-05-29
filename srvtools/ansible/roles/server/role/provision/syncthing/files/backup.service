@@ -1,8 +1,0 @@
-[Unit]
-Description=Backup service
-After=docker.service
-
-[Service]
-Type=simple
-ExecStart=/usr/local/bin/syncthing-s3-backup
-Restart=no

@@ -1,0 +1,4 @@
+---
+
+aws-cli:
+  Debian: awscli

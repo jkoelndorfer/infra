@@ -1,0 +1,97 @@
+---
+# This file defines packages that are installed
+# on all systems to enhance usability. These packages
+# provide software I use in my own personal workflows
+# and debugging tools.
+#
+# Each top-level object in this file is a generic
+# identifier for use in this repository. Since Linux
+# distributions can have different names for what
+# is effectively the same package, the operating-system
+# specific package name is provided.
+
+# The de-facto standard Linux shell. It's probably already there.
+# But if it isn't, it will be!
+bash:
+  Debian: bash
+
+# Fetch files over HTTP from the command line. Exceptionally
+# useful in shell scripts.
+curl:
+  Debian: curl
+
+# Perform arbitrary DNS lookups. Useful for debugging DNS issues.
+dig:
+  Debian: bind9-dnsutils
+
+# The popular version control system.
+git:
+  Debian: git
+
+# A solid improvement over classic top. Monitor system
+# CPU and memory utilization and manage processes.
+htop:
+  Debian: htop
+
+# This is used by the AWS CLI.
+groff:
+  Debian: groff
+
+# A command-line utility for parsing and manipulating JSON.
+# It's quite useful in shell scripts.
+jq:
+  Debian: jq
+
+# Logical Volume Manager. It makes disk management and partitioning
+# better. Useful mostly on physical hosts. Even if it isn't
+# used on that host, it might be useful for plugging in
+# an external disk.
+lvm:
+  Debian: lvm2
+
+# It's nice to be able to read manuals.
+man:
+  Debian: man
+
+# My preferred text editor.
+neovim:
+  Debian: neovim
+
+# Python: my favorite scripting language. <3
+python3:
+  Debian:
+    - python3
+    - python3-pip
+
+# Copy files between systems efficiently.
+rsync:
+  Debian: rsync
+
+# sshd, for remote access.
+sshd:
+  Debian: openssh-server
+
+# Gotta elevate privileges somehow.
+sudo:
+  Debian: sudo
+
+# sysstat provides performance-monitoring tools for Linux systems.
+sysstat:
+  Debian: sysstat
+
+# Captures network traffic flows. Useful for debugging.
+tcpdump:
+  Debian: tcpdump
+
+# The telnet protocol is not used much anymore, but it's sometimes
+# handy to have telnet as a quick "is this port open?" check.
+telnet:
+  Debian: telnet
+
+# tmux, the terminal multiplexer.
+tmux:
+  Debian: tmux
+
+# My preferred shell.
+zsh:
+  Debian: zsh
