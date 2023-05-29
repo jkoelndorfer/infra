@@ -110,6 +110,7 @@ EOF
         --stats=0 \
         --delete-during \
         --exclude '**/.stversions/**' \
+        --exclude '**/.syncthing.*.tmp' \
         --config "$rclone_config_path" \
         sync "$BACKUP_SRC" "$BACKUP_DEST" 2>&1
     exec_v docker start syncthing 2>&1
