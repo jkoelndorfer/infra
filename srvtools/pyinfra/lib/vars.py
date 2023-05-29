@@ -14,6 +14,7 @@ from .facts import DistroId
 
 distro_id: str = host.get_fact(DistroId)  # pyright: ignore
 
+aws_default_region = "us-east-1"
 build_cache_dir = "/var/cache/build"
 files_dir = path.join(path.dirname(__file__), "files")
 ctr_files_dir = path.join(files_dir, "container")

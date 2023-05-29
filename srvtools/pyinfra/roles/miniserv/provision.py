@@ -8,6 +8,7 @@ This module contains provision logic for the miniserv role.
 from os import path
 from shlex import quote
 
+from lib.aws import aws_access_key_id, aws_secret_access_key, ssm_parameter_value
 from lib.provision.docker import docker_ctr, docker_network
 from lib import vars as gvars
 from pyinfra.operations import files, systemd
@@ -63,6 +64,7 @@ def provision_container_networks():
 
 def provision_rclone_backup():
     backup_files_dir = path.join(vars.files_dir, "backup")
+    backup_config_dir = "/etc/backup"
 
     files.put(
         name="[rclone] install backup script",
@@ -73,6 +75,44 @@ def provision_rclone_backup():
         mode="0555",
         _sudo=True,
     )
+
+    files.directory(
+        name="[rclone] backup config directory",
+        path=backup_config_dir,
+        user="root",
+        group="root",
+        mode="0555",
+        _sudo=True,
+    )
+
+    files.template(
+        name="[rclone] backup env",
+        src=path.join(backup_files_dir, "env.conf.j2"),
+        dest=path.join(backup_config_dir, "env.conf"),
+        user="root",
+        group="root",
+        mode="0400",
+        _sudo=True,
+        quote=quote,
+        aws_default_region=gvars.aws_default_region,
+        aws_access_key_id=aws_access_key_id(),
+        aws_secret_access_key=aws_secret_access_key(),
+    )  # pyright: ignore
+
+    files.template(
+        name="[rclone] syncthing config",
+        src=path.join(backup_files_dir, "syncthing.conf.j2"),
+        dest=path.join(backup_config_dir, "syncthing.conf"),
+        user="root",
+        group="root",
+        mode="0444",
+        _sudo=True,
+        quote=quote,
+        backup_working_dir=container_data_dir(syncthing_container.name),
+        backup_src=vars.syncthing_backup_src,
+        backup_dest=ssm_parameter_value("/prod/backup/rclone_dest"),
+        bw_limit=vars.syncthing_bw_limit,
+    )  # pyright: ignore
 
     backup_service = files.put(
         name="[rclone] backup service systemd unit",

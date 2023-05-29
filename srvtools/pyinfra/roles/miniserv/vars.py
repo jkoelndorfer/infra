@@ -16,6 +16,9 @@ aqgo_sha256sum = "1f796478001096c0a46cacd499e6293f7a829ce2886d9d5b99358ba2ba67e1
 rclone_deb_sha256sum = "7c5982b75e7804e6750ddad6dfd74888cf154d1df3377a2aa350a5b7c27e0e1e"
 rclone_deb_url = "https://github.com/rclone/rclone/releases/download/v1.61.1/rclone-v1.61.1-linux-arm-v7.deb"
 
+syncthing_backup_src = "data/"
+syncthing_limited_bw = "1M:12M"
+syncthing_bw_limit = f"00:00,off 07:00,{ syncthing_limited_bw }"
 # Time that Syncthing rclone backups run, in "%H:%M" format.
 syncthing_backup_time = "04:00"
 
