@@ -112,7 +112,7 @@ def vaultwarden_env():
 
 vaultwarden_container = Container.restarting(
     name="vaultwarden",
-    image="docker.io/vaultwarden/server:1.27.0",
+    image="docker.io/vaultwarden/server:1.28.1",
     get_environment=vaultwarden_env,
     volumes=[
         V("data", "/data"),
