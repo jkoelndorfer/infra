@@ -25,15 +25,14 @@ services:
   writing.
 * A personal [Syncthing][2] file sync server.
 * A nightly backup service that saves all of the Syncthing
-  directories to S3 using [duplicity][3] and prunes old
-  backups.
+  directories to S3 using [rclone][3].
 * A statically generated [blog][4].
 * A [Vaultwarden][5] ([Bitwarden][6] clone) installation.
 
 
 [1]: https://sourceforge.net/p/ddclient/wiki/protocols/#dyndns2
 [2]: https://syncthing.net/
-[3]: http://duplicity.nongnu.org/
+[3]: https://rclone.org/
 [4]: https://www.johnk.io
 [5]: https://github.com/dani-garcia/vaultwarden
 [6]: https://bitwarden.com/
