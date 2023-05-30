@@ -92,6 +92,7 @@ def provision_aqgo():
         service="backup.timer",
         running=True,
         restarted=aqgo_env.changed or aqgo_systemd_unit.changed,
+        enabled=True,
         daemon_reload=aqgo_systemd_unit.changed,
         _sudo=True,
     )  # pyright: ignore
@@ -179,6 +180,7 @@ def provision_rclone_backup():
         name="[rclone] start backup timer",
         service="backup.timer",
         running=True,
+        enabled=True,
         restarted=backup_timer.changed,
         daemon_reload=backup_service.changed or backup_timer.changed,
         _sudo=True,
@@ -247,6 +249,7 @@ def provision_vaultwarden_backup():
         name="[vaultwarden] start backup timer",
         service="vaultwarden-backup.timer",
         running=True,
+        enabled=True,
         restarted=backup_timer.changed,
         daemon_reload=backup_service.changed or backup_timer.changed,
         _sudo=True,
