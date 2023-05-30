@@ -51,10 +51,50 @@ def vaultwarden_data_volume_dir() -> str:
 
 
 def provision():
+    provision_aqgo()
     provision_container_networks()
     provision_service_containers()
     provision_rclone_backup()
     provision_vaultwarden_backup()
+
+
+def provision_aqgo():
+    aqgo_files_dir = path.join(vars.files_dir, "aqgo")
+
+    aqgo_env = files.template(
+        name="[aqgo] aqgo env",
+        src=path.join(aqgo_files_dir, "aqgo.conf.j2"),
+        dest="/etc/aqgo.conf",
+        user="root",
+        group="root",
+        mode="0400",
+        _sudo=True,
+        quote=quote,
+        aws_default_region=gvars.aws_default_region,
+        aws_access_key_id=ssm_parameter_value("/prod/air_quality/aws_iam_access_key_id"),
+        aws_secret_access_key=ssm_parameter_value("/prod/air_quality/aws_iam_secret_access_key"),
+    )  # pyright: ignore
+
+    aqgo_systemd_unit = files.template(
+        name="[aqgo] aqgo service systemd unit",
+        src=path.join(aqgo_files_dir, "aqgo.service.j2"),
+        dest=path.join(gvars.systemd_unit_dir, "aqgo.service"),
+        user="root",
+        group="root",
+        mode="0444",
+        _sudo=True,
+        serial_device_path=vars.aqgo_serial_device_path,
+        metric_namespace=vars.aqgo_metric_namespace,
+    )  # pyright: ignore
+
+    systemd.service(
+        name="[aqgo] start aqgo",
+        service="backup.timer",
+        running=True,
+        restarted=aqgo_env.changed or aqgo_systemd_unit.changed,
+        daemon_reload=aqgo_systemd_unit.changed,
+        _sudo=True,
+    )  # pyright: ignore
 
 
 def provision_container_networks():

@@ -1,0 +1,14 @@
+[Unit]
+Description=Air Quality Daemon
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/aqgo -serial-device-path {{ serial_device_path }} -metric-namespace {{ metric_namespace }}
+Type=simple
+Restart=always
+RestartSec=30
+TimeoutStopSec=2
+EnvironmentFile=/etc/aqgo.conf
+
+[Install]
+WantedBy=multi-user.target
