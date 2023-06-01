@@ -9,7 +9,7 @@ This repository is broken into a few different top-level directories:
 
 * `aws`: contains AWS-specific bits, such as Lambda function code
 * `packer`: contains scripts and configuration to support building images
-* `srvtools`: contains tools that are deployed to servers, including ansible
+* `srvtools`: contains tools that are deployed to servers, including pyinfra
 * `terraform`: contains terraform stacks and reusable modules for provisiong
   infrastructure
 
