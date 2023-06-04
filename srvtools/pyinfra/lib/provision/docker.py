@@ -88,6 +88,7 @@ def docker_ctr(ctr: Container) -> bool:
         user="root",
         group="root",
         mode="0444",
+        dns=vars.home_router_ip,  # TODO: Configure a local, caching resolver for docker containers
         ctr=ctr,
         ctr_env_file=ctr_env_file,
         _sudo=True,

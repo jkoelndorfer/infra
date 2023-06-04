@@ -14,6 +14,7 @@ ExecStart=docker-multinet-run {{ ctr.networks | map(attribute='name') | join(' '
     --rm \
     --restart=no \
     --env-file {{ ctr_env_file }} \
+    --dns={{ dns }} \
     {% for v in ctr.volumes -%}
     --volume {{ v.src }}:{{ v.dest }}:{{ v.mode }} \
     {% endfor -%}
