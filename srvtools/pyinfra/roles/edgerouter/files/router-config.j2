@@ -8,7 +8,7 @@ firewall {
     options {
         mss-clamp {
             interface-type all
-            mss 1452
+            mss 1400
         }
     }
     receive-redirects disable
@@ -109,6 +109,7 @@ interfaces {
         listen-port {{ vars.wireguard_listen_port }}
         route-allowed-ips true
         private-key {{ vars.wireguard_key_path }}
+        mtu 1400
 
         {% for p in secrets.wireguard_peers %}
         peer {{ p.pubkey }} {
