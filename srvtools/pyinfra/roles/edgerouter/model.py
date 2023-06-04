@@ -101,6 +101,20 @@ class StaticDHCP:
         )
 
 
+class StaticDHCPs:
+    """
+    An iterable collection of StaticDHCP objects.
+    """
+    def __init__(self, dhcps: Iterable[StaticDHCP]) -> None:
+        self.dhcps = {d.name: d for d in dhcps}
+
+    def __getitem__(self, k: str) -> StaticDHCP:
+        return self.dhcps[k]
+
+    def __iter__(self) -> Iterator[StaticDHCP]:
+        return iter(self.dhcps.values())
+
+
 class User:
     """
     Represents a router user configuration.

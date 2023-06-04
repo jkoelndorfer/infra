@@ -18,6 +18,7 @@ from .model import (
     Host,
     PortForward,
     StaticDHCP,
+    StaticDHCPs,
     User,
     WireguardPeer,
     WireguardPeers,
@@ -99,7 +100,7 @@ dyndns = DynDNSConfig.from_dict(_s["dyndns"])
 dns = [DNS.from_dict(name, d) for name, d in _s["dns"].items()]
 hosts = dict()
 port_forwards = [PortForward.from_dict(d) for d in _s["port_forwards"]]
-static_dhcp = [StaticDHCP.from_dict(name, d) for name, d in _s["static_dhcp"].items()]
+static_dhcp = StaticDHCPs(StaticDHCP.from_dict(name, d) for name, d in _s["static_dhcp"].items())
 wireguard_peers = WireguardPeers(
     [WireguardPeer.from_dict(name, d) for name, d in _s["wireguard_peers"].items()]
 )
