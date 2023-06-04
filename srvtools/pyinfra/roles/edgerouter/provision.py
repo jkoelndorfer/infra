@@ -17,6 +17,7 @@ from . import secrets, vars
 files_dir = pjoin(dirname(__file__), "files")
 ipset_dir = pjoin(files_dir, "ipsets")
 
+
 def provision() -> None:
     provision_dyndns(secrets.dyndns)
     provision_ipsets()
@@ -35,10 +36,11 @@ def provision_ipset(name: str) -> None:
     ipset_entries = list()
     comment_line = re.compile(r"^\s*#")
     with open(pjoin(ipset_dir, f"{name}.txt"), "r") as f:
-        for l in f.readlines():
-            if comment_line.match(l):
+        for ln in f.readlines():
+            if comment_line.match(ln):
                 continue
-            ipset_entries.append(l)
+            ipset_entries.append(ln)
+
     files.template(
         name=f"deploy ipset {name}",
         src=pjoin(ipset_dir, "ipset.j2"),
@@ -68,6 +70,7 @@ def provision_ipsets() -> None:
     for i in ipsets:
         provision_ipset(i)
 
+
 def provision_dyndns(config: DynDNSConfig) -> None:
     dyndns_files_dir = pjoin(files_dir, "dyndns")
     dyndns_config_dir = pjoin(vars.user_data_config_dir, "dyndns")
@@ -95,6 +98,7 @@ def provision_dyndns(config: DynDNSConfig) -> None:
         _sudo=True,
     )
 
+
 def provision_router_cfg() -> None:
     reload_config = pjoin(vars.user_data_config_dir, "scripts", "reload-config")
     files.put(
@@ -117,8 +121,8 @@ def provision_router_cfg() -> None:
         secrets=secrets,
         vars=vars,
         _sudo=True,
-    ) # pyright: ignore
+    )  # pyright: ignore
     server.shell(
         name="reload router config",
         commands=[reload_config],
-    ) # pyright: ignore
+    )  # pyright: ignore
