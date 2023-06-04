@@ -46,6 +46,74 @@ firewall {
             }
         }
     }
+
+    name WIREGUARD_INBOUND {
+        default-action reject
+        rule 500 {
+            action accept
+            description "Allow responses to internally-initiated traffic"
+            log disable
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 510 {
+            action accept
+            description "Allow access to the Wireguard gateway"
+            log disable
+            destination {
+                address {{ str(vars.wireguard_router_ip) }}
+            }
+        }
+        rule 520 {
+            action accept
+            description "Allow traffic to Wireguard clients"
+            log disable
+            destination {
+                address {{ str(vars.wireguard_network) }}
+            }
+        }
+        rule 600 {
+            action accept
+            description "Allow miniserv HTTPS access to authorized VPN clients"
+            log disable
+            protocol tcp
+            source {
+                group {
+                    network-group wireguard-miniserv-https
+                }
+            }
+            destination {
+                address  {{ secrets.static_dhcp["miniserv"].ip }}
+                port     443
+            }
+        }
+        rule 610 {
+            action accept
+            description "Allow miniserv ICMP to authorized VPN clients"
+            log disable
+            protocol icmp
+            source {
+                group {
+                    network-group wireguard-miniserv-https
+                }
+            }
+            destination {
+                address  {{ secrets.static_dhcp["miniserv"].ip }}
+            }
+        }
+        rule 700 {
+            action accept
+            description "Allow full network access to authorized VPN clients"
+            log disable
+            source {
+                group {
+                    network-group wireguard-full-access
+                }
+            }
+        }
+    }
 }
 interfaces {
     ethernet eth0 {
@@ -110,6 +178,12 @@ interfaces {
         route-allowed-ips true
         private-key {{ vars.wireguard_key_path }}
         mtu 1400
+
+        firewall {
+            in {
+                name WIREGUARD_INBOUND
+            }
+        }
 
         {% for p in secrets.wireguard_peers %}
         peer {{ p.pubkey }} {

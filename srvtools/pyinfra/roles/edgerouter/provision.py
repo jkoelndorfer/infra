@@ -143,6 +143,7 @@ def provision_router_cfg() -> None:
         user=vars.config_user,
         group=vars.config_group,
         mode="0440",
+        str=str,
         secrets=secrets,
         vars=vars,
         ipsets=ipsets,
