@@ -15,7 +15,8 @@ router_runtime_cfg = path.join(config_dir, "config.pyinfra")
 router_boot_cfg = path.join(config_dir, "config.boot")
 cache_dir = "/var/cache"
 user_data_config_dir = path.join(config_dir, "user-data")
-post_config_d_dir = path.join(config_dir, "scripts", "post-config.d")
+scripts_dir = path.join(config_dir, "scripts")
+post_config_d_dir = path.join(scripts_dir, "post-config.d")
 
 config_user = "root"
 config_group = "vyattacfg"

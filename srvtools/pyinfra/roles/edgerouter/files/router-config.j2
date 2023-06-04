@@ -17,8 +17,11 @@ firewall {
     syn-cookies enable
 
     group {
-        network-group usa-ipv4 {
+    {% for i in ipsets %}
+        network-group {{ i }} {
+            /* The content of this group is managed by ipset directly. */
         }
+    {% endfor %}
     }
 
     name WAN_INBOUND {

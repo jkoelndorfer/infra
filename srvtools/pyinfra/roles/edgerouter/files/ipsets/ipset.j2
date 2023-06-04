@@ -1,3 +1,4 @@
+create {{ ipset_name }} hash:net -exist
 flush {{ ipset_name }}
 {% for i in ipset_entries %}
 add {{ ipset_name }} {{ i }}

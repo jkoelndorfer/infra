@@ -1,0 +1,11 @@
+#!/bin/vbash
+
+function vyos() {
+    /opt/vyatta/sbin/vyatta-cfg-cmd-wrapper "$@"
+}
+
+vyos begin
+vyos configure
+vyos set firewall group network-group "$1"
+vyos commit
+vyos end

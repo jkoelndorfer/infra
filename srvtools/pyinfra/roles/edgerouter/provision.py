@@ -8,6 +8,7 @@ This module contains provisioning logic for the edgerouter role.
 import re
 from os.path import dirname, join as pjoin
 from shlex import quote as sv
+from typing import Iterable, List
 
 from pyinfra.operations import files, server
 
@@ -16,6 +17,7 @@ from . import secrets, vars
 
 files_dir = pjoin(dirname(__file__), "files")
 ipset_dir = pjoin(files_dir, "ipsets")
+ipsets: List[str] = list()
 
 
 def provision() -> None:
@@ -32,15 +34,17 @@ def execute_post_config_d_scripts() -> None:
     )
 
 
-def provision_ipset(name: str) -> None:
-    ipset_entries = list()
-    comment_line = re.compile(r"^\s*#")
-    with open(pjoin(ipset_dir, f"{name}.txt"), "r") as f:
-        for ln in f.readlines():
-            if comment_line.match(ln):
-                continue
-            ipset_entries.append(ln)
+def provision_ipset(name: str, ipset_entries: Iterable[str]) -> None:
+    global ipsets
+    ipsets.append(name)
 
+    # Edgerouter will complain if an ipset already exists without having
+    # first been defined in its managed configuration. To work around this,
+    # we run a script to create the ipset first, using managed configuration.
+    server.shell(
+        name=f"create ipset {name}",
+        commands=[f"{sv(vars.scripts_dir)}/create-ipset {sv(name)}"],
+    )
     files.template(
         name=f"deploy ipset {name}",
         src=pjoin(ipset_dir, "ipset.j2"),
@@ -64,11 +68,32 @@ def provision_ipsets() -> None:
         mode="0555",
         _sudo=True,
     )
+    files.put(
+        name="deploy ipset create script",
+        src=pjoin(ipset_dir, "create-ipset"),
+        dest=vars.scripts_dir,
+        user=vars.config_user,
+        group=vars.config_group,
+        mode="0555",
+        _sudo=True,
+    )
     ipsets = [
-        "usa-ipv4"
+        ("usa-ipv4", read_ips_from_file("usa-ipv4.txt")),
     ]
-    for i in ipsets:
-        provision_ipset(i)
+    for ipset_name, ipset_entries in ipsets:
+        provision_ipset(ipset_name, ipset_entries)
+
+    for network_group in secrets.wireguard_peers.network_groups():
+        provision_ipset(network_group, (p.ip for p in secrets.wireguard_peers.in_network_group(network_group)))
+
+
+def read_ips_from_file(path: str) -> Iterable[str]:
+    comment_line = re.compile(r"^\s*#")
+    with open(pjoin(ipset_dir, path), "r") as f:
+        for ln in f.readlines():
+            if comment_line.match(ln):
+                continue
+            yield ln.strip()
 
 
 def provision_dyndns(config: DynDNSConfig) -> None:
@@ -120,6 +145,7 @@ def provision_router_cfg() -> None:
         mode="0440",
         secrets=secrets,
         vars=vars,
+        ipsets=ipsets,
         _sudo=True,
     )  # pyright: ignore
     server.shell(
