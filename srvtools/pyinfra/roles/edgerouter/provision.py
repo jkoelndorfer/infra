@@ -150,5 +150,5 @@ def provision_router_cfg() -> None:
     )  # pyright: ignore
     server.shell(
         name="reload router config",
-        commands=[reload_config],
+        commands=[f"sg {sv(vars.config_group)} -c {sv(reload_config)}"],
     )  # pyright: ignore
