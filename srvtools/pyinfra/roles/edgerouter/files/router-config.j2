@@ -107,7 +107,7 @@ interfaces {
         route-allowed-ips true
         private-key {{ vars.wireguard_key_path }}
 
-        {% for p in secrets.wireguard_peers -%}
+        {% for p in secrets.wireguard_peers %}
         peer {{ p.pubkey }} {
             allowed-ips {{ p.ip }}/32
         }
@@ -118,7 +118,7 @@ port-forward {
     auto-firewall disable
     hairpin-nat enable
     lan-interface eth5
-    {% for i in secrets.port_forwards -%}
+    {% for i in secrets.port_forwards %}
     rule {{ loop.index }} {
         description "{{ i.description }}"
         forward-to {
@@ -128,7 +128,7 @@ port-forward {
         original-port {{ i.src_port }}
         protocol {{ i.protocol }}
     }
-    {% endfor -%}
+    {% endfor %}
     wan-interface {{ vars.wan_iface }}
 }
 protocols {
@@ -148,12 +148,12 @@ service {
                 start {{ vars.dhcp_start }} {
                     stop {{ vars.dhcp_end }}
                 }
-                {% for i in secrets.static_dhcp -%}
+                {% for i in secrets.static_dhcp %}
                 static-mapping {{ i.name }} {
                     ip-address   {{ i.ip }}
                     mac-address  {{ i.mac }}
                 }
-                {% endfor -%}
+                {% endfor %}
             }
         }
         static-arp disable
@@ -164,20 +164,19 @@ service {
             cache-size 10000
             listen-on vtun0
             listen-on eth5
-            {% for i in vars.upstream_dns -%}
+            {% for i in vars.upstream_dns %}
             name-server {{ i }}
-            {% endfor -%}
-            {% for i in secrets.dns -%}
-            {% for d in i.dns -%}
+            {% endfor %}
+            {% for i in secrets.dns %}
+            {% for d in i.dns %}
             options address=/{{ d }}/{{ i.ip }}
-            {% endfor -%}
-            {% endfor -%}
-
-            {% for i in secrets.static_dhcp -%}
-            {% for d in i.dns -%}
+            {% endfor %}
+            {% endfor %}
+            {% for i in secrets.static_dhcp %}
+            {% for d in i.dns %}
             options address=/{{ d }}/{{ i.ip }}
-            {% endfor -%}
-            {% endfor -%}
+            {% endfor %}
+            {% endfor %}
         }
     }
     nat {
