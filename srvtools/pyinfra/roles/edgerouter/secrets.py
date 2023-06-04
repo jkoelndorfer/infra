@@ -18,6 +18,7 @@ from .model import (
     StaticDHCP,
     User,
     WireguardPeer,
+    WireguardPeers,
 )
 
 # In the previous Ansible configuration, many router secrets were retrieved
@@ -44,7 +45,9 @@ dns = [DNS.from_dict(name, d) for name, d in _s["dns"].items()]
 hosts = dict()
 port_forwards = [PortForward.from_dict(d) for d in _s["port_forwards"]]
 static_dhcp = [StaticDHCP.from_dict(name, d) for name, d in _s["static_dhcp"].items()]
-wireguard_peers = [WireguardPeer.from_dict(name, d) for name, d in _s["wireguard_peers"].items()]
+wireguard_peers = WireguardPeers(
+    [WireguardPeer.from_dict(name, d) for name, d in _s["wireguard_peers"].items()]
+)
 
 for d in dns:
     hosts[d.name] = Host.from_dns(d)

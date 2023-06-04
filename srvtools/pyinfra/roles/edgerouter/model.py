@@ -5,7 +5,8 @@ roles/edgerouter/model
 This module contains object models used in this role.
 """
 
-from typing import Any, Dict, List
+from itertools import chain
+from typing import Any, Dict, List, Iterable, Iterator, Set
 
 from passlib.hash import sha256_crypt
 
@@ -138,10 +139,11 @@ class WireguardPeer:
     """
     Represents a Wireguard peer.
     """
-    def __init__(self, name: str, pubkey: str, ip: str) -> None:
+    def __init__(self, name: str, pubkey: str, ip: str, network_groups: List[str]) -> None:
         self.name = name
         self.pubkey = pubkey
         self.ip = ip
+        self.network_groups = network_groups
 
     @classmethod
     def from_dict(cls, name: str, d: Dict[str, Any]) -> "WireguardPeer":
@@ -149,10 +151,34 @@ class WireguardPeer:
             name=name,
             pubkey=d["pubkey"],
             ip=d["ip"],
+            network_groups=d.get("network_groups", []),
         )
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.name}, {self.ip})"
+
+
+class WireguardPeers:
+    """
+    An iterable collection of WireguardPeer objects.
+    """
+    def __init__(self, peers: Iterable[WireguardPeer]) -> None:
+        self.peers = list(peers)
+
+    def __getitem__(self, idx: int) -> WireguardPeer:
+        return self.peers[idx]
+
+    def __iter__(self) -> Iterator[WireguardPeer]:
+        return iter(self.peers)
+
+    def in_network_group(self, network_group: str) -> Iterable[WireguardPeer]:
+        return filter(lambda p: network_group in p.network_groups, self.peers)
+
+    def network_groups(self) -> Set[str]:
+        """
+        Returns all network groups referenced by Wireguard peers in this collection.
+        """
+        return set(chain.from_iterable(p.network_groups for p in self.peers))
 
 
 class Host:
