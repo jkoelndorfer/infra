@@ -1,0 +1,15 @@
+#!/bin/bash
+
+function must() {
+	if ! "$@"; then
+		rc=10
+	fi
+}
+
+script_dir=$(dirname "$0")
+rc=0
+
+must "${script_dir}/lint"
+must "${script_dir}/typecheck"
+
+exit "$rc"

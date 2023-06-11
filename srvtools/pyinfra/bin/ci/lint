@@ -1,0 +1,8 @@
+#!/bin/bash
+
+script_dir=$(dirname "$0")
+source "${script_dir}/../lib.sh"
+cd "${script_dir}/../.."
+
+source_venv
+black --line-length 120 --check .
