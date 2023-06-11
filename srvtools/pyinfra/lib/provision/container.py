@@ -9,10 +9,10 @@ from os import path
 from shlex import quote as shell_quote
 from typing import Any, Tuple
 
-from pyinfra.operations import files
+from pyinfra.operations import files, server
 
 from ..model.container import Container
-from ..vars import ctr_files_dir
+from .. import vars
 
 ctr_env_dir = "/usr/local/etc/ctr-env"
 _container_inited = False
@@ -50,7 +50,7 @@ def container_env_file(ctr: Container) -> Tuple[str, Any]:
 
     op = files.template(
         name=f"[container] env file: {ctr.name}",
-        src=path.join(ctr_files_dir, "container-env.j2"),
+        src=path.join(vars.ctr_files_dir, "container-env.j2"),
         dest=ctr_env_file_path,
         user="root",
         group="root",
@@ -60,3 +60,31 @@ def container_env_file(ctr: Container) -> Tuple[str, Any]:
         _sudo=True,
     ) # pyright: ignore
     return (ctr_env_file_path, op)
+
+
+def container_user_group(ctr: Container) -> None:
+    """
+    Deploys the user and group for the given `ctr`.
+    """
+    addl_user_args = {
+        "group": vars.default_user_group,
+    }
+    if ctr.gid is not None:
+        group_name = ctr.name
+        addl_user_args["group"] = group_name
+        server.group(
+            name=f"[container] create group: {ctr.name}",
+            group=group_name,
+            gid=ctr.gid,
+            _sudo=True,
+        )  # pyright: ignore
+    if ctr.uid is not None:
+        user_name = ctr.name
+        server.user(
+            name=f"[container] create user: {ctr.name}",
+            user=user_name,
+            shell=vars.nologin_shell,
+            comment=f"{ctr.name} container user",
+            uid=ctr.uid,
+            _sudo=True,
+        )  # pyright: ignore

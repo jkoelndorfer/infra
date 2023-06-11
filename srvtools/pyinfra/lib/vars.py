@@ -20,6 +20,17 @@ files_dir = path.join(path.dirname(__file__), "files")
 ctr_files_dir = path.join(files_dir, "container")
 docker_files_dir = path.join(files_dir, "docker")
 
+# The group that created users should be added to if there is
+# not another group suitable for them.
+default_user_group = "nogroup"
+
+# The shell assigned to users who are not permitted to log in.
+nologin_shell = "/usr/sbin/nologin"
+
+# The home directory assigned to users who do not have a home directory.
+# systemd seems to use "/nonexistent" already, so let's use it, too.
+nonexistent_home_dir = "/nonexistent"
+
 timezone = "America/Chicago"
 systemd_unit_dir = "/etc/systemd/system"
 

@@ -9,7 +9,7 @@ from os import path
 
 from pyinfra.operations import files, systemd
 
-from .container import container_init, container_env_file
+from .container import container_init, container_env_file, container_user_group
 from ..model.container import Container, ContainerNetwork
 from .. import vars
 
@@ -80,6 +80,7 @@ def docker_ctr(ctr: Container) -> bool:
     docker_init()
 
     ctr_env_file, ctr_env_file_op = container_env_file(ctr)
+    container_user_group(ctr)
     systemd_service_name = f"{ctr.name}.service"
     ctr_systemd_unit = files.template(
         name=f"[docker] container systemd unit: {ctr.name}",
