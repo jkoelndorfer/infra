@@ -22,6 +22,7 @@ class _SwagNetworkManager:
     It tracks which networks are provided, so that we don't need to
     repeat them when we configure the SWAG container.
     """
+
     def __init__(self) -> None:
         # Each network requires three usable addresses:
         # * One for the network gateway

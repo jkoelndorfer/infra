@@ -9,7 +9,13 @@ from os import path
 
 from lib.aws import ssm_parameter_value
 from lib.model.container import Container, Volume as V
-from lib.vars import dns_zone, home_router_ip, miniserv_domains, miniserv_domains_by_service, timezone
+from lib.vars import (
+    dns_zone,
+    home_router_ip,
+    miniserv_domains,
+    miniserv_domains_by_service,
+    timezone,
+)
 from .containerlib import container_data_dir, swag_networks, web_networks
 
 
@@ -99,13 +105,12 @@ def vaultwarden_env():
         "WEBSOCKET_ENABLED": "true",
         "EXTENDED_LOGGING": "true",
         "LOG_FILE": "/log/vaultwarden.log",
-
         "SMTP_HOST": "smtp.sendgrid.net",
         "SMTP_PORT": "587",
         "SMTP_SECURITY": "starttls",
         "SMTP_FROM": f"noreply@{vaultwarden_domain}",
         "SMTP_USERNAME": "apikey",
-        "SMTP_PASSWORD": ssm_parameter_value('/prod/vaultwarden/sendgrid_api_key'),
+        "SMTP_PASSWORD": ssm_parameter_value("/prod/vaultwarden/sendgrid_api_key"),
         "SMTP_AUTH_MECHANISM": "Login",
     }
 
@@ -129,9 +134,7 @@ def swag_environment():
     # SWAG expects a comma-separated list of only the host,
     # i.e. instead of "miniserv.johnk.io,pihole.johnk.io",
     # SWAG needs "miniserv,pihole".
-    subdomains = ",".join(
-        s.replace(f".{dns_zone}", "") for s in miniserv_domains
-    )
+    subdomains = ",".join(s.replace(f".{dns_zone}", "") for s in miniserv_domains)
     return {
         "URL": dns_zone,
         "SUBDOMAINS": subdomains,
@@ -151,7 +154,11 @@ swag_container = Container.restarting(
     get_environment=swag_environment,
     volumes=[
         V("config", "/config"),
-        V(path.join(container_data_dir("vaultwarden"), "log"), "/vaultwarden-log", "ro"),
+        V(
+            path.join(container_data_dir("vaultwarden"), "log"),
+            "/vaultwarden-log",
+            "ro",
+        ),
     ],
     ports=[
         "80:80/tcp",

@@ -15,6 +15,7 @@ class CenturyLink:
     """
     Represents required CenturyLink configuration.
     """
+
     def __init__(self, pppoe_username: str, pppoe_password: str) -> None:
         self.pppoe_username = pppoe_username
         self.pppoe_password = pppoe_password
@@ -28,6 +29,7 @@ class DNS:
     """
     Represents one or more DNS entries pointing at an IP address.
     """
+
     def __init__(self, name: str, ip: str, dns: List[str]) -> None:
         self.name = name
         self.ip = ip
@@ -45,6 +47,7 @@ class DynDNSConfig:
     """
     Represents a dynamic DNS configuration.
     """
+
     def __init__(self, hostname: str, url: str, username: str, password: str) -> None:
         self.hostname = hostname
         self.url = url
@@ -63,7 +66,15 @@ class PortForward:
     """
     Represents a router port forward.
     """
-    def __init__(self, description: str, dest_ip: str, src_port: int, dest_port: int, protocol: str) -> None:
+
+    def __init__(
+        self,
+        description: str,
+        dest_ip: str,
+        src_port: int,
+        dest_port: int,
+        protocol: str,
+    ) -> None:
         self.description = description
         self.dest_ip = dest_ip
         self.src_port = src_port
@@ -82,6 +93,7 @@ class StaticDHCP:
     """
     Represents a static DHCP entry.
     """
+
     def __init__(self, name: str, mac: str, ip: str, dns: List[str]) -> None:
         self.name = name
         self.mac = mac
@@ -105,6 +117,7 @@ class StaticDHCPs:
     """
     An iterable collection of StaticDHCP objects.
     """
+
     def __init__(self, dhcps: Iterable[StaticDHCP]) -> None:
         self.dhcps = {d.name: d for d in dhcps}
 
@@ -119,6 +132,7 @@ class User:
     """
     Represents a router user configuration.
     """
+
     def __init__(self, username: str, full_name: str, password: str, hash_salt: str, pubkey: str) -> None:
         self.username = username
         self.password = password
@@ -153,6 +167,7 @@ class WireguardPeer:
     """
     Represents a Wireguard peer.
     """
+
     def __init__(self, name: str, pubkey: str, ip: str, network_groups: List[str]) -> None:
         self.name = name
         self.pubkey = pubkey
@@ -176,6 +191,7 @@ class WireguardPeers:
     """
     An iterable collection of WireguardPeer objects.
     """
+
     def __init__(self, peers: Iterable[WireguardPeer]) -> None:
         self.peers = list(peers)
 
@@ -199,6 +215,7 @@ class Host:
     """
     Represents a network host.
     """
+
     def __init__(self, name: str, ip: str, hostnames: List[str]) -> None:
         self.name = name
         self.ip = ip

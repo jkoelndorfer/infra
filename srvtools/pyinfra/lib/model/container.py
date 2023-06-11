@@ -96,6 +96,15 @@ class Container:
         Creates a `Container` with some sensible defaults for restarting.
         """
         return cls(
-            name, image, get_environment, volumes, networks,
-            ports, uid, gid, restart="always", max_restarts=3, restart_sec=3,
+            name,
+            image,
+            get_environment,
+            volumes,
+            networks,
+            ports,
+            uid,
+            gid,
+            restart="always",
+            max_restarts=3,
+            restart_sec=3,
         )

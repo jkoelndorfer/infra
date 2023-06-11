@@ -16,9 +16,7 @@ from .model.packages import PackageSet
 
 
 _ssm_client = None
-_pyinfra_root = path.abspath(
-    path.join(path.dirname(__file__), "..")
-)
+_pyinfra_root = path.abspath(path.join(path.dirname(__file__), ".."))
 _pyinfra_data_root = path.join(_pyinfra_root, "data")
 
 

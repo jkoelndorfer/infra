@@ -9,6 +9,7 @@ from pyinfra.operations import files
 
 from . import vars
 
+
 def build():
     files.directory(
         path=vars.wireguard_cache_dir,

@@ -207,9 +207,7 @@ def provision_service_containers():
 
 def provision_vaultwarden_backup():
     vaultwarden_files_dir = path.join(vars.files_dir, "vaultwarden")
-    vaultwarden_syncthing_data = path.join(
-        syncthing_data_volume_dir(), vaultwarden_container.name
-    )
+    vaultwarden_syncthing_data = path.join(syncthing_data_volume_dir(), vaultwarden_container.name)
     files.template(
         name="[vaultwarden] configure backup",
         src=path.join(vaultwarden_files_dir, "vaultwarden-backup.conf.j2"),

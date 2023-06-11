@@ -17,6 +17,7 @@ from .. import vars
 ctr_env_dir = "/usr/local/etc/ctr-env"
 _container_inited = False
 
+
 def container_init() -> None:
     global _container_inited
     if _container_inited:
@@ -54,11 +55,11 @@ def container_env_file(ctr: Container) -> Tuple[str, Any]:
         dest=ctr_env_file_path,
         user="root",
         group="root",
-        mode="0400", # env files may contain secrets, so restrict read access
+        mode="0400",  # env files may contain secrets, so restrict read access
         ctr_env=ctr_env,
         shell_quote=shell_quote,
         _sudo=True,
-    ) # pyright: ignore
+    )  # pyright: ignore
     return (ctr_env_file_path, op)
 
 

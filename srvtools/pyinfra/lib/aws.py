@@ -18,6 +18,7 @@ def _init_boto3():
     """
     import boto3
     import boto3.session
+
     global _boto_session
     global _boto_credentials
     if _boto_session is None:

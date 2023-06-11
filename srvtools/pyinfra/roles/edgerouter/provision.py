@@ -84,7 +84,10 @@ def provision_ipsets() -> None:
         provision_ipset(ipset_name, ipset_entries)
 
     for network_group in secrets.wireguard_peers.network_groups():
-        provision_ipset(network_group, (p.ip for p in secrets.wireguard_peers.in_network_group(network_group)))
+        provision_ipset(
+            network_group,
+            (p.ip for p in secrets.wireguard_peers.in_network_group(network_group)),
+        )
 
 
 def read_ips_from_file(path: str) -> Iterable[str]:

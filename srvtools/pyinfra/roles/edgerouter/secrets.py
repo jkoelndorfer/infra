@@ -9,6 +9,8 @@ import json
 import os
 import subprocess
 
+from typing import Dict
+
 import yaml
 
 from .model import (
@@ -53,7 +55,7 @@ def _get_most_recent_router_secrets(item):
     attachment_filename = secrets_attachment["fileName"]
     get_proc = subprocess.run(
         _bw_cmd("get", "attachment", attachment_filename, "--itemid", item["id"]),
-        capture_output=True
+        capture_output=True,
     )
     if get_proc.returncode != 0:
         raise Exception(f"failed getting bitwarden attachment {attachment_filename}")
@@ -98,15 +100,13 @@ admin = User(_a["username"], _a["full_name"], _a["password"], _a["hash_salt"], _
 centurylink = CenturyLink.from_dict(_s["centurylink"])
 dyndns = DynDNSConfig.from_dict(_s["dyndns"])
 dns = [DNS.from_dict(name, d) for name, d in _s["dns"].items()]
-hosts = dict()
+hosts: Dict[str, Host] = dict()
 port_forwards = [PortForward.from_dict(d) for d in _s["port_forwards"]]
 static_dhcp = StaticDHCPs(StaticDHCP.from_dict(name, d) for name, d in _s["static_dhcp"].items())
-wireguard_peers = WireguardPeers(
-    [WireguardPeer.from_dict(name, d) for name, d in _s["wireguard_peers"].items()]
-)
+wireguard_peers = WireguardPeers([WireguardPeer.from_dict(name, d) for name, d in _s["wireguard_peers"].items()])
 
-for d in dns:
-    hosts[d.name] = Host.from_dns(d)
+for _i in dns:
+    hosts[_i.name] = Host.from_dns(_i)
 
-for d in static_dhcp:
-    hosts[d.name] = Host.from_static_dhcp(d)
+for _j in static_dhcp:
+    hosts[_j.name] = Host.from_static_dhcp(_j)

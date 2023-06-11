@@ -1,7 +1,3 @@
-network = [
-    ("router0.lan", {"role": "edgerouter"})
-]
+network = [("router0.lan", {"role": "edgerouter"})]
 
-local_servers = [
-    ("miniserv.lan", {"role": "miniserv"})
-]
+local_servers = [("miniserv.lan", {"role": "miniserv"})]
