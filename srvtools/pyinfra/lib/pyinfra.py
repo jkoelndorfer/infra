@@ -44,32 +44,34 @@ def operation(f):
         name = kwargs.get("name", None)
         if name is not None:
             kwargs["name"] = self.name(name)
-        if not any_tags_selected(self.tags):
+        if not any_tags_selected(self.parent._tags):
             return
         return f(self, *args, **kwargs)
     return wrapped
 
 
-def _wth(
-    obj: T,
-    ctx: Optional[List[str]],
-    tags: Optional[List[str]],
-) -> T:
-    """
-    'with'
+class Pyinfra:
+    def __init__(self, ctx: Optional[List[str]] = None, tags: Optional[List[str]] = None) -> None:
+        self._ctxs: List[str] = ctx or []
+        self._tags: List[str] = tags or []
+        self.aws = PyinfraAws(self)
+        self.apt = PyinfraApt(self)
+        self.files = PyinfraFiles(self)
+        self.pacman = PyinfraPacman(self)
+        self.server = PyinfraServer(self)
+        self.systemd = PyinfraSystemd(self)
 
-    Clones `obj`, assigning additional context `ctx` and tags `tags`.
-    """
-    if ctx is not None:
-        ctx = [*obj.ctx, *ctx]  # type: ignore
-    else:
-        ctx = obj.ctx
+    def __enter__(self) -> "Pyinfra":
+        return self
 
-    if tags is not None:
-        tags = [*obj.tags, *tags]  # type: ignore
-    else:
-        tags = obj.tags
-    return obj.__class__(ctx, tags)
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        pass
+
+    def ctx(self, *ctxs: str) -> "Pyinfra":
+        return self.__class__(ctx=[*self._ctxs, *ctxs])
+
+    def tags(self, *tags: str) -> "Pyinfra":
+        return self.__class__(tags=[*self._tags, *tags])
 
 
 class PyinfraOperationWrapper:
@@ -79,29 +81,17 @@ class PyinfraOperationWrapper:
     Allows attaching additional context to operations.
     """
 
-    def __init__(
-        self,
-        ctx: Optional[List[str]] = None,
-        tags: Optional[List[str]] = None,
-    ) -> None:
-        self.ctx: List[str] = ctx or []
-        self.tags: List[str] = tags or []
+    def __init__(self, parent: "Pyinfra") -> None:
+        self.parent = parent
 
     def name(self, name: str) -> str:
         """
-        Provides an operation name in accordance with the current `ctx`.
+        Provides an operation name in accordance with the current contexts.
         """
         if self.name is not None:
-            return f"[{' / '.join(self.ctx)}] {name}"
+            return f"[{' / '.join(self.parent._ctxs)}] {name}"
         else:
             return name
-
-    def wth(
-        self,
-        ctx: Optional[List[str]] = None,
-        tags: Optional[List[str]] = None,
-    ) -> "PyinfraOperationWrapper":
-        return _wth(self, ctx, tags)
 
 
 class PyinfraAws(PyinfraOperationWrapper):
@@ -548,26 +538,3 @@ class PyinfraSystemd(PyinfraOperationWrapper):
             user_name=user_name,
             _sudo=_sudo,
         )  # pyright: ignore
-
-
-class Pyinfra:
-    def __init__(
-        self,
-        ctx:  Optional[List[str]] = None,
-        tags: Optional[List[str]] = None,
-    ) -> None:
-        self.ctx: List[str] = ctx or []
-        self.tags: List[str] = tags or []
-        self.aws = PyinfraAws(ctx, tags)
-        self.apt = PyinfraApt(ctx, tags)
-        self.files = PyinfraFiles(ctx, tags)
-        self.pacman = PyinfraPacman(ctx, tags)
-        self.server = PyinfraServer(ctx, tags)
-        self.systemd = PyinfraSystemd(ctx, tags)
-
-    def wth(
-        self,
-        ctx: Optional[List[str]] = None,
-        tags: Optional[List[str]] = None,
-    ) -> "Pyinfra":
-        return _wth(self, ctx, tags)
