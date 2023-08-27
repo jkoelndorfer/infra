@@ -70,7 +70,7 @@ def docker_network(pyinfra: Pyinfra, network: ContainerNetwork) -> bool:
     return network_systemd_unit.changed or network_systemd_service.changed
 
 
-def docker_ctr(pyinfra: Pyinfra, ctr: Container) -> bool:
+def docker_ctr(pyinfra: Pyinfra, ctr: Container, force_restart: bool = False) -> bool:
     """
     Runs the container given by `ctr` and configures `ctr` to start at system boot.
     """
@@ -97,7 +97,7 @@ def docker_ctr(pyinfra: Pyinfra, ctr: Container) -> bool:
         service=systemd_service_name,
         running=True,
         enabled=True,
-        restarted=ctr_systemd_unit.changed or ctr_env_file_op.changed,
+        restarted=ctr_systemd_unit.changed or ctr_env_file_op.changed or force_restart,
         daemon_reload=ctr_systemd_unit.changed,
     )
     return ctr_systemd_unit.changed or ctr_systemd_service.changed
