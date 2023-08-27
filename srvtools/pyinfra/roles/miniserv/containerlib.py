@@ -7,11 +7,14 @@ This module provides container helpers for the miniserv role.
 
 from ipaddress import ip_network, IPv4Network
 from os import path
-from typing import List
+from typing import Callable, List, Mapping, Optional, TypeVar
 
-from lib.model.container import ContainerNetwork
+from lib.model.container import Container, ContainerNetwork, Volume
+from lib.pyinfra import Pyinfra
 
 from .vars import data_dir
+
+T = TypeVar("T", bound="MiniservContainer")
 
 
 class _SwagNetworkManager:
@@ -47,11 +50,46 @@ class _SwagNetworkManager:
         return net
 
 
+class MiniservContainer(Container):
+    def __init__(
+        self: T,
+        name: str,
+        image: str,
+        get_environment: Callable[[], Mapping[str, str]],
+        deploy_config: Optional[Callable[[Pyinfra, T], bool]],
+        volumes: List[Volume],
+        networks: List[ContainerNetwork],
+        ports: List[str],
+        uid: Optional[int],
+        gid: Optional[int],
+        restart: str,
+        max_restarts: int,
+        restart_sec: int,
+    ) -> None:
+        super().__init__(
+            name=name,
+            image=image,
+            get_environment=get_environment,
+            deploy_config=deploy_config,
+            volumes=volumes,
+            networks=networks,
+            ports=ports,
+            uid=uid,
+            gid=gid,
+            restart=restart,
+            max_restarts=max_restarts,
+            restart_sec=restart_sec,
+        )
+        for v in volumes:
+            if not path.isabs(v.src):
+                v.src = path.join(self.data_dir, v.src)
+
+    @property
+    def data_dir(self) -> str:
+        return path.join(data_dir, self.name)
+
+
 _swag_network_manager = _SwagNetworkManager()
-
-
-def container_data_dir(name: str) -> str:
-    return path.join(data_dir, name)
 
 
 def swag_networks() -> List[ContainerNetwork]:
