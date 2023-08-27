@@ -10,9 +10,10 @@ from os import path
 from lib import vars as gvars
 from lib.aws import aws_access_key_id, aws_secret_access_key
 from lib.build.common import build_common, install_package_set
-from lib.build.docker import install_docker
+from lib.build.docker import install_docker, docker_pull
 from lib.pyinfra import Pyinfra
 
+from .containers import service_containers
 from . import vars
 
 
@@ -22,6 +23,7 @@ def build(p: Pyinfra):
     install_aqgo(p)
     install_docker(p)
     install_rclone(p)
+    pull_service_container_images(p)
 
 
 def install_aqgo(pyinfra: Pyinfra):
@@ -56,3 +58,8 @@ def install_rclone(pyinfra: Pyinfra):
         name="install package",
         src=rclone_deb_path,
     )
+
+
+def pull_service_container_images(pyinfra: Pyinfra):
+    for c in service_containers:
+        docker_pull(pyinfra, c)
