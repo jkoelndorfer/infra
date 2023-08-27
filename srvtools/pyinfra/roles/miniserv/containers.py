@@ -3,12 +3,17 @@ roles/miniserv/containers
 -------------------------
 
 This module defines the containers that run on miniserv.
+
+Note: containers defined here have volumes whose sources
+are not absolute paths. These are transformed into absolute
+paths during provisioning.
 """
 
 from os import path
 
 from lib.aws import ssm_parameter_value
-from lib.model.container import Container, Volume as V
+from lib.model.container import Volume as V, VolumeSubdir as SD
+from lib.pyinfra import Pyinfra
 from lib.vars import (
     dns_zone,
     home_router_ip,
@@ -16,7 +21,8 @@ from lib.vars import (
     miniserv_domains_by_service,
     timezone,
 )
-from .containerlib import container_data_dir, swag_networks, web_networks
+from .containerlib import MiniservContainer, swag_networks, web_networks
+from .vars import files_dir
 
 
 def pihole_env():
@@ -28,13 +34,24 @@ def pihole_env():
     }
 
 
-pihole_container = Container.restarting(
+pihole_container = MiniservContainer.restarting(
     name="pihole",
     image="docker.io/pihole/pihole:v5.8.1",
     get_environment=pihole_env,
+    deploy_config=None,
     volumes=[
-        V("pi-hole", "/etc/pihole"),
-        V("dnsmasq", "/etc/dnsmasq.d"),
+        V(
+            name="pi-hole",
+            src="pi-hole",
+            dest="/etc/pihole",
+            mode="0755",
+        ),
+        V(
+            name="dnsmasq",
+            src="dnsmasq",
+            dest="/etc/dnsmasq.d",
+            mode="0755",
+        ),
     ],
     networks=web_networks("pihole"),
     ports=[
@@ -51,13 +68,26 @@ def syncthing_env():
     }
 
 
-syncthing_container = Container.restarting(
+syncthing_container = MiniservContainer.restarting(
     name="syncthing",
     image="docker.io/linuxserver/syncthing:v1.21.0-ls83",
     get_environment=syncthing_env,
+    deploy_config=None,
     volumes=[
-        V("config", "/config"),
-        V("data", "/data"),
+        V(
+            name="config",
+            src="config",
+            dest="/config",
+            user="ctr",
+            group="ctr",
+        ),
+        V(
+            name="data",
+            src="data",
+            dest="/data",
+            user="ctr",
+            group="ctr",
+        ),
     ],
     networks=web_networks("syncthing"),
     ports=[
@@ -75,12 +105,19 @@ def unifi_env():
     }
 
 
-unifi_container = Container.restarting(
+unifi_container = MiniservContainer.restarting(
     name="unifi",
     image="docker.io/linuxserver/unifi-controller:7.3.76-ls174",
     get_environment=unifi_env,
+    deploy_config=None,
     volumes=[
-        V("config", "/config"),
+        V(
+            name="config",
+            src="config",
+            dest="/config",
+            user="ctr",
+            group="ctr",
+        ),
     ],
     networks=web_networks("unifi"),
     ports=[
@@ -115,13 +152,26 @@ def vaultwarden_env():
     }
 
 
-vaultwarden_container = Container.restarting(
+vaultwarden_container = MiniservContainer.restarting(
     name="vaultwarden",
     image="docker.io/vaultwarden/server:1.28.1",
     get_environment=vaultwarden_env,
+    deploy_config=None,
     volumes=[
-        V("data", "/data"),
-        V("log", "/log"),
+        V(
+            name="data",
+            src="data",
+            dest="/data",
+            user="ctr",
+            group="ctr",
+        ),
+        V(
+            name="log",
+            src="log",
+            dest="/log",
+            user="ctr",
+            group="ctr",
+        ),
     ],
     networks=web_networks("vaultwarden"),
     ports=[],
@@ -145,19 +195,68 @@ def swag_environment():
     }
 
 
+def swag_config(pyinfra: Pyinfra, ctr: Container) -> bool:
+    """
+    Provisions configuration for the SWAG container.
+
+    Returns `True` if any configuration has changed, `False` otherwise.
+    """
+    swag_files_dir = path.join(files_dir, "swag")
+    config_dir = path.join(ctr.volume_named("config").src, "nginx", "proxy-confs")
+    swag_configs = [
+        "pihole",
+        "syncthing",
+        "unifi-controller",
+        "vaultwarden",
+    ]
+
+    p = pyinfra.ctx("swag")
+    ops = []
+    for c in swag_configs:
+        config_filename = f"{c}.subdomain.conf"
+        op = p.files.put(
+            name=f"deploy swag config: {c}",
+            src=path.join(swag_files_dir, config_filename),
+            dest=path.join(config_dir, config_filename),
+            user="root",
+            group="root",
+            mode="0444",
+        )
+        ops.append(op)
+    return any(o.changed for o in ops)
+
+
 # NOTE: It's important that this container is defined _last_,
 # so that swag_networks() can return all the requisite networks
 # defined by previous containers.
-swag_container = Container.restarting(
+swag_container = MiniservContainer.restarting(
     name="swag",
     image="docker.io/linuxserver/swag:1.31.0-ls155",
     get_environment=swag_environment,
+    deploy_config=swag_config,
     volumes=[
-        V("config", "/config"),
         V(
-            path.join(container_data_dir("vaultwarden"), "log"),
-            "/vaultwarden-log",
-            "ro",
+            name="config",
+            src="config",
+            dest="/config",
+            subdirs=[
+                SD(
+                    path="nginx",
+                    user="ctr",
+                    group="ctr",
+                ),
+                SD(
+                    path="nginx/proxy-confs",
+                    user="ctr",
+                    group="ctr",
+                ),
+            ],
+        ),
+        V(
+            name="vaultwarden-log",
+            src=path.join(container_data_dir("vaultwarden"), "log"),
+            dest="/vaultwarden-log",
+            bind_mode="ro",
         ),
     ],
     ports=[
