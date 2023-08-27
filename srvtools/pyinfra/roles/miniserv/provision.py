@@ -215,6 +215,15 @@ def provision_vaultwarden_backup(pyinfra: Pyinfra):
             vaultwarden_syncthing_dir=vaultwarden_syncthing_data,
         )
 
+        p.files.put(
+            name="deploy backup script",
+            src=path.join(vaultwarden_files_dir, "vaultwarden-backup"),
+            dest=path.join(gvars.systemd_unit_dir, "vaultwarden-backup"),
+            user="root",
+            group="root",
+            mode="0555",
+        )
+
         backup_service = p.files.put(
             name="configure backup service",
             src=path.join(vaultwarden_files_dir, "vaultwarden-backup.service"),
