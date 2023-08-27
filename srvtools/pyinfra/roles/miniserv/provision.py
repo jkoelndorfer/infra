@@ -51,11 +51,31 @@ def vaultwarden_data_volume_dir() -> str:
 
 
 def provision(p: Pyinfra):
+    correct_ctr_source_paths()
     provision_aqgo(p)
     provision_container_networks(p)
     provision_service_containers(p)
     provision_rclone_backup(p)
     provision_vaultwarden_backup(p)
+
+
+def correct_ctr_source_paths():
+    """
+    For container volumes that are "relative", automatically
+    ensure they are placed under that container's designated
+    data directory.
+
+    This is only implied for miniserv because Docker (and by
+    extension, probably Podman), allow for named volumes
+    when the source is not a path.
+
+    In miniserv's case, we always want our container data
+    to live in a known location on the filesystem.
+    """
+    for ctr in service_containers:
+        for v in ctr.volumes:
+            if not path.isabs(v.src):
+                v.src = path.join(container_data_dir(ctr.name), v.src)
 
 
 def provision_aqgo(pyinfra: Pyinfra):
@@ -181,19 +201,6 @@ def provision_rclone_backup(pyinfra: Pyinfra):
 
 def provision_service_containers(p: Pyinfra):
     for ctr in service_containers:
-        for v in ctr.volumes:
-            # For container volumes that are "relative", automatically
-            # ensure they are placed under that container's designated
-            # data directory.
-            #
-            # This is only implied for miniserv because Docker (and by
-            # extension, probably Podman), allow for named volumes
-            # when the source is not a path.
-            #
-            # In miniserv's case, we always want our container data
-            # to live in a known location on the filesystem.
-            if not path.isabs(v.src):
-                v.src = path.join(container_data_dir(ctr.name), v.src)
         docker_ctr(p, ctr)
 
 
