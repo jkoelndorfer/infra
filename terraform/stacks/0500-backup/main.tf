@@ -1,3 +1,8 @@
+resource "aws_ssm_parameter" "backup_bucket" {
+  name  = "/${local.env.name}/backup/bucket"
+  type  = "String"
+  value = data.terraform_remote_state.backup_persistent.outputs.s3_bucket.bucket
+}
 resource "aws_ssm_parameter" "syncthing_rclone_dest" {
   name  = "/${local.env.name}/backup/rclone_dest"
   type  = "String"
