@@ -1,6 +1,6 @@
 """
-roles/miniserv/build
---------------------
+roles/miniserv/provision
+------------------------
 
 This module contains provision logic for the miniserv role.
 """
