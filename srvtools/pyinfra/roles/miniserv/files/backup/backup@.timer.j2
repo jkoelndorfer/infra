@@ -3,7 +3,7 @@ Description=Backup Timer
 After=network.target
 
 [Timer]
-OnCalendar=04:00
+OnCalendar={{ backup_time }}
 AccuracySec=10m
 Persistent=true
 

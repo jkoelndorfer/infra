@@ -15,6 +15,7 @@ from lib import vars as gvars
 from lib.pyinfra import Pyinfra
 from .containers import service_containers, syncthing_container, vaultwarden_container
 from .containerlib import swag_networks
+from . import backup
 from . import vars
 
 
@@ -22,7 +23,7 @@ def provision(p: Pyinfra):
     provision_aqgo(p)
     provision_container_networks(p)
     provision_service_containers(p)
-    provision_rclone_backup(p)
+    provision_rclone_backups(p)
     provision_vaultwarden_backup(p)
 
 
@@ -69,7 +70,7 @@ def provision_container_networks(pyinfra: Pyinfra):
         docker_network(pyinfra, network)
 
 
-def provision_rclone_backup(pyinfra: Pyinfra):
+def provision_rclone_backups(pyinfra: Pyinfra):
     backup_files_dir = path.join(vars.files_dir, "backup")
     backup_config_dir = "/etc/backup"
     p = pyinfra.ctx("rclone")
@@ -104,47 +105,50 @@ def provision_rclone_backup(pyinfra: Pyinfra):
         aws_secret_access_key=aws_secret_access_key(),
     )
 
-    p.files.template(
-        name="syncthing config",
-        src=path.join(backup_files_dir, "syncthing.conf.j2"),
-        dest=path.join(backup_config_dir, "syncthing.conf"),
-        user="root",
-        group="root",
-        mode="0444",
-        quote=quote,
-        backup_working_dir=syncthing_container.data_dir,
-        backup_src=vars.syncthing_backup_src,
-        backup_dest=ssm_parameter_value("/prod/backup/rclone_dest"),
-        bw_limit=vars.syncthing_bw_limit,
-    )
+    for b in backup.backups:
+        p.files.template(
+            name=f"{b.container_name} backup config",
+            src=path.join(backup_files_dir, f"backup.conf.j2"),
+            dest=path.join(backup_config_dir, f"{b.container_name}.conf"),
+            user="root",
+            group="root",
+            mode="0444",
+            quote=quote,
+            container_name=b.container_name,
+            backup_working_dir=b.working_directory,
+            backup_src=b.src,
+            backup_dest=b.dest,
+            bw_limit=backup.bw_limit,
+        )
 
-    backup_service = p.files.put(
-        name="backup service systemd unit",
-        src=path.join(backup_files_dir, "backup.service"),
-        dest=path.join(gvars.systemd_unit_dir, "backup.service"),
-        user="root",
-        group="root",
-        mode="0444",
-    )
+        backup_service = p.files.template(
+            name="backup service systemd unit",
+            src=path.join(backup_files_dir, "backup@.service"),
+            dest=path.join(gvars.systemd_unit_dir, "backup@.service"),
+            user="root",
+            group="root",
+            mode="0444",
+            backup_time=b.time,
+        )
 
-    backup_timer = p.files.template(
-        name="backup timer systemd unit",
-        src=path.join(backup_files_dir, "backup.timer.j2"),
-        dest=path.join(gvars.systemd_unit_dir, "backup.timer"),
-        user="root",
-        group="root",
-        mode="0444",
-        backup_time=vars.syncthing_backup_time,
-    )
+        backup_timer = p.files.template(
+            name="backup timer systemd unit",
+            src=path.join(backup_files_dir, "backup@.timer.j2"),
+            dest=path.join(gvars.systemd_unit_dir, f"backup@{b.container_name}.timer"),
+            user="root",
+            group="root",
+            mode="0444",
+            backup_time=b.time,
+        )
 
-    p.systemd.service(
-        name="start backup timer",
-        service="backup.timer",
-        running=True,
-        enabled=True,
-        restarted=backup_timer.changed,
-        daemon_reload=backup_service.changed or backup_timer.changed,
-    )
+        p.systemd.service(
+            name="start backup timer",
+            service=f"backup@{b.container_name}.timer",
+            running=True,
+            enabled=True,
+            restarted=backup_timer.changed,
+            daemon_reload=backup_service.changed or backup_timer.changed,
+        )
 
 
 def provision_service_containers(p: Pyinfra):
