@@ -45,7 +45,7 @@ def container_env_file(pyinfra: Pyinfra, ctr: Container) -> Tuple[str, Any]:
         ctr_env["PUID"] = str(ctr.uid)
     if ctr.gid is not None:
         ctr_env["PGID"] = str(ctr.gid)
-    ctr_env.update({k: str(v) for k, v in ctr.get_environment().items()})
+    ctr_env.update({k: str(v) for k, v in ctr.get_environment(ctr).items()})
 
     p = pyinfra.ctx("container")
     op = p.files.template(

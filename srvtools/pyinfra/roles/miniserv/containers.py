@@ -10,6 +10,7 @@ paths during provisioning.
 """
 
 from os import path
+from typing import Mapping
 
 from lib.aws import ssm_parameter_value
 from lib.model.container import Volume as V, VolumeSubdir as SD
@@ -26,6 +27,7 @@ from .vars import files_dir
 
 
 def pihole_env():
+def pihole_env(ctr: MiniservContainer):
     return {
         "TZ": timezone,
         "DNS1": home_router_ip,
@@ -62,7 +64,7 @@ pihole_container = MiniservContainer.restarting(
 )
 
 
-def syncthing_env():
+def syncthing_env(ctr: MiniservContainer):
     return {
         "TZ": timezone,
     }
@@ -99,7 +101,7 @@ syncthing_container = MiniservContainer.restarting(
 )
 
 
-def unifi_env():
+def unifi_env(ctr: MiniservContainer):
     return {
         "TZ": timezone,
     }
@@ -132,7 +134,7 @@ unifi_container = MiniservContainer.restarting(
 )
 
 
-def vaultwarden_env():
+def vaultwarden_env(ctr: MiniservContainer):
     vaultwarden_domain = miniserv_domains_by_service["vaultwarden"]
     return {
         "DOMAIN": f"https://{vaultwarden_domain}",
@@ -180,7 +182,7 @@ vaultwarden_container = MiniservContainer.restarting(
 )
 
 
-def swag_environment():
+def swag_environment(ctr: MiniservContainer):
     # SWAG expects a comma-separated list of only the host,
     # i.e. instead of "miniserv.johnk.io,pihole.johnk.io",
     # SWAG needs "miniserv,pihole".
