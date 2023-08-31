@@ -190,7 +190,8 @@ def swag_environment():
         "SUBDOMAINS": subdomains,
         "ONLY_SUBDOMAINS": "true",
         "EMAIL": f"letsencrypt@{dns_zone}",
-        "VALIDATION": "http",  # TODO: Use DNS-based validation
+        "VALIDATION": "dns",
+        "DNSPLUGIN": "route53",
         "STAGING": "false",
     }
 
@@ -202,7 +203,9 @@ def swag_config(pyinfra: Pyinfra, ctr: MiniservContainer) -> bool:
     Returns `True` if any configuration has changed, `False` otherwise.
     """
     swag_files_dir = path.join(files_dir, "swag")
-    config_dir = path.join(ctr.volume_named("config").src, "nginx", "proxy-confs")
+    cfg_volume_src = ctr.volume_named("config").src
+    proxy_confs_dir = path.join(cfg_volume_src, "nginx", "proxy-confs")
+    dns_conf_dir = path.join(cfg_volume_src, "dns-conf")
     swag_configs = [
         "pihole",
         "syncthing",
@@ -217,12 +220,24 @@ def swag_config(pyinfra: Pyinfra, ctr: MiniservContainer) -> bool:
         op = p.files.put(
             name=f"deploy swag config: {c}",
             src=path.join(swag_files_dir, config_filename),
-            dest=path.join(config_dir, config_filename),
+            dest=path.join(proxy_confs_dir, config_filename),
             user="root",
             group="root",
             mode="0444",
         )
         ops.append(op)
+
+    op = p.files.template(
+        name="deploy SWAG route53 dns config",
+        src=path.join(swag_files_dir, "route53.ini.j2"),
+        dest=path.join(dns_conf_dir, "route53.ini"),
+        user="root",
+        group="root",
+        mode="0400",
+        aws_access_key_id=ssm_parameter_value("/prod/local_ssl/aws_iam_access_key_id"),
+        aws_secret_access_key=ssm_parameter_value("/prod/local_ssl/aws_iam_secret_access_key"),
+    )
+    ops.append(op)
     return any(o.changed for o in ops)
 
 
