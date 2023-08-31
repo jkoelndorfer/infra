@@ -154,7 +154,7 @@ def vaultwarden_env():
 
 vaultwarden_container = MiniservContainer.restarting(
     name="vaultwarden",
-    image="docker.io/vaultwarden/server:1.28.1",
+    image="docker.io/vaultwarden/server:1.29.1",
     get_environment=vaultwarden_env,
     deploy_config=None,
     volumes=[
