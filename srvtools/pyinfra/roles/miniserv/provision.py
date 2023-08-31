@@ -56,7 +56,7 @@ def provision_aqgo(pyinfra: Pyinfra):
 
     p.systemd.service(
         name="start aqgo",
-        service="backup.timer",
+        service="aqgo.service",
         running=True,
         restarted=aqgo_env.changed or aqgo_systemd_unit.changed,
         enabled=True,
