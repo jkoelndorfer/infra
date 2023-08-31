@@ -55,7 +55,7 @@ class MiniservContainer(Container):
         self: T,
         name: str,
         image: str,
-        get_environment: Callable[[], Mapping[str, str]],
+        get_environment: Callable[[T], Mapping[str, str]],
         deploy_config: Optional[Callable[[Pyinfra, T], bool]],
         volumes: List[Volume],
         networks: List[ContainerNetwork],
