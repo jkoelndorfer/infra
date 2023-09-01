@@ -26,7 +26,76 @@ from .containerlib import MiniservContainer, swag_networks, web_networks
 from .vars import files_dir
 
 
-def pihole_env():
+def photoprism_env(ctr: MiniservContainer) -> Mapping[str, str]:
+    return {
+        "PHOTOPRISM_SITE_URL": "https://photoprism.johnk.io",
+
+        # This account should *only* be used during initial setup.
+        # If the credentials are required, log in to miniserv and
+        # run `docker inspect` to get them.
+        "PHOTOPRISM_ADMIN_USER": ssm_parameter_value("/prod/photoprism/username"),
+        "PHOTOPRISM_ADMIN_PASSWORD": ssm_parameter_value("/prod/photoprism/password"),
+
+        "PHOTOPRISM_DISABLE_CHOWN": "true",
+        "PHOTOPRISM_INIT": "",
+
+        # SWAG sits in front of Photoprism; all non-encrypted traffic is local
+        "PHOTOPRISM_DISABLE_TLS": "true",
+        "PHOTOPRISM_DEFAULT_TLS": "false",
+
+        # It's a low-traffic installation of Photoprism. :-)
+        "PHOTOPRISM_DATABASE_DRIVER": "sqlite",
+
+        "PHOTOPRISM_DISABLE_TENSORFLOW": "true",
+
+        "PHOTOPRISM_UID": str(ctr.uid),
+        "PHOTOPRISM_GID": str(ctr.gid),
+    }
+
+
+photoprism_container = MiniservContainer.restarting(
+    name="photoprism",
+    image="docker.io/photoprism/photoprism:230719-ce",
+    get_environment=photoprism_env,
+    deploy_config=None,
+    volumes=[
+        V(
+            name="import",
+            src="import",
+            dest="/photoprism/import",
+            mode="0750",
+            user="ctr",
+            group="ctr",
+        ),
+        V(
+            name="originals",
+            src="originals",
+            dest="/photoprism/originals",
+            mode="0750",
+            user="ctr",
+            group="ctr",
+        ),
+        V(
+            name="storage",
+            src="storage",
+            dest="/photoprism/storage",
+            mode="0750",
+            user="ctr",
+            group="ctr",
+        ),
+    ],
+    networks=web_networks("photoprism"),
+    ports=[],
+
+    # Photoprism only supports a limited range of UIDs & GIDs.
+    # See their docker-compose file [1].
+    #
+    # [1]: https://dl.photoprism.app/docker/docker-compose.yml
+    uid=1050,
+    gid=1050,
+)
+
+
 def pihole_env(ctr: MiniservContainer):
     return {
         "TZ": timezone,
@@ -209,6 +278,7 @@ def swag_config(pyinfra: Pyinfra, ctr: MiniservContainer) -> bool:
     proxy_confs_dir = path.join(cfg_volume_src, "nginx", "proxy-confs")
     dns_conf_dir = path.join(cfg_volume_src, "dns-conf")
     swag_configs = [
+        "photoprism",
         "pihole",
         "syncthing",
         "unifi-controller",
@@ -286,6 +356,7 @@ swag_container = MiniservContainer.restarting(
 )
 
 service_containers = [
+    photoprism_container,
     pihole_container,
     swag_container,
     syncthing_container,

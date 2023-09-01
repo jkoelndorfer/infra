@@ -51,6 +51,7 @@ home_router_ip_cidr = f"{home_router_ip}/{home_lan_network.prefixlen}"
 dns_zone = "johnk.io"
 miniserv_domains_by_service = {
     "miniserv": f"miniserv.{dns_zone}",
+    "photoprism": f"photoprism.{dns_zone}",
     "pihole": f"pihole.{dns_zone}",
     "syncthing": f"syncthing.{dns_zone}",
     "unifi": f"unifi.{dns_zone}",

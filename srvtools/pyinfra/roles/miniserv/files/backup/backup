@@ -104,11 +104,15 @@ EOF
         printf 'fatal: BACKUP_SRC "%s" does not exist\n' "$BACKUP_SRC" >&2
         return 1
     fi
+
+    # "storage/cache" is used by PhotoPrism. It's cache, so we should not back it up.
+    # TODO: Allow configurable excludes by service.
     exec_v rclone -v -l \
         --bwlimit "$BW_LIMIT" \
         --checksum \
         --stats=0 \
         --delete-during \
+        --exclude 'storage/cache' \
         --exclude '**/.stversions/**' \
         --exclude '**/.syncthing.*.tmp' \
         --config "$rclone_config_path" \

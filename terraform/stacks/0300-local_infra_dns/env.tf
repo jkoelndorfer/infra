@@ -6,6 +6,7 @@ locals {
       ]
       miniserv_private_records = [
         "miniserv",
+        "photoprism",
         "pihole",
         "syncthing",
         "unifi",
@@ -19,6 +20,7 @@ locals {
       ]
       miniserv_private_records = [
         "miniserv",
+        "photoprism",
         "pihole",
         "syncthing",
         "unifi",
