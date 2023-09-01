@@ -16,14 +16,14 @@ bw_limit = f"00:00,off 07:00,{ limited_bw }"
 
 backups = [
     Backup(
-        name="photoprism",
+        container_name="photoprism",
         time="02:00",
         working_directory=photoprism_container.data_dir,
         src="/",
         dest=f"s3:{bucket}/photoprism/rclone/",
     ),
     Backup(
-        name="syncthing",
+        container_name="syncthing",
         time="04:00",
         working_directory=syncthing_container.data_dir,
         src="data/",

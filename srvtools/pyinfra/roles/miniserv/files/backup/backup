@@ -15,7 +15,7 @@
 set -o pipefail
 
 backup_config_path=$1
-restart_syncthing=0
+restart_container=0
 
 RC_OK=0
 RC_INVALID_ARGS=1
@@ -45,12 +45,12 @@ if [[ -z "$AWS_DEFAULT_REGION" ]]; then
     export AWS_DEFAULT_REGION='us-east-1'
 fi
 
-unset BACKUP_WORKING_DIR BACKUP_SRC BACKUP_DEST BW_LIMIT
+unset CONTAINER_NAME BACKUP_WORKING_DIR BACKUP_SRC BACKUP_DEST BW_LIMIT
 if ! source "$backup_config_path"; then
     printf 'error: failed reading config: %s\n' "$backup_config_path" >&2
     exit "$RC_BAD_CONFIG"
 fi
-for reqd_param in BACKUP_WORKING_DIR BACKUP_SRC BACKUP_DEST BW_LIMIT; do
+for reqd_param in CONTAINER_NAME BACKUP_WORKING_DIR BACKUP_SRC BACKUP_DEST BW_LIMIT; do
     if [[ -z "${!reqd_param}" ]]; then
         printf 'error: missing required config parameter: %s\n' "$reqd_param" >&2
         exit "$RC_BAD_CONFIG"
@@ -69,8 +69,8 @@ function cleanup() {
     if [[ -n "$backup_report_file" ]]; then
         rm -f "$backup_report_file"
     fi
-    if [[ "$restart_syncthing" == '1' ]]; then
-        exec_v docker start syncthing
+    if [[ "$restart_container" == '1' ]]; then
+        exec_v docker start "$CONTAINER_NAME"
     fi
 }
 
@@ -94,8 +94,8 @@ EOF
     printf '%s\n' "$rclone_config" > "$rclone_config_path"
 
     printf 'backup start @ %s\n' "$(date --rfc-3339=seconds)"
-    exec_v docker stop syncthing 2>&1
-    restart_syncthing=1
+    exec_v docker stop "$CONTAINER_NAME" 2>&1
+    restart_container=1
     if ! exec_v cd "$BACKUP_WORKING_DIR"; then
         printf 'fatal: unable to change to BACKUP_WORKING_DIR "%s"\n' "$BACKUP_WORKING_DIR" >&2
         return 1
@@ -113,8 +113,8 @@ EOF
         --exclude '**/.syncthing.*.tmp' \
         --config "$rclone_config_path" \
         sync "$BACKUP_SRC" "$BACKUP_DEST" 2>&1
-    exec_v docker start syncthing 2>&1
-    restart_syncthing=0
+    exec_v docker start "$CONTAINER_NAME" 2>&1
+    restart_container=0
     printf 'backup end @ %s\n' "$(date --rfc-3339=seconds)"
 }
 
@@ -125,7 +125,7 @@ function send_backup_report() {
     local backup_report_topic_arn=$(/opt/srvtools/aws/ssm-param --name "/$ENV/backup/backup_sns_topic_arn")
     aws sns publish \
         --topic-arn "$backup_report_topic_arn" \
-        --subject "Backup Report $backup_date" \
+        --subject "Backup Report: $CONTAINER_NAME $backup_date" \
         --message "$report"
 }
 

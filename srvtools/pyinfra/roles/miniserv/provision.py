@@ -107,14 +107,15 @@ def provision_rclone_backups(pyinfra: Pyinfra):
 
     for b in backup.backups:
         p.files.template(
-            name=f"{b.name} backup config",
+            name=f"{b.container_name} backup config",
             src=path.join(backup_files_dir, f"backup.conf.j2"),
-            dest=path.join(backup_config_dir, f"{b.name}.conf"),
+            dest=path.join(backup_config_dir, f"{b.container_name}.conf"),
             user="root",
             group="root",
             mode="0444",
             quote=quote,
-            backup_working_dir=syncthing_container.data_dir,
+            container_name=b.container_name,
+            backup_working_dir=b.working_directory,
             backup_src=b.src,
             backup_dest=b.dest,
             bw_limit=backup.bw_limit,
@@ -133,7 +134,7 @@ def provision_rclone_backups(pyinfra: Pyinfra):
         backup_timer = p.files.template(
             name="backup timer systemd unit",
             src=path.join(backup_files_dir, "backup@.timer.j2"),
-            dest=path.join(gvars.systemd_unit_dir, f"backup@{b.name}.timer"),
+            dest=path.join(gvars.systemd_unit_dir, f"backup@{b.container_name}.timer"),
             user="root",
             group="root",
             mode="0444",
@@ -142,7 +143,7 @@ def provision_rclone_backups(pyinfra: Pyinfra):
 
         p.systemd.service(
             name="start backup timer",
-            service=f"backup@{b.name}.timer",
+            service=f"backup@{b.container_name}.timer",
             running=True,
             enabled=True,
             restarted=backup_timer.changed,
