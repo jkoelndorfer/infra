@@ -19,7 +19,7 @@ backups = [
         container_name="photoprism",
         time="02:00",
         working_directory=photoprism_container.data_dir,
-        src="/",
+        src="./",
         dest=f"s3:{bucket}/photoprism/rclone/",
     ),
     Backup(
