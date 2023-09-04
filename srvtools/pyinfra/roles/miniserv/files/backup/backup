@@ -70,7 +70,7 @@ function cleanup() {
         rm -f "$backup_report_file"
     fi
     if [[ "$restart_container" == '1' ]]; then
-        exec_v docker start "$CONTAINER_NAME"
+        exec_v systemctl start "$CONTAINER_NAME"
     fi
 }
 
@@ -94,7 +94,7 @@ EOF
     printf '%s\n' "$rclone_config" > "$rclone_config_path"
 
     printf 'backup start @ %s\n' "$(date --rfc-3339=seconds)"
-    exec_v docker stop "$CONTAINER_NAME" 2>&1
+    exec_v systemctl stop "$CONTAINER_NAME" 2>&1
     restart_container=1
     if ! exec_v cd "$BACKUP_WORKING_DIR"; then
         printf 'fatal: unable to change to BACKUP_WORKING_DIR "%s"\n' "$BACKUP_WORKING_DIR" >&2
@@ -117,7 +117,7 @@ EOF
         --exclude '**/.syncthing.*.tmp' \
         --config "$rclone_config_path" \
         sync "$BACKUP_SRC" "$BACKUP_DEST" 2>&1
-    exec_v docker start "$CONTAINER_NAME" 2>&1
+    exec_v systemctl start "$CONTAINER_NAME" 2>&1
     restart_container=0
     printf 'backup end @ %s\n' "$(date --rfc-3339=seconds)"
 }
