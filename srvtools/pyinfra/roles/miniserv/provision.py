@@ -101,8 +101,8 @@ def provision_rclone_backups(pyinfra: Pyinfra):
         mode="0400",
         quote=quote,
         aws_default_region=gvars.aws_default_region,
-        aws_access_key_id=aws_access_key_id(),
-        aws_secret_access_key=aws_secret_access_key(),
+        aws_access_key_id=ssm_parameter_value("/prod/backup/creds/rclone/id"),
+        aws_secret_access_key=ssm_parameter_value("/prod/backup/creds/rclone/secret"),
     )
 
     for b in backup.backups:
