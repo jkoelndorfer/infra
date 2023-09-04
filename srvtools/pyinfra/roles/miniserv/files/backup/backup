@@ -112,7 +112,7 @@ EOF
         --checksum \
         --stats=0 \
         --delete-during \
-        --exclude 'storage/cache' \
+        --exclude 'storage/cache/**' \
         --exclude '**/.stversions/**' \
         --exclude '**/.syncthing.*.tmp' \
         --config "$rclone_config_path" \
