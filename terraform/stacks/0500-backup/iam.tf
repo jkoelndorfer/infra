@@ -95,6 +95,7 @@ data "aws_iam_policy_document" "rclone" {
     resources = [
       local.backup_bucket,
       "${local.backup_bucket}/syncthing/rclone/*",
+      "${local.backup_bucket}/photoprism/rclone/*",
     ]
   }
 
