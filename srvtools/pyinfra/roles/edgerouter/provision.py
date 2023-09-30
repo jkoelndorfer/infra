@@ -121,7 +121,7 @@ def provision_dyndns(pyinfra: Pyinfra, config: DynDNSConfig) -> None:
         dest=pjoin(dyndns_config_dir, "dyndns.sh"),
         user=vars.config_user,
         group=vars.config_group,
-        mode="0440",
+        mode="0550",
     )
 
 
