@@ -75,7 +75,7 @@ resource "aws_lambda_function" "dyndns" {
   role          = aws_iam_role.dyndns.arn
   description   = "Provides dynamic DNS for EC2 instances and authenticated clients."
   memory_size   = 128
-  runtime       = "python3.7"
+  runtime       = "python3.11"
   timeout       = 5
   environment {
     variables = {
