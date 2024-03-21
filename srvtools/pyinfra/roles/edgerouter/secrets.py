@@ -103,6 +103,7 @@ dns = [DNS.from_dict(name, d) for name, d in _s["dns"].items()]
 hosts: Dict[str, Host] = dict()
 port_forwards = [PortForward.from_dict(d) for d in _s["port_forwards"]]
 static_dhcp = StaticDHCPs(StaticDHCP.from_dict(name, d) for name, d in _s["static_dhcp"].items())
+wireguard_key = _s["wireguard_key"]
 wireguard_peers = WireguardPeers([WireguardPeer.from_dict(name, d) for name, d in _s["wireguard_peers"].items()])
 
 for _i in dns:

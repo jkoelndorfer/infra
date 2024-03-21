@@ -5,6 +5,7 @@ roles/edgerouter/provision
 This module contains provisioning logic for the edgerouter role.
 """
 
+from io import StringIO
 import re
 from os.path import dirname, join as pjoin
 from shlex import quote as sv
@@ -23,6 +24,7 @@ def provision(p: Pyinfra) -> None:
     provision_dyndns(p, secrets.dyndns)
     provision_ipsets(p)
     execute_post_config_d_scripts(p)
+    provision_wireguard_key(p, secrets.wireguard_key)
     provision_router_cfg(p)
 
 
@@ -151,4 +153,16 @@ def provision_router_cfg(pyinfra: Pyinfra) -> None:
     p.server.shell(
         name="reload router config",
         commands=[f"sg {sv(vars.config_group)} -c {sv(reload_config)}"],
+    )
+
+def provision_wireguard_key(pyinfra: Pyinfra, wireguard_key: str) -> None:
+    p = pyinfra.ctx("wireguard-key")
+
+    p.files.put(
+        name="provision wireguard private key",
+        src=StringIO(f"{wireguard_key}\n"),
+        dest=vars.wireguard_key_path,
+        user=vars.config_user,
+        group=vars.config_group,
+        mode="0440",
     )
