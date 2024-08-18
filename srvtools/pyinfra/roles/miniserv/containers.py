@@ -55,7 +55,7 @@ def photoprism_env(ctr: MiniservContainer) -> Mapping[str, str]:
 
 photoprism_container = MiniservContainer.restarting(
     name="photoprism",
-    image="docker.io/photoprism/photoprism:230719-ce",
+    image="docker.io/photoprism/photoprism:240711-ce",
     get_environment=photoprism_env,
     deploy_config=None,
     volumes=[
