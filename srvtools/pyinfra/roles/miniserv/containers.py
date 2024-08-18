@@ -141,7 +141,7 @@ def syncthing_env(ctr: MiniservContainer):
 
 syncthing_container = MiniservContainer.restarting(
     name="syncthing",
-    image="docker.io/linuxserver/syncthing:v1.21.0-ls83",
+    image="docker.io/linuxserver/syncthing:v1.27.10-ls154",
     get_environment=syncthing_env,
     deploy_config=None,
     volumes=[
