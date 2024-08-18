@@ -318,7 +318,7 @@ def swag_config(pyinfra: Pyinfra, ctr: MiniservContainer) -> bool:
 # defined by previous containers.
 swag_container = MiniservContainer.restarting(
     name="swag",
-    image="docker.io/linuxserver/swag:1.31.0-ls155",
+    image="docker.io/linuxserver/swag:2.11.0-ls319",
     get_environment=swag_environment,
     deploy_config=swag_config,
     volumes=[
