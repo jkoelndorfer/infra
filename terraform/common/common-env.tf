@@ -10,14 +10,16 @@ locals {
   }
   environments_globals = {
     dev = {
-      name           = "dev"
-      dns_zone       = "dev.johnk.io"
-      vpc_cidr_block = "10.99.0.0/16"
+      name             = "dev"
+      dns_zone         = "dev.johnk.io"
+      wedding_dns_zone = "dev.koelndorfer.wedding"
+      vpc_cidr_block   = "10.99.0.0/16"
     }
     prod = {
-      name           = "prod"
-      dns_zone       = "johnk.io"
-      vpc_cidr_block = "10.100.0.0/16"
+      name             = "prod"
+      dns_zone         = "johnk.io"
+      wedding_dns_zone = "koelndorfer.wedding"
+      vpc_cidr_block   = "10.100.0.0/16"
     }
   }
 
