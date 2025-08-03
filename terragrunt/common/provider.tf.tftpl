@@ -1,0 +1,40 @@
+locals {
+  default_labels = {
+    env = var.env_folder.env
+  }
+}
+
+terraform {
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "6.46.0"
+    }
+
+    random = {
+      source  = "hashicorp/random"
+      version = "3.7.2"
+    }
+  }
+}
+
+provider "google" {
+  default_labels = local.default_labels
+%{~ if google_provider_credentials != "" }
+  credentials = "${google_provider_credentials}"
+%{~ endif }
+}
+
+provider "google" {
+  alias = "infra"
+
+  default_labels = local.default_labels
+
+  user_project_override = true
+  billing_project       = "${globals.gcp_infra_mgmt_project.project_id}"
+%{~ if google_provider_credentials != "" }
+  credentials = "${google_provider_credentials}"
+%{~ endif }
+}
+
+provider "random" {}
