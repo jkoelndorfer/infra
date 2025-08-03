@@ -15,6 +15,7 @@ remote_state {
 
   config = {
     bucket = local.tfstate_gcs_bucket
+    prefix = "${path_relative_to_include()}/tofu.tfstate"
 
     # We manage bucket bootstrapping ourselves.
     skip_bucket_creation = true
