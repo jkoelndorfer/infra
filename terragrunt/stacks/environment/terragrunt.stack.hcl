@@ -2,6 +2,7 @@ locals {
   units_dir  = "${get_repo_root()}/terragrunt//units"
   unit_paths = {
     env_folder = "env_folder"
+    dns        = "dns"
   }
   unit_paths_values = { for k, v in local.unit_paths: k => "../${v}" }
 
@@ -25,5 +26,11 @@ locals {
 unit "env_folder" {
   source = "${local.units_dir}/env_folder"
   path   = local.unit_paths.env_folder
+  values = local.common_values
+}
+
+unit "dns" {
+  source = "${local.units_dir}/dns"
+  path   = local.unit_paths.dns
   values = local.common_values
 }
