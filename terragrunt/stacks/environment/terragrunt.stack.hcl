@@ -3,6 +3,7 @@ locals {
   unit_paths = {
     env_folder = "env_folder"
     dns        = "dns"
+    backup     = "backup"
   }
   unit_paths_values = { for k, v in local.unit_paths: k => "../${v}" }
 
@@ -32,5 +33,11 @@ unit "env_folder" {
 unit "dns" {
   source = "${local.units_dir}/dns"
   path   = local.unit_paths.dns
+  values = local.common_values
+}
+
+unit "backup" {
+  source = "${local.units_dir}/backup"
+  path   = local.unit_paths.backup
   values = local.common_values
 }
