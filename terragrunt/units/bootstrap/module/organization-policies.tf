@@ -15,8 +15,8 @@ resource "google_org_policy_policy" "enforced_constraint" {
 
   for_each = toset(local.enforced_constraints)
 
-  name   = "organizations/${var.gcp_organization.org_id}/policies/${each.value}"
-  parent = "organizations/${var.gcp_organization.org_id}"
+  name   = "organizations/${var.google_organization.org_id}/policies/${each.value}"
+  parent = "organizations/${var.google_organization.org_id}"
 
   spec {
     rules {

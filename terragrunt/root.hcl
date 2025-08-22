@@ -19,36 +19,36 @@ locals {
 
   # Mirrors the structure of the google_organization data; see
   # https://registry.terraform.io/providers/hashicorp/google/6.46.0/docs/data-sources/organization.
-  gcp_organization = {
+  google_organization = {
     org_id = "285001668841"
     domain = "koelndorfer.com"
   }
 
   # Mirrors the structure of the google_billing_account data; see
   # https://registry.terraform.io/providers/hashicorp/google/6.46.0/docs/data-sources/billing_account.
-  gcp_billing_account = {
+  google_billing_account = {
     id = "018603-0A0108-775C8E"
   }
 
   # Mirrors the structure of the google_project data; see
   # https://registry.terraform.io/providers/hashicorp/google/6.46.0/docs/data-sources/project.
-  gcp_infra_mgmt_project = {
-    project_id = "infra-mgmt-${local.gcp_organization.org_id}"
+  google_infra_mgmt_project = {
+    project_id = "infra-mgmt-${local.google_organization.org_id}"
   }
 
-  _gcp_personal_principal = "john@${local.gcp_organization.domain}"
+  _google_personal_principal = "john@${local.google_organization.domain}"
 
   # Mirrors the structure of the google_service_account data; see
   # https://registry.terraform.io/providers/hashicorp/google/6.46.0/docs/data-sources/service_account.
-  gcp_personal_principal  = {
-    email  = local._gcp_personal_principal
-    member = "user:${local._gcp_personal_principal}"
+  google_personal_principal  = {
+    email  = local._google_personal_principal
+    member = "user:${local._google_personal_principal}"
   }
 
   # Mirrors the structure of the google_storage_bucket data; see
   # https://registry.terraform.io/providers/hashicorp/google/6.46.0/docs/data-sources/storage_bucket.
   infrastate_gcs_bucket = {
-    name = "infrastate-${local.gcp_organization.org_id}"
+    name = "infrastate-${local.google_organization.org_id}"
   }
 
   paths = {
@@ -70,22 +70,22 @@ locals {
   # Modules can access them by using the "globals" module which is also
   # automatically generated.
   globals = {
-    aws_organization       = local.aws_organization
-    gcp_organization       = local.gcp_organization
-    gcp_billing_account    = local.gcp_billing_account
-    gcp_infra_mgmt_project = local.gcp_infra_mgmt_project
-    gcp_personal_principal = local.gcp_personal_principal
-    paths                  = local.paths
+    aws_organization          = local.aws_organization
+    google_organization       = local.google_organization
+    google_billing_account    = local.google_billing_account
+    google_infra_mgmt_project = local.google_infra_mgmt_project
+    google_personal_principal = local.google_personal_principal
+    paths                     = local.paths
   }
 
   # Used in generated variable files (and the outputs of the globals module).
   global_descriptions = {
-    aws_organization       = "the AWS organization that infrastructure is deployed to"
-    gcp_organization       = "the GCP organization that infrastructure is deployed to"
-    gcp_billing_account    = "the GCP billing account that infrastructure is billed to"
-    gcp_infra_mgmt_project = "the GCP project used for infrastructure management"
-    gcp_personal_principal = "the GCP principal used for day-to-day operations"
-    paths                  = "paths to important resources under terragrunt's management"
+    aws_organization          = "the AWS organization that infrastructure is deployed to"
+    google_organization       = "the GCP organization that infrastructure is deployed to"
+    google_billing_account    = "the GCP billing account that infrastructure is billed to"
+    google_infra_mgmt_project = "the GCP project used for infrastructure management"
+    google_personal_principal = "the GCP principal used for day-to-day operations"
+    paths                     = "paths to important resources under terragrunt's management"
   }
 
   global_vars_gen = { for k, v in local.globals: k => { description = lookup(local.global_descriptions, k), default = v } }

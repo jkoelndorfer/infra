@@ -12,7 +12,7 @@ locals {
 resource "google_organization_iam_member" "personal_iam" {
   for_each = toset(local.personal_account_roles)
 
-  org_id = var.gcp_organization.org_id
+  org_id = var.google_organization.org_id
   role   = each.value
-  member = var.gcp_personal_principal.member
+  member = var.google_personal_principal.member
 }

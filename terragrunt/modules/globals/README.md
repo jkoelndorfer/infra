@@ -29,6 +29,6 @@ module "g" {
 resource "google_project" "example" {
   name       = "My Example Project"
   project_id = "my-example-project"
-  org_id     = module.g.gcp_organization.org_id
+  org_id     = module.g.google_organization.org_id
 }
 ```

@@ -1,5 +1,5 @@
 data "google_secret_manager_secret_version_access" "anonymous_domains" {
-  project = var.gcp_infra_mgmt_project.project_id
+  project = var.google_infra_mgmt_project.project_id
 
   secret = "anonymous-domains"
 }

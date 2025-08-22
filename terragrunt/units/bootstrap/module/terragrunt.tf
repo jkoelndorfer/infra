@@ -16,13 +16,13 @@ resource "null_resource" "terragrunt_key" {
 }
 
 resource "google_organization_iam_member" "terragrunt_folder_creator" {
-  org_id = var.gcp_organization.org_id
+  org_id = var.google_organization.org_id
   role   = "roles/resourcemanager.folderCreator"
   member = google_service_account.terragrunt.member
 }
 
 resource "google_organization_iam_member" "terragrunt_project_creator" {
-  org_id = var.gcp_organization.org_id
+  org_id = var.google_organization.org_id
   role   = "roles/resourcemanager.projectCreator"
   member = google_service_account.terragrunt.member
 }
@@ -44,7 +44,7 @@ resource "google_storage_bucket_iam_member" "terragrunt_state_bucket_viewer" {
 #
 # See https://cloud.google.com/billing/docs/how-to/billing-access.
 resource "google_billing_account_iam_member" "terragrunt_billing" {
-  billing_account_id = var.gcp_billing_account.id
+  billing_account_id = var.google_billing_account.id
 
   role   = "roles/billing.user"
   member = google_service_account.terragrunt.member

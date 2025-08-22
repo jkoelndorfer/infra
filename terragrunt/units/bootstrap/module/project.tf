@@ -28,9 +28,9 @@ locals {
 # a suffix so it can be easily referenced for API quota purposes.
 resource "google_project" "infra_mgmt" {
   name            = local.project_name
-  project_id      = "${local.project_name}-${var.gcp_organization.org_id}"
-  org_id          = var.gcp_organization.org_id
-  billing_account = var.gcp_billing_account.id
+  project_id      = "${local.project_name}-${var.google_organization.org_id}"
+  org_id          = var.google_organization.org_id
+  billing_account = var.google_billing_account.id
   labels = {
     function = "infra-mgmt"
   }

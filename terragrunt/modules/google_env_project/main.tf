@@ -14,7 +14,7 @@ resource "google_project" "this" {
   name            = "${var.google_env_folder.env}-${var.function}"
   project_id      = "${var.google_env_folder.env}-${var.function}-${random_string.project_id_suffix.result}"
   folder_id       = var.google_env_folder.folder_id
-  billing_account = module.g.gcp_billing_account.id
+  billing_account = module.g.google_billing_account.id
 
   labels = {
     function = var.function
@@ -51,7 +51,7 @@ resource "terraform_data" "after_project_service" {
         #   │ This is a bug in the provider, which should be reported in the provider's
         #   │ own issue tracker.
         #
-        org_id = module.g.gcp_organization.org_id
+        org_id = module.g.google_organization.org_id
       }
     )
   }
