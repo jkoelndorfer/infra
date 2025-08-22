@@ -2,6 +2,21 @@ locals {
   repo_root       = get_repo_root()
   terragrunt_root = "${local.repo_root}/terragrunt"
 
+  _aws_management_account_id = "780570912590"
+  _aws_organization_id = "o-rdbgkdyowc"
+  _aws_root_ou_id = "r-sict"
+
+  aws_organization = {
+    id                 = local._aws_organization_id
+    master_account_arn = "arn:aws:account::${local._aws_management_account_id}:account"
+    master_account_id  = local._aws_management_account_id
+
+    root_ou = {
+      id  = local._aws_root_ou_id
+      arn = "arn:aws:organizations::${local._aws_management_account_id}:root/${local._aws_organization_id}/${local._aws_root_ou_id}"
+    }
+  }
+
   # Mirrors the structure of the google_organization data; see
   # https://registry.terraform.io/providers/hashicorp/google/6.46.0/docs/data-sources/organization.
   gcp_organization = {
@@ -55,6 +70,7 @@ locals {
   # Modules can access them by using the "globals" module which is also
   # automatically generated.
   globals = {
+    aws_organization       = local.aws_organization
     gcp_organization       = local.gcp_organization
     gcp_billing_account    = local.gcp_billing_account
     gcp_infra_mgmt_project = local.gcp_infra_mgmt_project
@@ -64,6 +80,7 @@ locals {
 
   # Used in generated variable files (and the outputs of the globals module).
   global_descriptions = {
+    aws_organization       = "the AWS organization that infrastructure is deployed to"
     gcp_organization       = "the GCP organization that infrastructure is deployed to"
     gcp_billing_account    = "the GCP billing account that infrastructure is billed to"
     gcp_infra_mgmt_project = "the GCP project used for infrastructure management"
