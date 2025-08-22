@@ -11,7 +11,7 @@ resource "google_service_account" "terragrunt" {
 # to create the key and save it locally.
 resource "null_resource" "terragrunt_key" {
   provisioner "local-exec" {
-    command = "gcloud iam service-accounts keys create ${var.paths.terragrunt_root}/terragrunt-sa.key --iam-account ${google_service_account.terragrunt.email}"
+    command = "gcloud iam service-accounts keys create ${var.paths.terragrunt_credentials} --iam-account ${google_service_account.terragrunt.email}"
   }
 }
 
