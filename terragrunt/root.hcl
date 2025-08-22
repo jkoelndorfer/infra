@@ -2,6 +2,10 @@ locals {
   repo_root       = get_repo_root()
   terragrunt_root = "${local.repo_root}/terragrunt"
 
+  # Path to the directory containing local service account
+  # credentials for Terragrunt.
+  terragrunt_credentials = pathexpand("~/.local/terragrunt/credentials")
+
   _aws_management_account_id = "780570912590"
   _aws_organization_id = "o-rdbgkdyowc"
   _aws_root_ou_id = "r-sict"
@@ -54,7 +58,7 @@ locals {
   paths = {
     repo_root              = local.repo_root
     terragrunt_root        = "${local.repo_root}/terragrunt"
-    terragrunt_credentials = pathexpand("~/.local/terragrunt/credentials/google.key")
+    google_credentials     = "${local.terragrunt_credentials}/google.key"
     common_root            = "${local.terragrunt_root}/common"
 
     # NOTE: the trailing slash here is important so that Terraform finds a "double-slash" at
@@ -104,7 +108,7 @@ remote_state {
     bucket = local.infrastate_gcs_bucket.name
     prefix = "terragrunt/stacks/${replace(path_relative_to_include(), "/(.terragrunt-stack/|^stacks/[^/]+/)/", "")}"
 
-    credentials = local.paths.terragrunt_credentials
+    credentials = local.paths.google_credentials
 
     # We manage bucket bootstrapping ourselves.
     skip_bucket_creation = true
@@ -121,7 +125,7 @@ generate "provider" {
   contents  = templatefile(
     "${local.paths.common_root}/provider.tf.tftpl",
     {
-      google_provider_credentials = local.paths.terragrunt_credentials
+      google_provider_credentials = local.paths.google_credentials
       globals                     = local.globals
     }
   )
