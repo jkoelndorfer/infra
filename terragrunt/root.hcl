@@ -56,11 +56,48 @@ locals {
   }
 
   paths = {
-    repo_root              = local.repo_root
-    terragrunt_root        = "${local.repo_root}/terragrunt"
-    aws_credentials        = "${local.terragrunt_credentials}/aws"
-    google_credentials     = "${local.terragrunt_credentials}/google.key"
-    common_root            = "${local.terragrunt_root}/common"
+    repo_root       = local.repo_root
+    terragrunt_root = "${local.repo_root}/terragrunt"
+
+    # This file is an AWS credentials file [1] of the form:
+    #
+    #   [terragrunt]
+    #   aws_access_key_id=00000000000000000000
+    #   aws_secret_access_key=0000000000000000000000000000000000000000
+    #
+    #   [management]
+    #   aws_access_key_id=00000000000000000000
+    #   aws_secret_access_key=0000000000000000000000000000000000000000
+    #
+    #
+    # Other credential options should work, too, but long-term credential
+    # is easiest to set up.
+    #
+    # The "management" credential should be an organization root user
+    # credential *used only for bootstrapping*. Make sure to delete
+    # it after bootstrapping is finished.
+    #
+    # [1]: https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html
+    aws_credentials = "${local.terragrunt_credentials}/aws"
+
+    # This file is a service account key [2] of the form:
+    #
+    #     {
+    #         "type": "service_account",
+    #         "project_id": "a-project-id",
+    #         "private_key_id": "0000000000000000000000000000000000000000",
+    #         "private_key": "-----BEGIN PRIVATE KEY-----\n[...]\n-----END PRIVATE KEY-----\n",
+    #         "client_email": "terragrunt@a-project-id.iam.gserviceaccount.com",
+    #         "client_id": "000000000000000000000",
+    #         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    #         "token_uri": "https://oauth2.googleapis.com/token",
+    #         "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    #         "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/terragrunt%40a-project-id.iam.gserviceaccount.com",
+    #         "universe_domain": "googleapis.com"
+    #     }
+    google_credentials = "${local.terragrunt_credentials}/google.key"
+
+    common_root = "${local.terragrunt_root}/common"
 
     # NOTE: the trailing slash here is important so that Terraform finds a "double-slash" at
     # the modules directory and interprets it as the module package. This allows for modules
