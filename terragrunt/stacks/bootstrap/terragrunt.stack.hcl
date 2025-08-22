@@ -10,6 +10,12 @@ locals {
   }
 }
 
+unit "aws_accounts" {
+  source = "../..//units/aws_accounts"
+  path   = "aws_accounts"
+  values = local.bootstrap_values
+}
+
 unit "google_bootstrap" {
   source = "../..//units/google_bootstrap"
   path   = "google_bootstrap"

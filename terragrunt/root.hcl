@@ -19,6 +19,17 @@ locals {
       id  = local._aws_root_ou_id
       arn = "arn:aws:organizations::${local._aws_management_account_id}:root/${local._aws_organization_id}/${local._aws_root_ou_id}"
     }
+
+    # The name of the IAM role used that the management account can use to
+    # access resources in the member account.
+    member_account_access_role = "OrganizationAccountAccessRole"
+
+    # Template string used to create the owner email for
+    # AWS organization member accounts.
+    #
+    # NOTE: this needs to be double-escaped because it is rendered to JSON, where a string
+    # containing "${...}" is treated as a resource reference.
+    member_account_email_tmpl = "aws.$$${identifier}@john.$$${google_organization_domain}"
   }
 
   # Mirrors the structure of the google_organization data; see
@@ -53,6 +64,12 @@ locals {
   # https://registry.terraform.io/providers/hashicorp/google/6.46.0/docs/data-sources/storage_bucket.
   infrastate_gcs_bucket = {
     name = "infrastate-${local.google_organization.org_id}"
+  }
+
+  # Mirrors the structure of the aws_s3_bucket data; see
+  # https://registry.terraform.io/providers/hashicorp/aws/6.10.0/docs/data-sources/s3_bucket
+  infrastate_s3_bucket = {
+    bucket = "infrastate-${local.aws_organization.master_account_id}"
   }
 
   paths = {
@@ -112,12 +129,12 @@ locals {
   # Modules can access them by using the "globals" module which is also
   # automatically generated.
   globals = {
-    aws_organization          = local.aws_organization
-    google_organization       = local.google_organization
-    google_billing_account    = local.google_billing_account
-    google_infra_mgmt_project = local.google_infra_mgmt_project
-    google_personal_principal = local.google_personal_principal
-    paths                     = local.paths
+     aws_organization          = local.aws_organization
+     google_organization       = local.google_organization
+     google_billing_account    = local.google_billing_account
+     google_infra_mgmt_project = local.google_infra_mgmt_project
+     google_personal_principal = local.google_personal_principal
+     paths                     = local.paths
   }
 
   # Used in generated variable files (and the outputs of the globals module).
