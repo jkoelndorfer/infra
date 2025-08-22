@@ -20,7 +20,7 @@ remote_state {
   }
 
   config = {
-    path = "${get_terragrunt_dir()}/../../bootstrap.tfstate"
+    path = "${get_terragrunt_dir()}/../../google_bootstrap.tfstate"
   }
 }
 

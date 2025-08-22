@@ -135,7 +135,7 @@ terragrunt/modules/globals
 *.tfstate
 *.tfstate.backup
 !terraform/stacks/bootstrap/**/*.tfstate
-!terragrunt/stacks/bootstrap/bootstrap.tfstate
+!terragrunt/stacks/bootstrap/google_bootstrap.tfstate
 
 # Crash log files
 crash.log
