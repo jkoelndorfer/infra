@@ -30,6 +30,8 @@ generate "provider_bootstrap" {
   contents  = templatefile(
     "${include.root.locals.paths.terragrunt_root}/common/provider.tf.tftpl",
     {
+      aws_provider_credentials    = include.root.locals.paths.aws_credentials
+      aws_provider_profile        = "DONOTUSE"
       google_provider_credentials = ""
       globals                     = include.root.locals.globals
     }

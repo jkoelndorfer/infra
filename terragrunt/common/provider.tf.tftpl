@@ -1,11 +1,16 @@
 locals {
   default_labels = {
-    env = var.google_env_folder.env
+    env = var.env
   }
 }
 
 terraform {
   required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "6.10.0"
+    }
+
     google = {
       source  = "hashicorp/google"
       version = "6.46.0"
@@ -16,6 +21,17 @@ terraform {
       version = "3.7.2"
     }
   }
+}
+
+provider "aws" {
+  region = "us-east-2"
+
+  default_tags {
+    tags = local.default_labels
+  }
+
+  profile                  = "${aws_provider_profile}"
+  shared_credentials_files = ["${aws_provider_credentials}"]
 }
 
 provider "google" {

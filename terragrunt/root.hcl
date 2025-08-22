@@ -58,6 +58,7 @@ locals {
   paths = {
     repo_root              = local.repo_root
     terragrunt_root        = "${local.repo_root}/terragrunt"
+    aws_credentials        = "${local.terragrunt_credentials}/aws"
     google_credentials     = "${local.terragrunt_credentials}/google.key"
     common_root            = "${local.terragrunt_root}/common"
 
@@ -125,6 +126,8 @@ generate "provider" {
   contents  = templatefile(
     "${local.paths.common_root}/provider.tf.tftpl",
     {
+      aws_provider_profile        = "terragrunt"
+      aws_provider_credentials    = local.paths.aws_credentials
       google_provider_credentials = local.paths.google_credentials
       globals                     = local.globals
     }
