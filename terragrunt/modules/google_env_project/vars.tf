@@ -1,4 +1,4 @@
-variable "env_folder" {
+variable "google_env_folder" {
   type = object({
     env       = string
     folder_id = string

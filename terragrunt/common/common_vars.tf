@@ -3,7 +3,7 @@ variable "env" {
   type        = string
 }
 
-variable "env_folder" {
+variable "google_env_folder" {
   description = "folder containing environment-specific projects"
   type = object({
     name         = string

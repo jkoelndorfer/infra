@@ -1,6 +1,6 @@
-output "env_folder" {
-  description = "the environment folder the project was created under"
-  value       = var.env_folder
+output "folder" {
+  description = "the folder the project was created under"
+  value       = var.google_env_folder
 }
 
 output "labels" {

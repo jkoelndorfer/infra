@@ -6,10 +6,10 @@ terraform {
   source = "./module"
 }
 
-dependency "env_folder" {
-  config_path = values.unit_paths.env_folder
+dependency "google_env_folder" {
+  config_path = values.unit_paths.google_env_folder
 
-  mock_outputs = values.mock_outputs.env_folder
+  mock_outputs = values.mock_outputs.google_env_folder
 }
 
-inputs = merge(values, dependency.env_folder.outputs)
+inputs = merge(values, dependency.google_env_folder.outputs)

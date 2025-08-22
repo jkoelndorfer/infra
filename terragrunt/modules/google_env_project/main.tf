@@ -11,9 +11,9 @@ resource "random_string" "project_id_suffix" {
 }
 
 resource "google_project" "this" {
-  name            = "${var.env_folder.env}-${var.function}"
-  project_id      = "${var.env_folder.env}-${var.function}-${random_string.project_id_suffix.result}"
-  folder_id       = var.env_folder.folder_id
+  name            = "${var.google_env_folder.env}-${var.function}"
+  project_id      = "${var.google_env_folder.env}-${var.function}-${random_string.project_id_suffix.result}"
+  folder_id       = var.google_env_folder.folder_id
   billing_account = module.g.gcp_billing_account.id
 
   labels = {

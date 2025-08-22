@@ -1,8 +1,8 @@
 locals {
   units_dir  = "${get_repo_root()}/terragrunt//units"
   unit_paths = {
-    env_folder = "env_folder"
-    dns        = "dns"
+    google_env_folder = "google_env_folder"
+    dns               = "dns"
   }
   unit_paths_values = { for k, v in local.unit_paths: k => "../${v}" }
 
@@ -11,8 +11,8 @@ locals {
     unit_paths = local.unit_paths_values
 
     mock_outputs = {
-      env_folder = {
-        env_folder = {
+      google_env_folder = {
+        google_env_folder = {
           env          = values.env
           display_name = "not a real environment folder; use only env attribute"
           name         = "not a real environment folder; use only env attribute"
@@ -23,9 +23,9 @@ locals {
   }
 }
 
-unit "env_folder" {
-  source = "${local.units_dir}/env_folder"
-  path   = local.unit_paths.env_folder
+unit "google_env_folder" {
+  source = "${local.units_dir}/google_env_folder"
+  path   = local.unit_paths.google_env_folder
   values = local.common_values
 }
 

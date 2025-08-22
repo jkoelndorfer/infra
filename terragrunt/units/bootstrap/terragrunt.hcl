@@ -38,7 +38,7 @@ generate "provider_bootstrap" {
 
 inputs = {
   env = values.env
-  env_folder = {
+  google_env_folder = {
     name         = "not a real environment folder; use only env attribute"
     display_name = "not a real environment folder; use only env attribute"
     env          = values.env
