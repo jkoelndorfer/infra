@@ -39,13 +39,4 @@ generate "aws_provider" {
   )
 }
 
-inputs = {
-  env = values.env
-  google_env_folder = {
-    env          = values.env
-    display_name = "not a real environment folder; use only env attribute"
-    name         = "not a real environment folder; use only env attribute"
-    folder_id    = "000000000000"
-  }
-  infrastate_s3_bucket = include.root.locals.infrastate_s3_bucket
-}
+inputs = values
