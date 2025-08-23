@@ -7,18 +7,6 @@ terraform {
   source = "./module"
 }
 
-dependency "aws_bootstrap" {
-  config_path = values.unit_paths.aws_bootstrap
-
-  mock_outputs = {
-    terragrunt_user = {
-      arn  = "arn:aws:iam::000000000000:user/terragrunt"
-      id   = "terragrunt"
-      name = "terragrunt"
-    }
-  }
-}
-
 # For more information on local backends using remote_state, see:
 #   * https://github.com/gruntwork-io/terragrunt/issues/2179#issuecomment-1368307823
 #   * https://stackoverflow.com/a/74977268
@@ -32,12 +20,12 @@ remote_state {
   }
 
   config = {
-    path = "${get_terragrunt_dir()}/../../aws_accounts.tfstate"
+    path = "${get_terragrunt_dir()}/../../aws_bootstrap.tfstate"
   }
 }
 
-generate "aws_provider" {
-  path = "aws_bootstrap_provider.tf"
+generate "aws_organization_provider" {
+  path = "aws_organization_provider.tf"
   if_exists = "overwrite"
   contents = templatefile(
     "${include.root.locals.paths.common_root}/aws_provider.tf.tftpl",
@@ -45,7 +33,7 @@ generate "aws_provider" {
       alias       = null
       region      = null
       assume_role = null
-      profile     = "terragrunt"
+      profile     = "management"
       globals     = include.root.locals.globals
     }
   )

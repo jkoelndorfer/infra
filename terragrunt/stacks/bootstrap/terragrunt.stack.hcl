@@ -1,6 +1,7 @@
 locals {
   unit_paths = {
     aws_accounts     = "aws_accounts"
+    aws_bootstrap    = "aws_bootstrap"
     google_bootstrap = "google_bootstrap"
   }
   unit_paths_values = { for k, v in local.unit_paths: k => "../${v}" }
@@ -19,6 +20,12 @@ locals {
 unit "aws_accounts" {
   source = "../..//units/aws_accounts"
   path   = local.unit_paths.aws_accounts
+  values = local.bootstrap_values
+}
+
+unit "aws_bootstrap" {
+  source = "../..//units/aws_bootstrap"
+  path   = local.unit_paths.aws_bootstrap
   values = local.bootstrap_values
 }
 
