@@ -1,0 +1,15 @@
+provider "google" {
+%{ if alias != null ~}
+  alias = "${alias}"
+%{~ endif }
+
+  default_labels = local.default_labels
+
+%{ if billing_override ~}
+  user_project_override = true
+  billing_project       = "${globals.google_infra_mgmt_project.project_id}"
+%{ endif ~}
+%{~ if credentials != null }
+  credentials = "${credentials}"
+%{~ endif }
+}

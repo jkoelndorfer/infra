@@ -175,24 +175,30 @@ remote_state {
 # Generated File Configuration #
 ################################
 
-generate "provider" {
-  path      = "provider.tf"
-  if_exists = "skip"
-  contents  = templatefile(
-    "${local.paths.common_root}/provider.tf.tftpl",
-    {
-      aws_provider_profile        = "terragrunt"
-      aws_provider_credentials    = local.paths.aws_credentials
-      google_provider_credentials = local.paths.google_credentials
-      globals                     = local.globals
-    }
-  )
+generate "common_provider" {
+  path      = "common_provider.tf"
+  if_exists = "overwrite"
+  contents  = file("${local.paths.common_root}/common_provider.tf")
 }
 
 generate "common_vars" {
   path      = "common_vars.tf"
   if_exists = "overwrite"
   contents  = file("${local.paths.common_root}/common_vars.tf")
+}
+
+generate "google_default_provider" {
+  path      = "google_default_provider.tf"
+  if_exists = "skip"
+  contents  = templatefile(
+    "${local.paths.common_root}/google_provider.tf.tftpl",
+    {
+      alias            = null
+      billing_override = false
+      credentials      = local.paths.google_credentials
+      globals          = local.globals
+    }
+  )
 }
 
 #########################

@@ -39,18 +39,6 @@ generate "aws_provider" {
   )
 }
 
-generate "provider_bootstrap" {
-  path      = "provider.tf"
-  if_exists = "overwrite"
-  contents  = templatefile(
-    "${include.root.locals.paths.terragrunt_root}/common/provider.tf.tftpl",
-    {
-      google_provider_credentials = ""
-      globals                     = include.root.locals.globals
-    }
-  )
-}
-
 inputs = {
   env = values.env
   google_env_folder = {

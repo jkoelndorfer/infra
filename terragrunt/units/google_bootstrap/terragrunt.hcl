@@ -24,16 +24,30 @@ remote_state {
   }
 }
 
-generate "provider_bootstrap" {
-  path      = "provider.tf"
+generate "google_bootstrap_default_provider" {
+  path      = "google_default_provider.tf"
   if_exists = "overwrite"
   contents  = templatefile(
-    "${include.root.locals.paths.terragrunt_root}/common/provider.tf.tftpl",
+    "${include.root.locals.paths.common_root}/google_provider.tf.tftpl",
     {
-      aws_provider_credentials    = include.root.locals.paths.aws_credentials
-      aws_provider_profile        = "DONOTUSE"
-      google_provider_credentials = ""
-      globals                     = include.root.locals.globals
+      alias            = null
+      billing_override = false
+      credentials      = null
+      globals          = include.root.locals.globals
+    }
+  )
+}
+
+generate "google_infra_provider" {
+  path      = "google_infra_provider.tf"
+  if_exists = "overwrite"
+  contents  = templatefile(
+    "${include.root.locals.paths.common_root}/google_provider.tf.tftpl",
+    {
+      alias            = "infra"
+      billing_override = true
+      credentials      = null
+      globals          = include.root.locals.globals
     }
   )
 }
