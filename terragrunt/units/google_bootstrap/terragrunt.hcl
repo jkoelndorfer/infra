@@ -38,13 +38,9 @@ generate "provider_bootstrap" {
   )
 }
 
-inputs = {
-  env = values.env
-  google_env_folder = {
-    name         = "not a real environment folder; use only env attribute"
-    display_name = "not a real environment folder; use only env attribute"
-    env          = values.env
-    folder_id    = "000000000000"
+inputs = merge(
+  values,
+  {
+    infrastate_gcs_bucket = include.root.locals.infrastate_gcs_bucket
   }
-  infrastate_gcs_bucket = include.root.locals.infrastate_gcs_bucket
-}
+)
