@@ -12,6 +12,7 @@ locals {
 
   aws_organization = {
     id                 = local._aws_organization_id
+    default_region     = "us-east-2"
     master_account_arn = "arn:aws:account::${local._aws_management_account_id}:account"
     master_account_id  = local._aws_management_account_id
 

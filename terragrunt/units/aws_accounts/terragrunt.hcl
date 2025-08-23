@@ -24,14 +24,27 @@ remote_state {
   }
 }
 
+generate "aws_provider" {
+  path = "aws_bootstrap_provider.tf"
+  if_exists = "overwrite"
+  contents = templatefile(
+    "${include.root.locals.paths.common_root}/aws_provider.tf.tftpl",
+    {
+      alias       = null
+      region      = null
+      assume_role = null
+      profile     = "management"
+      globals     = include.root.locals.globals
+    }
+  )
+}
+
 generate "provider_bootstrap" {
   path      = "provider.tf"
   if_exists = "overwrite"
   contents  = templatefile(
     "${include.root.locals.paths.terragrunt_root}/common/provider.tf.tftpl",
     {
-      aws_provider_profile        = "management"
-      aws_provider_credentials    = include.root.locals.paths.aws_credentials
       google_provider_credentials = ""
       globals                     = include.root.locals.globals
     }

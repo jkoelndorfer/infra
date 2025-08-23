@@ -23,17 +23,6 @@ terraform {
   }
 }
 
-provider "aws" {
-  region = "us-east-2"
-
-  default_tags {
-    tags = local.default_labels
-  }
-
-  profile                  = "${aws_provider_profile}"
-  shared_credentials_files = ["${aws_provider_credentials}"]
-}
-
 provider "google" {
   default_labels = local.default_labels
 %{~ if google_provider_credentials != "" }
