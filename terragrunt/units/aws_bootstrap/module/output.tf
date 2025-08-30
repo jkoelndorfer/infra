@@ -1,3 +1,8 @@
+output "aws_infra_mgmt_account" {
+  description = "the AWS account used for infrastructure management"
+  value       = module.infra_mgmt_account
+}
+
 output "terragrunt_user" {
   description = "IAM user used to manage AWS organization via Terragrunt"
   value       = {

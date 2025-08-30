@@ -1,11 +1,24 @@
 locals {
   unit_paths = {
-    aws_accounts     = "aws_accounts"
+    aws_infra_mgmt   = "aws_infra_mgmt"
     aws_bootstrap    = "aws_bootstrap"
     google_bootstrap = "google_bootstrap"
   }
   unit_paths_values = { for k, v in local.unit_paths: k => "../${v}" }
   bootstrap_values = {
+    aws_bootstrap = {
+      aws_infra_mgmt_account = {
+        arn   = "arn:aws:organizations::000000000000:account/x-xxxxxxxxxx/000000000000"
+        email = "aws.infra-mgmt@example.com"
+        env   = "bootstrap"
+        id    = "000000000000"
+
+        organization_access_role = {
+          arn  = "arn:aws:iam::000000000000:role/OrganizationAccountAccessRole"
+          name = "OrganizationAccountAccessRole"
+        }
+      }
+    }
     env = "prod"
     google_env_folder = {
       name         = "not a real environment folder; use only env attribute"
@@ -15,12 +28,6 @@ locals {
     }
     unit_paths = local.unit_paths_values
   }
-}
-
-unit "aws_accounts" {
-  source = "../..//units/aws_accounts"
-  path   = local.unit_paths.aws_accounts
-  values = local.bootstrap_values
 }
 
 unit "aws_bootstrap" {
