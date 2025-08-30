@@ -134,13 +134,13 @@ locals {
   # Modules can access them by using the "globals" module which is also
   # automatically generated.
   globals = {
-     aws_organization          = local.aws_organization
-     aws_personal_principal    = local.aws_personal_principal
-     google_organization       = local.google_organization
-     google_billing_account    = local.google_billing_account
-     google_infra_mgmt_project = local.google_infra_mgmt_project
-     google_personal_principal = local.google_personal_principal
-     paths                     = local.paths
+    aws_organization          = local.aws_organization
+    aws_personal_principal    = local.aws_personal_principal
+    google_organization       = local.google_organization
+    google_billing_account    = local.google_billing_account
+    google_infra_mgmt_project = local.google_infra_mgmt_project
+    google_personal_principal = local.google_personal_principal
+    paths                     = local.paths
   }
 
   # Used in generated variable files (and the outputs of the globals module).
