@@ -33,6 +33,10 @@ locals {
     member_account_email_tmpl = "aws.$$${identifier}@john.$$${google_organization_domain}"
   }
 
+  aws_personal_principal = {
+    name = "john.koelndorfer"
+  }
+
   # Mirrors the structure of the google_organization data; see
   # https://registry.terraform.io/providers/hashicorp/google/6.46.0/docs/data-sources/organization.
   google_organization = {
@@ -131,6 +135,7 @@ locals {
   # automatically generated.
   globals = {
      aws_organization          = local.aws_organization
+     aws_personal_principal    = local.aws_personal_principal
      google_organization       = local.google_organization
      google_billing_account    = local.google_billing_account
      google_infra_mgmt_project = local.google_infra_mgmt_project
@@ -141,6 +146,7 @@ locals {
   # Used in generated variable files (and the outputs of the globals module).
   global_descriptions = {
     aws_organization          = "the AWS organization that infrastructure is deployed to"
+    aws_personal_principal    = "the AWS principal used for day-to-day operations"
     google_organization       = "the GCP organization that infrastructure is deployed to"
     google_billing_account    = "the GCP billing account that infrastructure is billed to"
     google_infra_mgmt_project = "the GCP project used for infrastructure management"

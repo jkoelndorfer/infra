@@ -1,17 +1,4 @@
-data "aws_iam_policy_document" "infra_mgmt_automation" {
-  statement {
-    sid    = "AllowOrganizationAssumeRole"
-    effect = "Allow"
-
-    actions = [
-      "sts:AssumeRole",
-    ]
-
-    resources = [
-      "arn:aws:iam::*:role/OrganizationAccountAccessRole",
-    ]
-  }
-
+data "aws_iam_policy_document" "infra_mgmt_organization_access" {
   statement {
     sid    = "AllowOrganizationManagement"
     effect = "Allow"
@@ -30,6 +17,7 @@ data "aws_iam_policy_document" "infra_mgmt_automation" {
       "organizations:ListOrganizationalUnitsForParent",
       "organizations:ListParents",
       "organizations:ListTagsForResource",
+      "organizations:MoveAccount",
       "organizations:TagResource",
       "organizations:UntagResource",
       "organizations:UpdateOrganizationalUnit",
@@ -41,18 +29,23 @@ data "aws_iam_policy_document" "infra_mgmt_automation" {
   }
 }
 
-resource "aws_iam_policy" "infra_mgmt_automation" {
-  name        = "InfrastructureManagementAutomation"
+resource "aws_iam_policy" "infra_mgmt_organization_access" {
+  name        = "InfrastructureManagementOrganizationAccess"
   path        = "/"
   description = "Grants access for infrastructure management tooling to manage the organization."
-  policy      = data.aws_iam_policy_document.infra_mgmt_automation.json
+  policy      = data.aws_iam_policy_document.infra_mgmt_organization_access.json
 }
 
 resource "aws_iam_user" "terragrunt" {
   name = "terragrunt"
 }
 
-resource "aws_iam_user_policy_attachment" "terragrunt_infra_mgmt" {
+resource "aws_iam_user_policy_attachment" "terragrunt_infra_mgmt_organization_access" {
   user       = aws_iam_user.terragrunt.name
-  policy_arn = aws_iam_policy.infra_mgmt_automation.arn
+  policy_arn = aws_iam_policy.infra_mgmt_organization_access.arn
+}
+
+resource "aws_iam_user_policy_attachment" "terragrunt_organization_member_account_access" {
+  user       = aws_iam_user.terragrunt.name
+  policy_arn = aws_iam_policy.organization_member_account_access.arn
 }
