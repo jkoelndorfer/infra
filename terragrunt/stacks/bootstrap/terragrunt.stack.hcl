@@ -41,3 +41,9 @@ unit "google_bootstrap" {
   path   = local.unit_paths.google_bootstrap
   values = local.bootstrap_values
 }
+
+unit "aws_infra_mgmt" {
+  source = "../..//units/aws_infra_mgmt"
+  path   = local.unit_paths.aws_infra_mgmt
+  values = local.bootstrap_values
+}
