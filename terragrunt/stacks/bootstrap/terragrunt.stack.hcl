@@ -1,6 +1,7 @@
 locals {
   unit_paths = {
     aws_infra_mgmt   = "aws_infra_mgmt"
+    aws_accounts     = "aws_accounts"
     aws_bootstrap    = "aws_bootstrap"
     google_bootstrap = "google_bootstrap"
   }
@@ -45,5 +46,11 @@ unit "google_bootstrap" {
 unit "aws_infra_mgmt" {
   source = "../..//units/aws_infra_mgmt"
   path   = local.unit_paths.aws_infra_mgmt
+  values = local.bootstrap_values
+}
+
+unit "aws_accounts" {
+  source = "../..//units/aws_accounts"
+  path   = local.unit_paths.aws_accounts
   values = local.bootstrap_values
 }
