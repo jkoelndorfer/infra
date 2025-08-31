@@ -27,10 +27,14 @@ unit "google_env_folder" {
   source = "${local.units_dir}/google_env_folder"
   path   = local.unit_paths.google_env_folder
   values = local.common_values
+
+  no_dot_terragrunt_stack = true
 }
 
 unit "dns" {
   source = "${local.units_dir}/dns"
   path   = local.unit_paths.dns
   values = local.common_values
+
+  no_dot_terragrunt_stack = true
 }
