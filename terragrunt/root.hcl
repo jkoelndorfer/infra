@@ -159,7 +159,7 @@ locals {
 }
 
 remote_state {
-  backend = "gcs"
+  backend = "s3"
 
   generate = {
     path      = "backend.tf"
@@ -167,13 +167,16 @@ remote_state {
   }
 
   config = {
-    bucket = local.infrastate_gcs_bucket.name
-    prefix = "terragrunt/stacks/${replace(path_relative_to_include(), "/(.terragrunt-stack/|^stacks/[^/]+/)/", "")}"
+    bucket  = local.infrastate_s3_bucket.bucket
+    key     = "terragrunt/stacks/${replace(path_relative_to_include(), "/(.terragrunt-stack/|^stacks/[^/]+/)/", "")}/default.tfstate"
+    region  = "us-east-2"
+    profile = "terragrunt"
 
-    credentials = local.paths.google_credentials
+    shared_credentials_file = local.paths.aws_credentials
 
-    # We manage bucket bootstrapping ourselves.
-    skip_bucket_creation = true
+    assume_role = {
+      role_arn = "arn:aws:iam::929926685443:role/InfrastructureStateUpdater"
+    }
   }
 }
 
