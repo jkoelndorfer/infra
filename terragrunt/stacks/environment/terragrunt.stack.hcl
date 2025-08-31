@@ -2,6 +2,7 @@ locals {
   units_dir  = "${get_repo_root()}/terragrunt//units"
   unit_paths = {
     google_env_folder = "google_env_folder"
+    backup            = "backup"
     dns               = "dns"
   }
   unit_paths_values = { for k, v in local.unit_paths: k => "../${v}" }
@@ -34,6 +35,14 @@ unit "google_env_folder" {
 unit "dns" {
   source = "${local.units_dir}/dns"
   path   = local.unit_paths.dns
+  values = local.common_values
+
+  no_dot_terragrunt_stack = true
+}
+
+unit "backup" {
+  source = "${local.units_dir}/backup"
+  path   = local.unit_paths.backup
   values = local.common_values
 
   no_dot_terragrunt_stack = true
