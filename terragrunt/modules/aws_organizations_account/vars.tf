@@ -12,3 +12,10 @@ variable "env" {
     error_message = "Environment must be 'bootstrap', 'dev', or 'prod'"
   }
 }
+
+variable "parent_id" {
+  type        = string
+  description = "root (or OU) ID of the parent for this account"
+  nullable    = true
+  default     = null
+}

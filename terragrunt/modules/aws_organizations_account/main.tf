@@ -16,6 +16,7 @@ resource "aws_organizations_account" "this" {
   )
   name      = var.env != "bootstrap" ? join("-", local.identifier) : var.function
   role_name = module.g.aws_organization.member_account_access_role
+  parent_id = var.parent_id
 
   close_on_deletion = true
 
