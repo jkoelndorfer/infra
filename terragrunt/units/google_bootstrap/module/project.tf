@@ -2,12 +2,18 @@ locals {
   project_name = "infra-mgmt"
 
   project_services = [
+    # This is needed to create a billing budget.
+    "billingbudgets.googleapis.com",
+
     # This is needed by the Terragrunt service account to associate projects
     # to a billing account.
     "cloudbilling.googleapis.com",
 
     # This is needed by the Terragrunt service account to create folders and projects.
     "cloudresourcemanager.googleapis.com",
+
+    # This is needed to enable budget-related notifications.
+    "monitoring.googleapis.com",
 
     # This is needed by Terragrunt to enable the v2 organization policy API.
     "orgpolicy.googleapis.com",

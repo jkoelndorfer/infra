@@ -3,6 +3,7 @@ locals {
     aws_infra_mgmt   = "aws_infra_mgmt"
     aws_accounts     = "aws_accounts"
     aws_bootstrap    = "aws_bootstrap"
+    budget           = "budget"
     google_bootstrap = "google_bootstrap"
   }
   unit_paths_values = { for k, v in local.unit_paths: k => "../${v}" }
@@ -18,6 +19,12 @@ locals {
           arn  = "arn:aws:iam::000000000000:role/OrganizationAccountAccessRole"
           name = "OrganizationAccountAccessRole"
         }
+      }
+    }
+    aws_infra_mgmt = {
+      infrastate_bucket = {
+        arn    = "arn:aws:s3:::infrastate-000000000000"
+        bucket = "infrastate-000000000000"
       }
     }
     env = "prod"
@@ -52,5 +59,11 @@ unit "aws_infra_mgmt" {
 unit "aws_accounts" {
   source = "../..//units/aws_accounts"
   path   = local.unit_paths.aws_accounts
+  values = local.bootstrap_values
+}
+
+unit "budget" {
+  source = "../..//units/budget"
+  path   = local.unit_paths.budget
   values = local.bootstrap_values
 }

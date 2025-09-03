@@ -33,6 +33,25 @@ resource "google_project_iam_member" "terragrunt_infra_mgmt_secret_reader" {
   member  = google_service_account.terragrunt.member
 }
 
+resource "google_project_iam_member" "terragrunt_service_consumer" {
+  project = google_project.infra_mgmt.project_id
+  role    = "roles/serviceusage.serviceUsageConsumer"
+  member  = google_service_account.terragrunt.member
+}
+
+resource "google_project_iam_member" "terragrunt_infra_mgmt_monitoring_channel_editor" {
+  project = google_project.infra_mgmt.project_id
+  role    = "roles/monitoring.notificationChannelEditor"
+  member  = google_service_account.terragrunt.member
+}
+
+resource "google_billing_account_iam_member" "terragrunt_cost_manager" {
+  billing_account_id = var.google_billing_account.id
+
+  role   = "roles/billing.costsManager"
+  member = google_service_account.terragrunt.member
+}
+
 resource "google_storage_bucket_iam_member" "terragrunt_state_bucket_viewer" {
   bucket = google_storage_bucket.infrastate.name
   role   = "roles/storage.bucketViewer"
