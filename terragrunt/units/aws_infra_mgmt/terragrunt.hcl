@@ -27,7 +27,7 @@ remote_state {
 dependency "aws_bootstrap" {
   config_path = values.unit_paths.aws_bootstrap
 
-  mock_outputs = values.aws_bootstrap
+  mock_outputs = values.mock_outputs.aws_bootstrap
 }
 
 generate "aws_infra_mgmt_provider" {
@@ -64,6 +64,7 @@ inputs = merge(
   values,
   dependency.aws_bootstrap.outputs,
   {
+    google_env_folder    = values.mock_outputs.google_env_folder
     infrastate_s3_bucket = include.root.locals.infrastate_s3_bucket
   },
 )

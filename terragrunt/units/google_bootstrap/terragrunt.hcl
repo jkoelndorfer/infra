@@ -55,6 +55,7 @@ generate "google_infra_provider" {
 inputs = merge(
   values,
   {
+    google_env_folder     = values.mock_outputs.google_env_folder
     infrastate_gcs_bucket = include.root.locals.infrastate_gcs_bucket
   }
 )

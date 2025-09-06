@@ -39,4 +39,7 @@ generate "aws_organization_provider" {
   )
 }
 
-inputs = values
+inputs = merge(
+  values,
+  values.mock_outputs,
+)

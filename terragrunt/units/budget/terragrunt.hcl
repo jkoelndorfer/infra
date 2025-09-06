@@ -10,7 +10,7 @@ terraform {
 dependency "aws_infra_mgmt" {
   config_path = values.unit_paths.aws_infra_mgmt
 
-  mock_outputs = values.aws_infra_mgmt
+  mock_outputs = values.mock_outputs.aws_infra_mgmt
 }
 
 dependency "google_bootstrap" {
@@ -46,4 +46,10 @@ generate "google_infra_provider" {
   )
 }
 
-inputs = merge(values, dependency.google_bootstrap.outputs)
+inputs = merge(
+  values,
+  dependency.google_bootstrap.outputs,
+  {
+    google_env_folder = values.mock_outputs.google_env_folder
+  }
+)

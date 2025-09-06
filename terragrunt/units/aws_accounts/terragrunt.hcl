@@ -45,4 +45,9 @@ generate "aws_organization_provider" {
   )
 }
 
-inputs = values
+inputs = merge(
+  values,
+  {
+    google_env_folder = values.mock_outputs.google_env_folder
+  }
+)

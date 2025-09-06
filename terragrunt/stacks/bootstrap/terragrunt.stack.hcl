@@ -8,32 +8,34 @@ locals {
   }
   unit_paths_values = { for k, v in local.unit_paths: k => "../${v}" }
   bootstrap_values = {
-    aws_bootstrap = {
-      aws_infra_mgmt_account = {
-        arn   = "arn:aws:organizations::000000000000:account/x-xxxxxxxxxx/000000000000"
-        email = "aws.infra-mgmt@example.com"
-        env   = "bootstrap"
-        id    = "000000000000"
+    mock_outputs = {
+      aws_bootstrap = {
+        aws_infra_mgmt_account = {
+          arn   = "arn:aws:organizations::000000000000:account/x-xxxxxxxxxx/000000000000"
+          email = "aws.infra-mgmt@example.com"
+          env   = "bootstrap"
+          id    = "000000000000"
 
-        organization_access_role = {
-          arn  = "arn:aws:iam::000000000000:role/OrganizationAccountAccessRole"
-          name = "OrganizationAccountAccessRole"
+          organization_access_role = {
+            arn  = "arn:aws:iam::000000000000:role/OrganizationAccountAccessRole"
+            name = "OrganizationAccountAccessRole"
+          }
         }
       }
-    }
-    aws_infra_mgmt = {
-      infrastate_bucket = {
-        arn    = "arn:aws:s3:::infrastate-000000000000"
-        bucket = "infrastate-000000000000"
+      aws_infra_mgmt = {
+        infrastate_bucket = {
+          arn    = "arn:aws:s3:::infrastate-000000000000"
+          bucket = "infrastate-000000000000"
+        }
+      }
+      google_env_folder = {
+        name         = "not a real environment folder; use only env attribute"
+        display_name = "not a real environment folder; use only env attribute"
+        env          = "prod"
+        folder_id    = "000000000000"
       }
     }
     env = "prod"
-    google_env_folder = {
-      name         = "not a real environment folder; use only env attribute"
-      display_name = "not a real environment folder; use only env attribute"
-      env          = "prod"
-      folder_id    = "000000000000"
-    }
     unit_paths = local.unit_paths_values
   }
 }
