@@ -29,6 +29,18 @@ modem_network = ip_network("172.17.17.0/24")
 router_ip_modem_net = next(modem_network.hosts())
 router_ip_modem_net_cidr = f"{router_ip_modem_net}/{modem_network.prefixlen}"
 
+kserv_network = ip_network("192.168.7.0/24")
+kube_cluster_network = ip_network("192.168.8.0/22")
+kube_service_network = ip_network("192.168.12.0/22")
+
+router_ip_kserv_network = next(kserv_network.hosts())
+router_ip_kube_cluster_network = next(kube_cluster_network.hosts())
+router_ip_kube_service_network = next(kube_service_network.hosts())
+
+router_ip_kserv_network_cidr = f"{router_ip_kserv_network}/{kserv_network.prefixlen}"
+router_ip_kube_cluster_network_cidr = f"{router_ip_kube_cluster_network}/{kube_cluster_network.prefixlen}" 
+router_ip_kube_service_network_cidr = f"{router_ip_kube_service_network}/{kube_service_network.prefixlen}" 
+
 dhcp_start = "192.168.194.10"
 dhcp_end = "192.168.194.250"
 
