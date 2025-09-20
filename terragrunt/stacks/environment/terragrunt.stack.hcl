@@ -5,6 +5,7 @@ locals {
     backup            = "backup"
     dns               = "dns"
     homelab_dns       = "homelab_dns"
+    homelab_traefik   = "homelab_traefik"
   }
   unit_paths_values = { for k, v in local.unit_paths: k => "../${v}" }
 
@@ -49,6 +50,7 @@ locals {
           description = "Mock role to provide access to update DNS records."
         }
       }
+      homelab_traefik = {}
     }
   }
 }
@@ -80,6 +82,20 @@ unit "dns" {
 unit "backup" {
   source = "${local.units_dir}/backup"
   path   = local.unit_paths.backup
+  values = local.common_values
+
+  no_dot_terragrunt_stack = true
+}
+
+unit "homelab_traefik" {
+  # Traefik's Helm chart does not support multiple installations per Kubernetes cluster.
+  #
+  # It produces the following error:
+  #   > Error: INSTALLATION FAILED: Unable to continue with install: IngressClass "traefik" in namespace ""
+  #   > exists and cannot be imported into the current release: invalid ownership metadata; annotation validation
+  #   > error: key "meta.helm.sh/release-namespace" must equal "foo": current value is "bar"
+  source = values.env == "prod" ? "${local.units_dir}/homelab_traefik" : "${local.units_dir}/noop"
+  path   = local.unit_paths.homelab_traefik
   values = local.common_values
 
   no_dot_terragrunt_stack = true
