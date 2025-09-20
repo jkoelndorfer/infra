@@ -12,6 +12,9 @@ locals {
     # This is needed by the Terragrunt service account to create folders and projects.
     "cloudresourcemanager.googleapis.com",
 
+    # This is needed by the Terragrunt service account to create custom IAM roles.
+    "iam.googleapis.com",
+
     # This is needed to enable budget-related notifications.
     "monitoring.googleapis.com",
 
