@@ -1,0 +1,69 @@
+#!/bin/bash
+
+set -euo pipefail
+
+function file_has_valid_sha256sum() {
+  # Example output:
+  #
+  #   $ sha256sum /dev/null
+  #   e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  /dev/null
+  local actual_sha256sum=$(sha256sum "$file_absolute_path" | awk '{ print $1 }')
+
+  if [[ "$actual_sha256sum" == "$expected_sha256sum" ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+function write_data_output() {
+  jq -n \
+    --arg file_path "$file_absolute_path" \
+    --arg file_downloaded "$file_downloaded" \
+    --arg url "$url" \
+    --arg sha256sum "$expected_sha256sum" \
+    '{ file_path: $file_path, file_downloaded: $file_downloaded, url: $url, sha256sum: $sha256sum }'
+}
+
+default_cache_dir="${HOME}/.cache/terragrunt/http_download"
+if ! type jq >/dev/null 2>&1; then
+  printf 'fatal: the http_download module requires jq to be installed\n' >&2
+  exit 1
+fi
+
+read -r -t 0.25 -d '' query || true
+
+url=$(jq -r '.url' <<<"$query")
+expected_sha256sum=$(jq -r '.sha256sum' <<<"$query")
+user_cache_dir=$(jq -r '.cache_dir' <<<"$query")
+file_downloaded='false'
+
+if [[ "$user_cache_dir" != 'null' ]]; then
+  actual_cache_dir=${user_cache_dir}
+else
+  actual_cache_dir=${default_cache_dir}
+fi
+dest_filename=$(basename "$url")
+file_absolute_path="${actual_cache_dir}/${dest_filename}"
+
+mkdir -p "$actual_cache_dir"
+cd "$actual_cache_dir"
+
+if file_has_valid_sha256sum; then
+  # The file has already been downloaded; just return the cached copy.
+  write_data_output
+  exit 0
+else
+  rm -f "$file_absolute_path"
+fi
+
+curl -s --output "$file_absolute_path" -L "$url"
+file_downloaded='true'
+
+if file_has_valid_sha256sum; then
+  write_data_output
+else
+  printf 'downloaded file has sha256sum %s, expected %s\n' "$actual_sha256sum" "$expected_sha256sum"
+  rm -f "$file_absolute_path"
+  exit 1
+fi
