@@ -6,6 +6,7 @@ locals {
     dns               = "dns"
     homelab_dns       = "homelab_dns"
     homelab_traefik   = "homelab_traefik"
+    homelab_syncthing = "homelab_syncthing"
   }
   unit_paths_values = { for k, v in local.unit_paths: k => "../${v}" }
 
@@ -48,6 +49,19 @@ locals {
             "dns.changes.create",
           ]
           description = "Mock role to provide access to update DNS records."
+        }
+      }
+      homelab_syncthing = {
+        deployment = {
+          namespace = "mock-syncthing"
+          name      = "syncthing"
+        }
+
+        data_volume = {
+          name    = "mock-syncthing-data"
+          storage = "100Gi"
+
+          storage_class_name = "local-path"
         }
       }
       homelab_traefik = {}
@@ -96,6 +110,14 @@ unit "homelab_traefik" {
   #   > error: key "meta.helm.sh/release-namespace" must equal "foo": current value is "bar"
   source = values.env == "prod" ? "${local.units_dir}/homelab_traefik" : "${local.units_dir}/noop"
   path   = local.unit_paths.homelab_traefik
+  values = local.common_values
+
+  no_dot_terragrunt_stack = true
+}
+
+unit "homelab_syncthing" {
+  source = "${local.units_dir}/homelab_syncthing"
+  path   = local.unit_paths.homelab_syncthing
   values = local.common_values
 
   no_dot_terragrunt_stack = true
