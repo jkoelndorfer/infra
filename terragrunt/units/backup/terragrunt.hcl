@@ -22,6 +22,18 @@ dependency "google_env_folder" {
   mock_outputs = values.mock_outputs.google_env_folder
 }
 
+dependency "homelab_ctr_registry" {
+  config_path = values.unit_paths.homelab_ctr_registry
+
+  mock_outputs = values.mock_outputs.homelab_ctr_registry
+}
+
+dependency "homelab_syncthing" {
+  config_path = values.unit_paths.homelab_syncthing
+
+  mock_outputs = values.mock_outputs.homelab_syncthing
+}
+
 generate "aws_provider" {
   path      = "aws_provider.tf"
   if_exists = "overwrite"
@@ -40,5 +52,10 @@ generate "aws_provider" {
 
 inputs = merge(
   values,
-  dependency.google_env_folder.outputs
+  dependency.google_env_folder.outputs,
+  dependency.homelab_ctr_registry.outputs,
+  {
+    syncthing_deployment = dependency.homelab_syncthing.outputs.deployment,
+    syncthing_data_volume = dependency.homelab_syncthing.outputs.data_volume,
+  },
 )

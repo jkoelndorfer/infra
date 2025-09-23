@@ -24,10 +24,6 @@ resource "aws_s3_bucket_versioning" "backup" {
   }
 }
 
-locals {
-  syncthing_prefix = "syncthing/"
-}
-
 resource "aws_s3_bucket_lifecycle_configuration" "backup" {
   bucket = aws_s3_bucket.backup.bucket
 
@@ -47,113 +43,15 @@ resource "aws_s3_bucket_lifecycle_configuration" "backup" {
   }
 
   rule {
-    id     = "syncthing-storage-class"
+    id     = "restic"
     status = "Enabled"
 
     filter {
-      prefix = local.syncthing_prefix
+      prefix = "restic/"
     }
 
-    noncurrent_version_transition {
+    noncurrent_version_expiration {
       noncurrent_days = 30
-      storage_class   = "STANDARD_IA"
-    }
-
-    noncurrent_version_transition {
-      noncurrent_days = 90
-      storage_class   = "GLACIER"
-    }
-  }
-
-  rule {
-    id     = "syncthing-7-day"
-    status = "Enabled"
-
-    filter {
-      prefix = local.syncthing_prefix
-    }
-
-    noncurrent_version_expiration {
-      noncurrent_days = 7
-
-      newer_noncurrent_versions = 30
-    }
-  }
-
-  rule {
-    id     = "syncthing-90-day"
-    status = "Enabled"
-
-    filter {
-      prefix = local.syncthing_prefix
-    }
-
-    noncurrent_version_expiration {
-      noncurrent_days = 90
-
-      newer_noncurrent_versions = 5
-    }
-  }
-
-  rule {
-    id     = "syncthing-1-year"
-    status = "Enabled"
-
-    filter {
-      prefix = local.syncthing_prefix
-    }
-
-    noncurrent_version_expiration {
-      noncurrent_days = 365
-
-      newer_noncurrent_versions = 3
-    }
-  }
-
-  rule {
-    id     = "syncthing-2-year"
-    status = "Enabled"
-
-    filter {
-      prefix = local.syncthing_prefix
-    }
-
-    noncurrent_version_expiration {
-      noncurrent_days = 730
-    }
-  }
-
-  rule {
-    id     = "photoprism"
-    status = "Enabled"
-
-    filter {
-      prefix = "photoprism/"
-    }
-
-    noncurrent_version_expiration {
-      noncurrent_days = 1
-    }
-
-    transition {
-      days = 0
-
-      storage_class = "GLACIER"
-    }
-  }
-
-  rule {
-    id     = "vaultwarden"
-    status = "Enabled"
-
-    filter {
-      prefix = "vaultwarden/"
-    }
-
-    noncurrent_version_expiration {
-      noncurrent_days = 365
-
-      newer_noncurrent_versions = 100
     }
   }
 }

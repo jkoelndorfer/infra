@@ -1,5 +1,6 @@
 locals {
   backup_ro_bucket_permissions = [
+    "s3:GetBucketLocation",
     "s3:GetBucketVersioning",
     "s3:ListBucket",
     "s3:ListBucketMultipartUploads",
@@ -36,12 +37,22 @@ locals {
 
 data "aws_iam_policy_document" "home_backup" {
   statement {
-    sid     = "AllowHomeBackup"
+    sid     = "AllowHomeBackupBucket"
+    effect  = "Allow"
+    actions = local.backup_ro_bucket_permissions
+    resources = [
+      aws_s3_bucket.backup.arn,
+    ]
+  }
+
+  statement {
+    sid     = "AllowHomeBackupObjects"
     effect  = "Allow"
     actions = local.backup_rw_object_permissions
     resources = [
       "${aws_s3_bucket.backup.arn}/syncthing/*",
       "${aws_s3_bucket.backup.arn}/photoprism/*",
+      "${aws_s3_bucket.backup.arn}/restic/*",
     ]
   }
 
