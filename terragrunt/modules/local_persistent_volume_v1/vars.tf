@@ -1,3 +1,8 @@
+variable "env" {
+  description = "the environment that the volume is deployed in"
+  type        = string
+}
+
 variable "namespace" {
   description = "the namespace that the volume claim is created in"
   type        = string

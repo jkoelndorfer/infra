@@ -8,6 +8,7 @@ module "namespace" {
 module "cert_volume" {
   source = "${var.paths.modules_root}/local_persistent_volume_v1"
 
+  env            = var.env
   namespace      = module.namespace.name
   name           = "traefik"
   storage        = "128Mi"

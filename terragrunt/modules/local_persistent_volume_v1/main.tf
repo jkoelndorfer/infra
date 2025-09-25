@@ -10,7 +10,7 @@ locals {
 
 resource "kubernetes_persistent_volume_v1" "this" {
   metadata {
-    name = var.name
+    name = "${var.env}-${var.name}"
   }
 
   spec {
@@ -47,7 +47,7 @@ resource "kubernetes_persistent_volume_v1" "this" {
 resource "kubernetes_persistent_volume_claim_v1" "this" {
   metadata {
     namespace = var.namespace
-    name      = kubernetes_persistent_volume_v1.this.metadata[0].name
+    name      = var.name
   }
 
   spec {
