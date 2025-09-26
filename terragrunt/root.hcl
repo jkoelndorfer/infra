@@ -65,6 +65,9 @@ locals {
     member = "user:${local._google_personal_principal}"
   }
 
+  # Domain that can receive email categorized by recipient.
+  personal_email_domain = "john.${local.google_organization.domain}"
+
   # Mirrors the structure of the google_storage_bucket data; see
   # https://registry.terraform.io/providers/hashicorp/google/6.46.0/docs/data-sources/storage_bucket.
   infrastate_gcs_bucket = {
@@ -141,6 +144,7 @@ locals {
     google_infra_mgmt_project = local.google_infra_mgmt_project
     google_personal_principal = local.google_personal_principal
     paths                     = local.paths
+    personal_email_domain     = local.personal_email_domain
   }
 
   # Used in generated variable files (and the outputs of the globals module).
@@ -152,6 +156,7 @@ locals {
     google_infra_mgmt_project = "the GCP project used for infrastructure management"
     google_personal_principal = "the GCP principal used for day-to-day operations"
     paths                     = "paths to important resources under terragrunt's management"
+    personal_email_domain     = "domain that can receive email categorized by recipient" 
   }
 
   global_vars_gen = { for k, v in local.globals: k => { description = lookup(local.global_descriptions, k), default = v } }
