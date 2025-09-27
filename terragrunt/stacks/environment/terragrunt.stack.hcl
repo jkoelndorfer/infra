@@ -1,12 +1,13 @@
 locals {
   units_dir  = "${get_repo_root()}/terragrunt//units"
   unit_paths = {
-    google_env_folder = "google_env_folder"
-    backup            = "backup"
-    dns               = "dns"
-    homelab_dns       = "homelab_dns"
-    homelab_traefik   = "homelab_traefik"
-    homelab_syncthing = "homelab_syncthing"
+    google_env_folder    = "google_env_folder"
+    backup               = "backup"
+    dns                  = "dns"
+    homelab_ctr_registry = "homelab_ctr_registry"
+    homelab_dns          = "homelab_dns"
+    homelab_traefik      = "homelab_traefik"
+    homelab_syncthing    = "homelab_syncthing"
   }
   unit_paths_values = { for k, v in local.unit_paths: k => "../${v}" }
 
@@ -22,6 +23,10 @@ locals {
           name         = "not a real environment folder; use only env attribute"
           folder_id    = "000000000000"
         }
+      }
+      homelab_ctr_registry = {
+        registry_ro_host = "ctr-registry-ro.example.com"
+        registry_rw_host = "ctr-registry-rw.example.com"
       }
       homelab_dns = {
         homelab_dns_project = {
@@ -110,6 +115,14 @@ unit "homelab_traefik" {
   #   > error: key "meta.helm.sh/release-namespace" must equal "foo": current value is "bar"
   source = values.env == "prod" ? "${local.units_dir}/homelab_traefik" : "${local.units_dir}/noop"
   path   = local.unit_paths.homelab_traefik
+  values = local.common_values
+
+  no_dot_terragrunt_stack = true
+}
+
+unit "homelab_ctr_registry" {
+  source = "${local.units_dir}/homelab_ctr_registry"
+  path   = local.unit_paths.homelab_ctr_registry
   values = local.common_values
 
   no_dot_terragrunt_stack = true
