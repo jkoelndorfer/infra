@@ -1,13 +1,14 @@
 locals {
   units_dir  = "${get_repo_root()}/terragrunt//units"
   unit_paths = {
-    google_env_folder    = "google_env_folder"
-    backup               = "backup"
-    dns                  = "dns"
-    homelab_ctr_registry = "homelab_ctr_registry"
-    homelab_dns          = "homelab_dns"
-    homelab_traefik      = "homelab_traefik"
-    homelab_syncthing    = "homelab_syncthing"
+    google_env_folder      = "google_env_folder"
+    backup                 = "backup"
+    dns                    = "dns"
+    homelab_argo_workflows = "homelab_argo_workflows"
+    homelab_ctr_registry   = "homelab_ctr_registry"
+    homelab_dns            = "homelab_dns"
+    homelab_traefik        = "homelab_traefik"
+    homelab_syncthing      = "homelab_syncthing"
   }
   unit_paths_values = { for k, v in local.unit_paths: k => "../${v}" }
 
@@ -123,6 +124,16 @@ unit "homelab_traefik" {
 unit "homelab_ctr_registry" {
   source = "${local.units_dir}/homelab_ctr_registry"
   path   = local.unit_paths.homelab_ctr_registry
+  values = local.common_values
+
+  no_dot_terragrunt_stack = true
+}
+
+unit "homelab_argo_workflows" {
+  # Argo Workflows monitors resources in all namespaces, so it won't
+  # support multiple installations per Kubernetes cluster.
+  source = values.env == "prod" ? "${local.units_dir}/homelab_argo_workflows" : "${local.units_dir}/noop"
+  path   = local.unit_paths.homelab_argo_workflows
   values = local.common_values
 
   no_dot_terragrunt_stack = true
