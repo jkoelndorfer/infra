@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from backup.cmd import CommandExecutorProtocol
+from backup.cmd import CommandExecutorProtocol, cmdexec
 from backup.restic import ResticClient
 
 from testlib.restic import ExpectedResticCommand
@@ -34,6 +34,24 @@ def expected_restic_cmd(
         ]
 
     return f
+
+
+@pytest.fixture
+def restic_client(
+    restic_repository_path: str,
+    restic_password_file: Path,
+    restic_cache_dir: Path,
+) -> ResticClient:
+    """
+    ResticClient using a real command executor. Methods called on this client will
+    invoke the restic binary.
+    """
+    return ResticClient(
+        cmdexec=cmdexec,
+        repository_path=restic_repository_path,
+        password_file=restic_password_file,
+        cache_dir=restic_cache_dir,
+    )
 
 
 @pytest.fixture
@@ -88,4 +106,9 @@ def restic_password_file(restic_dir: Path) -> Path:
     Contains the path to a password file that can be used to initialize
     a new restic repository.
     """
-    return restic_dir / "password"
+    p = restic_dir / "password"
+
+    with open(p, "w") as f:
+        f.write("test-repo-password")
+
+    return p
