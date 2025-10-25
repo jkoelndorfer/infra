@@ -1,0 +1,84 @@
+#!/bin/bash
+
+set -eo pipefail
+
+python_version='3.13'
+base_image_tag="${python_version}-trixie"
+
+build_stage=${1:-base}
+script_path=$(readlink -f "$0")
+script_dir=$(dirname "$script_path")
+
+cd "$script_dir"
+
+repo_revision=$(git rev-parse HEAD)
+
+set -x
+case "$build_stage" in
+base)
+	python_image_working_ctr=$(buildah from "docker.io/python:${base_image_tag}")
+
+	buildah run "$python_image_working_ctr" -- apt-get update
+	buildah run "$python_image_working_ctr" -- apt-get -y install awscli kubectl restic rclone
+
+	buildah commit "$python_image_working_ctr" 'backupjob:base'
+	buildah rm "$python_image_working_ctr"
+	;&
+
+appdeps)
+	pkgs_ctr=$(buildah from 'backupjob:base')
+
+	buildah add "$pkgs_ctr" 'app/requirements.txt' '/app/requirements.txt'
+
+	buildah run "$pkgs_ctr" -- pip install -r '/app/requirements.txt'
+
+	buildah commit "$pkgs_ctr" 'backupjob:appdeps'
+	buildah rm "$pkgs_ctr"
+	;&
+
+app)
+	appdeps_ctr=$(buildah from 'backupjob:appdeps')
+
+	buildah add "$appdeps_ctr" 'app/backup.py' '/app/backup.py'
+	buildah add "$appdeps_ctr" 'app/backup' '/app/backup'
+	buildah add "$appdeps_ctr" 'app/pytest.ini' '/app/pytest.ini'
+	buildah add "$appdeps_ctr" 'app/tests' '/app/tests'
+	buildah add "$appdeps_ctr" 'app/test' '/app/test'
+
+	buildah commit "$appdeps_ctr" "backupjob:app"
+	buildah rm "$appdeps_ctr"
+	;&
+
+cfg)
+	app_ctr=$(buildah from 'backupjob:app')
+
+	buildah config --env 'BACKUPJOB_CONTAINER=1' "$app_ctr"
+	buildah config --env "PYTHONPATH=/app:/app/tests" "$app_ctr"
+	buildah config --cmd '["/app/backup.py"]' "$app_ctr"
+	buildah config --workingdir '/app' "$app_ctr"
+
+	buildah commit "$app_ctr" "backupjob:${repo_revision}"
+	buildah rm "$app_ctr"
+	;;
+
+*)
+	printf 'invalid build stage: %s\n' "$build_stage" >&2
+	exit 1
+	;;
+esac
+
+buildah tag "backupjob:${repo_revision}" 'backupjob:latest'
+podman run \
+	--user 50000 \
+	--rm -it \
+	--env 'COVERAGE_FILE=/tmp/coverage' \
+	'backupjob:latest' \
+	'/app/test' -m 'not live' -p 'no:cacheprovider'
+
+internal_registry_rw_domain=$(kubectl -n prod-registry get secret/registry-rw --template='{{ .data.hostname }}' | base64 -d)
+if [[ -n "$internal_registry_rw_domain" ]]; then
+	buildah tag "backupjob:${repo_revision}" "${internal_registry_rw_domain}/backupjob:${repo_revision}"
+	buildah tag "backupjob:latest" "${internal_registry_rw_domain}/backupjob:latest"
+else
+	printf 'skipping tag for internal registry because domain could not be looked up\n' >&2
+fi

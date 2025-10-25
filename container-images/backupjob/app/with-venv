@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -euo pipefail
+
+script_path=$(readlink -f "$0")
+script_dir=$(dirname "$script_path")
+venv="${script_dir}/.venv"
+requirements_txt="${script_dir}/requirements.txt"
+do_dependency_install=0
+
+export PYTHONPATH="${script_dir}:${script_dir}/tests"
+
+if ! [[ -d "$venv" ]]; then
+	virtualenv "$venv"
+	do_dependency_install=1
+else
+	if [[ "$(stat -c '%Y' "$venv")" -lt "$(stat -c '%Y' "$requirements_txt")" ]]; then
+		do_dependency_install=1
+		rm -rf "$venv"
+		virtualenv "$venv"
+	fi
+fi
+
+source "${venv}/bin/activate"
+if [[ "$do_dependency_install" == '1' ]]; then
+	pip install -r "$requirements_txt"
+fi
+
+exec "$@"
