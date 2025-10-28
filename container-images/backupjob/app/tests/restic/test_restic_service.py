@@ -62,6 +62,7 @@ class TestResticServiceIntegration:
 
         restic_dir.chmod(0o700)
 
+    @pytest.mark.slow
     def test_backup_single_directory_uninitialized_repo(
         self, backup_src_info: BackupSourceInfo, restic_service: ResticService
     ) -> None:
@@ -88,6 +89,7 @@ class TestResticServiceIntegration:
         assert total_bytes_processed.data == backup_src_info.total_size
         assert new_repo.data is True
 
+    @pytest.mark.slow
     def test_backup_each_directory_uninitialized_repo(
         self, backup_src_info: BackupSourceInfo, restic_service: ResticService
     ) -> None:
@@ -120,6 +122,7 @@ class TestResticServiceIntegration:
         assert total_count == backup_src_info.total_count
         assert total_bytes_processed == backup_src_info.total_size
 
+    @pytest.mark.slow
     def test_backup_backup_fail(
         self,
         backup_src_info: BackupSourceInfo,
@@ -154,6 +157,7 @@ class TestResticServiceIntegration:
 
         backup_src_info.path.chmod(0o700)
 
+    @pytest.mark.slow
     def test_check(
         self, backup_src_info: BackupSourceInfo, restic_service: ResticService
     ) -> None:
