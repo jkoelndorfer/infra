@@ -9,7 +9,35 @@ from typing import Generator
 
 import pytest
 
-from testlib import DataGenerator, MockCommandExecutor
+from testlib import (
+    BackupSourceInfo,
+    BackupSourceSubdirectory,
+    DataGenerator,
+    MockCommandExecutor,
+)
+
+
+@pytest.fixture
+def backup_src_info(datagen: DataGenerator) -> BackupSourceInfo:
+    """
+    Backup source directory containing generated data.
+    """
+    backup_src_root = Path("backup-src")
+    D = BackupSourceSubdirectory
+
+    data_dirs = [
+        D(Path("0001"), 128, 256),
+        D(Path("0002"), 512, 128),
+        D(Path("0003"), 8, 2048),
+    ]
+
+    bsi = BackupSourceInfo(datagen.root / backup_src_root)
+
+    for dd in data_dirs:
+        bsi.directories.append(dd)
+        datagen.generate_random(backup_src_root / dd.path, dd.count, dd.file_size)
+
+    return bsi
 
 
 @pytest.fixture
