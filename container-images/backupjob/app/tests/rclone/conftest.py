@@ -6,9 +6,27 @@ from pathlib import Path
 
 import pytest
 
+from backup.cmd import cmdexec
 from backup.rclone import RcloneClient
 
 from testlib.cmd import MockCommandExecutor
+
+
+@pytest.fixture
+def sync_destination(tmpdir: Path) -> Path:
+    """
+    Destination for rclone syncs.
+    """
+    return tmpdir / "rclone-dest"
+
+
+@pytest.fixture
+def rclone_client() -> RcloneClient:
+    """
+    RcloneClient using a real command executor. Methods called on this client will
+    invoke the rclone binary.
+    """
+    return RcloneClient(cmdexec=cmdexec)
 
 
 @pytest.fixture
