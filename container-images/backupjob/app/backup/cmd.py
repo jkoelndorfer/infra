@@ -9,6 +9,10 @@ from pathlib import Path
 import subprocess
 from typing import Protocol
 
+from .log import logger
+
+log = logger("cmd")
+
 
 class CommandExecutorProtocol(Protocol):
     """
@@ -37,7 +41,12 @@ def cmdexec(
     else:
         stderr = subprocess.PIPE
 
-    return subprocess.run(cmd, cwd=str(cwd), stdout=subprocess.PIPE, stderr=stderr)
+    log.info(f"executing command {cmd} in {cwd}")
+    proc = subprocess.run(cmd, cwd=str(cwd), stdout=subprocess.PIPE, stderr=stderr)
+    log.info(proc.stdout)
+    if not combine_stdout_stderr:
+        log.info(proc.stderr)
+    return proc
 
 
 # Ensure cmdexec satisfies the CommandExecutorProtocol.

@@ -8,13 +8,16 @@ The BackupApplication is invoked by the backup script to perform backups.
 """
 
 from argparse import ArgumentParser, Namespace, _SubParsersAction
+from logging import INFO, StreamHandler
 from os import environ
 from pathlib import Path
+from sys import stderr
 from typing import Optional
 
 from requests import Session
 
 from .cmd import cmdexec
+from .log import logger
 from .rclone import RcloneClient, RcloneService
 from .restic import ResticClient, ResticService
 from .reporter import BackupReporter, GoogleChatBackupReporter, GoogleChatReportRenderer
@@ -132,6 +135,14 @@ class BackupApplication:
         restic_check = restic_sub.add_parser("check", help="restic check")
         restic_check.set_defaults(func=self.restic_check)
 
+    def configure_logger(self) -> None:
+        """
+        Configures the logger for this application.
+        """
+        log = logger(None)
+        log.addHandler(StreamHandler(stream=stderr))
+        log.setLevel(INFO)
+
     def rclone_service(self, args: Namespace) -> RcloneService:
         """
         Returns an RcloneService configured according to provided arguments.
@@ -220,6 +231,7 @@ class BackupApplication:
         """
         The entrypoint for the backup application.
         """
+        self.configure_logger()
         argparser = self.argparser()
         args = argparser.parse_args(argv)
         reporter = self.reporter(args)

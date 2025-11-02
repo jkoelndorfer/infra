@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Optional, Type, TypeVar
 
 from ..cmd import CommandExecutorProtocol
+from ..log import logger
 from .error import ResticError, InvalidResticRepositoryPasswordError
 from .model import ResticResult, ResticBackupResult, ResticCheckResult, ResticReturnCode
 
@@ -32,6 +33,7 @@ class ResticClient:
         cache_dir: Optional[Path],
     ) -> None:
         self.cmdexec = cmdexec
+        self.log = logger("restic.ResticClient")
         self.repository_path = repository_path
         self.password_file = password_file
         self.cache_dir = cache_dir
@@ -60,6 +62,8 @@ class ResticClient:
 
             case _:
                 # Unhandled error.
+                for m in result.messages:
+                    self.log.error(f"restic error: {str(m)}")
                 raise ResticError("unhandled error from restic", result)
 
     def backup(self, source: Path, skip_if_unchanged: bool) -> ResticBackupResult:
