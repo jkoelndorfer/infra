@@ -234,6 +234,8 @@ class GoogleChatBackupReporter:
         thread_key = self.thread_keyize(f"{backup_report.name}@{now_s}")
 
         for r in backup_report.all_reports():
+            if r.omittable:
+                continue
             response = self.report_one(r, thread_key=thread_key)
             responses.append(response)
 

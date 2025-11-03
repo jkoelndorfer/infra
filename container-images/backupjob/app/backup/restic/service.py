@@ -178,6 +178,9 @@ class ResticService:
             lambda x: A.ERROR if x is None else None,
         )
 
+        if skip_if_unchanged and snapshot_id is None:
+            report.omittable = True
+
         report.successful = True
 
     def _init_repo(self, new_backup_repo: F[bool], init_ok: F[bool]) -> bool:

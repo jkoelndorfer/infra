@@ -126,6 +126,39 @@ class TestResticServiceIntegration:
         assert all(r.successful for r in all_reports)
 
     @pytest.mark.slow
+    def test_double_backup_omittable_reports(
+        self, backup_src_info: BackupSourceInfo, restic_service: ResticService
+    ) -> None:
+        """
+        Tests that backing up directories with no changes to ensure that the
+        directories without changes have reports where omittable is True.
+        """
+        restic_service.backup(
+            name="test_double_backup_omittable_reports_first",
+            source=backup_src_info.path,
+            for_each=True,
+            skip_if_unchanged=True,
+        )
+        report = restic_service.backup(
+            name="test_double_backup_omittable_reports_second",
+            source=backup_src_info.path,
+            for_each=True,
+            skip_if_unchanged=True,
+        )
+
+        all_reports = list(report.all_reports())
+        omittable_reports = list(filter(lambda r: r.omittable, all_reports))
+        num_reports = len(all_reports)
+
+        # The top level "summary" report is always produced.
+        #
+        # Reports for each of the individual, backed-up directories
+        # are excluded if no data has changed.
+        expected_num_omitted_reports = num_reports - 1
+
+        assert len(omittable_reports) == expected_num_omitted_reports
+
+    @pytest.mark.slow
     def test_backup_backup_fail(
         self,
         backup_src_info: BackupSourceInfo,
