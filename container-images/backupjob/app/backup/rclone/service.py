@@ -32,6 +32,7 @@ class RcloneService:
 
         result = self.client.sync(source, destination)
 
+        report.successful = result.stats.errors == 0
         report.new_field(
             "Errors", result.stats.errors, lambda x: A.OK if x == 0 else A.ERROR
         )

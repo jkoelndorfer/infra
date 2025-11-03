@@ -7,7 +7,6 @@ Contains the implementation for the restic service.
 
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Tuple
 
 from ..report import (
     BackupReport,
@@ -68,7 +67,6 @@ class ResticService:
         """
         report = BackupReport("Repository Check")
         report.new_field("Repository", self.client.repository_path, lambda x: None)
-        check_ok = report.new_field("Check OK", False, lambda x: A.OK if x else A.ERROR)
 
         result = self.client.check(read_data=True)
         summary = result.summary or dict()
@@ -90,7 +88,7 @@ class ResticService:
         )
 
         if summary.get("num_errors", 1) == 0:
-            check_ok.data = True
+            report.successful = True
 
         return report
 
@@ -105,38 +103,35 @@ class ResticService:
 
         A subreport is produced for each backed-up directory if there were changes.
         """
+        all_subreports: list[BackupReport] = list()
+
         for p in source.iterdir():
             if p.is_file() or p.is_dir():
                 subreport = BackupReport(f"{report.name} / {p.name}")
+                all_subreports.append(subreport)
                 subreport.new_field("Backup Start", datetime.now(), lambda x: None)
                 backup_end = subreport.new_field(
                     "Backup End", datetime.now(), lambda x: None
                 )
                 try:
-                    backup_ok, snapshot_id = self._backup_single(
-                        p, skip_if_unchanged, subreport
-                    )
-                    if not backup_ok or snapshot_id is not None:
-                        report.add_subreport(subreport)
+                    self._backup_single(p, skip_if_unchanged, subreport)
+                    report.add_subreport(subreport)
                 finally:
                     backup_end.data = datetime.now()
+
+        report.successful = all(r.successful for r in all_subreports)
 
     def _backup_single(
         self,
         source: Path,
         skip_if_unchanged: bool,
         report: BackupReport,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> None:
         """
         Performs a single directory backup.
-
-        Returns a boolean indicating whether the backup was OK and an optional string
-        containing the snapshot ID, if one was created.
         """
         report.new_field("Directory", str(source), lambda x: None)
-        backup_ok = report.new_field(
-            "Backup OK", False, lambda x: A.OK if x else A.ERROR
-        )
+
         try:
             result = self.client.backup(source, skip_if_unchanged)
         except Exception as e:  # pragma: nocover
@@ -147,6 +142,8 @@ class ResticService:
         if result.summary is not None:
             summary = result.summary
 
+        snapshot_id = summary.get("snapshot_id", None)
+
         if result.returncode != ResticReturnCode.RC_OK:
             report.new_field(
                 "Error",
@@ -155,8 +152,6 @@ class ResticService:
             )
             return
 
-        backup_ok.data = True
-        snapshot_id = summary.get("snapshot_id", None)
         report.new_field(
             "New Files",
             summary.get("files_new", None),
@@ -182,7 +177,8 @@ class ResticService:
             snapshot_id,
             lambda x: A.ERROR if x is None else None,
         )
-        return backup_ok.data, snapshot_id
+
+        report.successful = True
 
     def _init_repo(self, new_backup_repo: F[bool], init_ok: F[bool]) -> bool:
         """

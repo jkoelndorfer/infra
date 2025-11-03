@@ -104,6 +104,14 @@ class TestBackupReport:
     Tests the BackupReport class.
     """
 
+    def test_default_unsuccessful(self) -> None:
+        """
+        Tests that the backup report defaults to being unsuccessful.
+        """
+        report = BackupReport("Default State")
+
+        assert not report.successful
+
     @pytest.mark.parametrize("name", ["TestReport1", "AnotherTestReport"])
     def test_name(self, name: str) -> None:
         """

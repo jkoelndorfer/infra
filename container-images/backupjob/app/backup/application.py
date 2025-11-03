@@ -32,6 +32,7 @@ class BackupApplication:
     """
 
     RC_OK = 0
+    RC_BACKUP_ERROR = 20
 
     def __init__(self) -> None:
         # Used for validation during test runs.
@@ -239,4 +240,7 @@ class BackupApplication:
         self.backup_report = backup_report
         reporter.report(backup_report)
 
-        return self.RC_OK
+        if backup_report.successful:
+            return self.RC_OK
+        else:
+            return self.RC_BACKUP_ERROR

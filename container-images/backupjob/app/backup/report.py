@@ -86,6 +86,9 @@ class BackupReport:
         # rclone runs end up being a no-op.
         self.omittable = False
 
+        # Whether the backup report indicates a successful operation.
+        self.successful = False
+
     def add_field(self, field: BackupReportField) -> None:
         """
         Adds a field to this backup report.

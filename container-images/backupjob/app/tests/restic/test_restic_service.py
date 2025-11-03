@@ -57,6 +57,7 @@ class TestResticServiceIntegration:
         )
         init_ok = report.find_one_field(lambda f: f.label == "Init OK")
 
+        assert not report.successful
         assert init_ok is not None
         assert init_ok.data is False
 
@@ -82,6 +83,7 @@ class TestResticServiceIntegration:
             lambda f: f.label == "Total Bytes Processed"
         )
 
+        assert report.successful
         assert new_files is not None
         assert total_bytes_processed is not None
         assert new_repo is not None
@@ -121,6 +123,7 @@ class TestResticServiceIntegration:
 
         assert total_count == backup_src_info.total_count
         assert total_bytes_processed == backup_src_info.total_size
+        assert all(r.successful for r in all_reports)
 
     @pytest.mark.slow
     def test_backup_backup_fail(
@@ -149,11 +152,9 @@ class TestResticServiceIntegration:
         )
 
         error = report.find_one_field(lambda f: f.label == "Error")
-        backup_ok = report.find_one_field(lambda f: f.label == "Backup OK")
 
+        assert not report.successful
         assert error is not None
-        assert backup_ok is not None
-        assert backup_ok.data is False
 
         backup_src_info.path.chmod(0o700)
 
@@ -180,6 +181,7 @@ class TestResticServiceIntegration:
             lambda f: f.label == "Prune Suggested"
         )
 
+        assert check_report.successful
         assert errors is not None
         assert repair_suggested is not None
         assert prune_suggested is not None
