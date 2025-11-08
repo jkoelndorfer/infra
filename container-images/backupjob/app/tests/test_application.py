@@ -121,7 +121,8 @@ class TestBackupApplicationIntegration:
         Tests an rclone sync, restic backup, and restic check.
         """
 
-        if environ.get("GOOGLE_CHAT_WEBHOOK_URL", None) is None:
+        url = environ.get("GOOGLE_CHAT_WEBHOOK_URL", None)
+        if url is None or url == "":
             pytest.skip(
                 "GOOGLE_CHAT_WEBHOOK_URL must be set to run test_full_backup_job"
             )

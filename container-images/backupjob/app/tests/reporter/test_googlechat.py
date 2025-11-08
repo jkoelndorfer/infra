@@ -124,7 +124,7 @@ def google_chat_webhook_url() -> str:
     Live webhook URI for Google Chat reporting.
     """
     url = environ.get("GOOGLE_CHAT_WEBHOOK_URL", None)
-    if url is None:
+    if url is None or url == "":
         pytest.skip(
             reason="GOOGLE_CHAT_WEBHOOK_URL must be set to perform live Google Chat webhook tests"
         )
