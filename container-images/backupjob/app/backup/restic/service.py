@@ -102,6 +102,50 @@ class ResticService:
 
         return report
 
+    def compare_latest_snapshots(self, remote_client: ResticClient) -> BackupReport:
+        """
+        Compares the most recent snapshot between the local repository
+        (accessed this service object's ResticClient) and a remote
+        repository (accessed via the remote_client).
+
+        The report is successful if the local and remote repositories' latest
+        snapshots are the same.
+        """
+        report = BackupReport("Snapshot Comparison")
+        report.new_field(
+            "Local Repository", self.client.repository_path, lambda x: None
+        )
+        report.new_field(
+            "Remote Repository", remote_client.repository_path, lambda x: None
+        )
+        local_snap_result = self.client.snapshots(latest=1)
+        remote_snap_result = remote_client.snapshots(latest=1)
+        no_snapshot = "(none)"
+
+        local_snap_id = no_snapshot
+        if len(local_snap_result.snapshots) > 0:
+            local_snap_id = local_snap_result.snapshots[-1].id
+
+        remote_snap_id = no_snapshot
+        if len(remote_snap_result.snapshots) > 0:
+            remote_snap_id = remote_snap_result.snapshots[-1].id
+
+        report.new_field(
+            "Local Snapshot ID",
+            local_snap_id,
+            lambda x: A.ERROR if local_snap_id == no_snapshot else None,
+        )
+        report.new_field(
+            "Remote Snapshot ID",
+            remote_snap_id,
+            lambda x: A.ERROR if local_snap_id == no_snapshot else None,
+        )
+
+        if local_snap_id == remote_snap_id and local_snap_id != no_snapshot:
+            report.successful = True
+
+        return report
+
     def _backup_for_each(
         self,
         source: Path,

@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from backup.cmd import cmdexec
 from backup.restic import ResticClient, ResticService
 
 from testlib import BackupSourceInfo
@@ -222,3 +223,73 @@ class TestResticServiceIntegration:
         assert errors.data == 0
         assert repair_suggested.data is False
         assert prune_suggested.data is False
+
+    def test_compare_latest_snapshots_same_client(
+        self, backup_src_info: BackupSourceInfo, restic_service: ResticService
+    ) -> None:
+        """
+        Tests compare_latest_snapshots using the same restic client as both
+        the local and remote client.
+        """
+        restic_service.backup(
+            name="test_compare_latest_snapshots_same_client",
+            source=backup_src_info.path,
+            for_each=False,
+            skip_if_unchanged=False,
+        )
+        compare_report = restic_service.compare_latest_snapshots(restic_service.client)
+        local_snap_id = compare_report.find_one_field(
+            lambda f: f.label == "Local Snapshot ID"
+        )
+        remote_snap_id = compare_report.find_one_field(
+            lambda f: f.label == "Remote Snapshot ID"
+        )
+
+        assert compare_report.successful
+        assert local_snap_id is not None
+        assert remote_snap_id is not None
+        assert local_snap_id.data == remote_snap_id.data
+
+    @pytest.mark.slow
+    def test_compare_latest_snapshots_different_repositories(
+        self,
+        backup_src_info: BackupSourceInfo,
+        restic_remote_cache_dir: Path,
+        restic_remote_repository_path: str,
+        restic_password_file: Path,
+        restic_service: ResticService,
+    ) -> None:
+        """
+        Tests compare_latest_snapshots when the local and remote repositories are different.
+        """
+        remote_restic_client = ResticClient(
+            cmdexec,
+            restic_remote_repository_path,
+            restic_password_file,
+            restic_remote_cache_dir,
+        )
+        remote_restic_service = ResticService(remote_restic_client)
+
+        restic_service.backup(
+            name="test_compare_latest_snapshots_different_repositories_local",
+            source=backup_src_info.path,
+            for_each=False,
+            skip_if_unchanged=False,
+        )
+        remote_restic_service.backup(
+            name="test_compare_latest_snapshots_different_repositories_remote",
+            source=backup_src_info.path,
+            for_each=False,
+            skip_if_unchanged=False,
+        )
+
+        report = restic_service.compare_latest_snapshots(remote_restic_client)
+        local_snap_id = report.find_one_field(lambda f: f.label == "Local Snapshot ID")
+        remote_snap_id = report.find_one_field(
+            lambda f: f.label == "Remote Snapshot ID"
+        )
+
+        assert not report.successful
+        assert local_snap_id is not None
+        assert remote_snap_id is not None
+        assert local_snap_id.data != remote_snap_id.data

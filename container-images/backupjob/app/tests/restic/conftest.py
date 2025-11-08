@@ -85,6 +85,17 @@ def restic_dir(tmpdir: Path) -> Path:
 
 
 @pytest.fixture
+def restic_remote_dir(tmpdir: Path) -> Path:
+    """
+    Path to the "remote" restic directory containing restic-related test data.
+    """
+    d = tmpdir / "restic-remote"
+    d.mkdir()
+
+    return d
+
+
+@pytest.fixture
 def restic_cache_dir(restic_dir: Path) -> Path:
     """
     Path to an empty Restic cache directory.
@@ -93,11 +104,27 @@ def restic_cache_dir(restic_dir: Path) -> Path:
 
 
 @pytest.fixture
+def restic_remote_cache_dir(restic_remote_dir: Path) -> Path:
+    """
+    Path to an empty Restic cache directory for the "remote" repository.
+    """
+    return restic_remote_dir / "cache"
+
+
+@pytest.fixture
 def restic_repository_path(restic_dir: Path) -> str:
     """
     Path to a temporary directory that can be used to initialize a Restic repository.
     """
     return str(restic_dir / "repo")
+
+
+@pytest.fixture
+def restic_remote_repository_path(restic_remote_dir: Path) -> str:
+    """
+    Path to a temporary directory that can be used to initialize a "remote" Restic repository.
+    """
+    return str(restic_remote_dir / "repo")
 
 
 @pytest.fixture
