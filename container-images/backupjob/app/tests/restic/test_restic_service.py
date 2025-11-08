@@ -156,6 +156,7 @@ class TestResticServiceIntegration:
         # are excluded if no data has changed.
         expected_num_omitted_reports = num_reports - 1
 
+        assert len(all_reports) == 4
         assert len(omittable_reports) == expected_num_omitted_reports
 
     @pytest.mark.slow

@@ -12,7 +12,13 @@ from typing import Optional, Type, TypeVar
 from ..cmd import CommandExecutorProtocol
 from ..log import logger
 from .error import ResticError, InvalidResticRepositoryPasswordError
-from .model import ResticResult, ResticBackupResult, ResticCheckResult, ResticReturnCode
+from .model import (
+    ResticResult,
+    ResticBackupResult,
+    ResticCheckResult,
+    ResticSnapshotsResult,
+    ResticReturnCode,
+)
 
 
 RR = TypeVar("RR", bound=ResticResult)
@@ -147,7 +153,11 @@ class ResticClient:
         full_cmd = self.full_cmd(*cmd)
         proc = self.cmdexec(full_cmd, cwd=cwd, combine_stdout_stderr=True)
         if single_json_document:
-            messages = [json.loads(proc.stdout)]
+            json_obj = json.loads(proc.stdout)
+            if isinstance(json_obj, list):
+                messages = json_obj
+            else:
+                messages = [json_obj]
         else:
             messages = list(
                 map(lambda ln: json.loads(ln), proc.stdout.splitlines(b"\n"))
@@ -159,4 +169,19 @@ class ResticClient:
             full_cmd=full_cmd,
             returncode=proc.returncode,
             messages=messages,
+        )
+
+    def snapshots(self, latest: Optional[int] = None) -> ResticSnapshotsResult:
+        """
+        Lists the repository's snapshots.
+        """
+        optional_args: list[str] = list()
+        if latest is not None:
+            optional_args.extend(["--latest", str(latest)])
+
+        return self.run(
+            "snapshots",
+            *optional_args,
+            result_type=ResticSnapshotsResult,
+            single_json_document=True,
         )

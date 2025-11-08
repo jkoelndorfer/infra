@@ -7,7 +7,8 @@ Contains models for restic data.
 
 from datetime import datetime
 from enum import IntEnum
-from typing import Any, Optional
+from pathlib import Path
+from typing import Any, Optional, Self
 
 
 class ResticReturnCode(IntEnum):
@@ -84,6 +85,7 @@ class ResticBackupSummary:
         files_unmodified: int,
         dirs_new: int,
         dirs_changed: int,
+        dirs_unmodified: int,
         data_blobs: int,
         tree_blobs: int,
         data_added: int,
@@ -99,12 +101,37 @@ class ResticBackupSummary:
         self.files_unmodified = files_unmodified
         self.dirs_new = dirs_new
         self.dirs_changed = dirs_changed
+        self.dirs_unmodified = dirs_unmodified
         self.data_blobs = data_blobs
         self.tree_blobs = tree_blobs
         self.data_added = data_added
         self.data_added_packed = data_added_packed
         self.total_files_processed = total_files_processed
         self.total_bytes_processed = total_bytes_processed
+
+    @classmethod
+    def from_dict(cls, snapshot_id: Optional[str], d: dict) -> Self:
+        """
+        Given a dictionary with backup summary fields as returned by restic,
+        returns a corresponding ResticBackupSummary object.
+        """
+        return cls(
+            snapshot_id=snapshot_id,
+            backup_start=datetime.fromisoformat(d["backup_start"]),
+            backup_end=datetime.fromisoformat(d["backup_end"]),
+            files_new=d["files_new"],
+            files_changed=d["files_changed"],
+            files_unmodified=d["files_unmodified"],
+            dirs_new=d["dirs_new"],
+            dirs_changed=d["dirs_changed"],
+            dirs_unmodified=d["dirs_unmodified"],
+            data_blobs=d["data_blobs"],
+            tree_blobs=d["tree_blobs"],
+            data_added=d["data_added"],
+            data_added_packed=d["data_added_packed"],
+            total_files_processed=d["total_files_processed"],
+            total_bytes_processed=d["total_bytes_processed"],
+        )
 
 
 class ResticBackupResult(ResticResult):
@@ -140,21 +167,9 @@ class ResticBackupResult(ResticResult):
         if self.returncode == ResticReturnCode.RC_OK:
             assert self._summary_dict is not None
 
-            self.summary = ResticBackupSummary(
+            self.summary = ResticBackupSummary.from_dict(
                 snapshot_id=self._summary_dict.get("snapshot_id", None),
-                backup_start=datetime.fromisoformat(self._summary_dict["backup_start"]),
-                backup_end=datetime.fromisoformat(self._summary_dict["backup_end"]),
-                files_new=self._summary_dict["files_new"],
-                files_changed=self._summary_dict["files_changed"],
-                files_unmodified=self._summary_dict["files_unmodified"],
-                dirs_new=self._summary_dict["dirs_new"],
-                dirs_changed=self._summary_dict["dirs_changed"],
-                data_blobs=self._summary_dict["data_blobs"],
-                tree_blobs=self._summary_dict["tree_blobs"],
-                data_added=self._summary_dict["data_added"],
-                data_added_packed=self._summary_dict["data_added_packed"],
-                total_files_processed=self._summary_dict["total_files_processed"],
-                total_bytes_processed=self._summary_dict["total_bytes_processed"],
+                d=self._summary_dict,
             )
 
 
@@ -217,3 +232,76 @@ class ResticCheckResult(ResticResult):
                 suggest_repair_index=self._summary_dict["suggest_repair_index"],
                 suggest_prune=self._summary_dict["suggest_prune"],
             )
+
+
+class ResticSnapshot:
+    """
+    Object representing an individual restic snapshot.
+    """
+
+    def __init__(
+        self,
+        time: datetime,
+        parent: Optional[str],
+        tree: str,
+        paths: list[Path],
+        hostname: str,
+        username: str,
+        program_version: str,
+        id: str,
+        short_id: str,
+        summary: ResticBackupSummary,
+    ) -> None:
+        self.time = time
+        self.parent = parent
+        self.tree = tree
+        self.paths = paths
+        self.hostname = hostname
+        self.username = username
+        self.program_version = program_version
+        self.id = id
+        self.short_id = short_id
+        self.summary = summary
+
+
+class ResticSnapshotsResult(ResticResult):
+    """
+    Object representing the result of a `restic snapshots` invocation.
+    """
+
+    def __init__(
+        self,
+        repository: str,
+        cmd: list[str],
+        full_cmd: list[str],
+        returncode: int,
+        messages: list[dict[str, Any]],
+    ) -> None:
+        super().__init__(
+            repository=repository,
+            cmd=cmd,
+            full_cmd=full_cmd,
+            returncode=returncode,
+            messages=messages,
+        )
+
+        self.snapshots: list[ResticSnapshot] = list()
+
+        if self.returncode == ResticReturnCode.RC_OK:
+            for sd in self.messages:
+                self.snapshots.append(
+                    ResticSnapshot(
+                        time=datetime.fromisoformat(sd["time"]),
+                        parent=sd.get("parent", None),
+                        tree=sd["tree"],
+                        paths=[Path(p) for p in sd["paths"]],
+                        hostname=sd["hostname"],
+                        username=sd["username"],
+                        program_version=sd["program_version"],
+                        id=sd["id"],
+                        short_id=sd["short_id"],
+                        summary=ResticBackupSummary.from_dict(
+                            snapshot_id=sd["id"], d=sd["summary"]
+                        ),
+                    )
+                )

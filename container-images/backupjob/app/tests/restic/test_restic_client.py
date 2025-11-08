@@ -2,6 +2,8 @@
 Tests the ResticClient class.
 """
 
+from datetime import datetime, timedelta, timezone
+import json
 from pathlib import Path
 
 import pytest
@@ -17,6 +19,42 @@ from testlib.cmd import (
     MockInvokedCommand,
 )
 from testlib.restic import ExpectedResticCommand
+
+
+@pytest.fixture
+def snapshots_output() -> list[dict]:
+    """
+    Returns mock output from a `restic snapshots` invocation.
+    """
+    return [
+        {
+            "time": "2025-11-02T11:46:27.402512808-06:00",
+            "parent": "0000000100000000000000000000000000000000000000000000000000000000",
+            "tree": "1000000100000000000000000000000000000000000000000000000000000000",
+            "paths": ["/data/src/1"],
+            "hostname": "test",
+            "username": "root",
+            "program_version": "restic 0.18.0",
+            "summary": {
+                "backup_start": "2025-11-02T11:46:27.402512808-06:00",
+                "backup_end": "2025-11-02T11:46:28.231534042-06:00",
+                "files_new": 0,
+                "files_changed": 0,
+                "files_unmodified": 1989,
+                "dirs_new": 0,
+                "dirs_changed": 865,
+                "dirs_unmodified": 18,
+                "data_blobs": 0,
+                "tree_blobs": 866,
+                "data_added": 1016451,
+                "data_added_packed": 434650,
+                "total_files_processed": 1989,
+                "total_bytes_processed": 435508331,
+            },
+            "id": "0000000200000000000000000000000000000000000000000000000000000000",
+            "short_id": "00000002",
+        },
+    ]
 
 
 class TestResticClientMockCommandExecutor:
@@ -287,3 +325,115 @@ class TestResticClientMockCommandExecutor:
 
         with pytest.raises(ResticError):
             restic_client_mock_cmd.init()
+
+    def test_snapshots_returns_snapshot_list(
+        self,
+        expected_restic_cmd: ExpectedResticCommand,
+        mock_cmd_executor: MockCommandExecutor,
+        restic_client_mock_cmd: ResticClient,
+        snapshots_output: list[dict],
+    ) -> None:
+        """
+        Tests that the snapshots method returns a list of snapshots with the result.
+        """
+        rc = 0
+        expected_time = datetime(
+            2025,
+            11,
+            2,
+            11,
+            46,
+            27,
+            402512,
+            tzinfo=timezone(timedelta(days=-1, seconds=64800)),
+        )
+        expected_backup_start = datetime(
+            2025,
+            11,
+            2,
+            11,
+            46,
+            27,
+            402512,
+            tzinfo=timezone(timedelta(days=-1, seconds=64800)),
+        )
+        expected_backup_end = datetime(
+            2025,
+            11,
+            2,
+            11,
+            46,
+            28,
+            231534,
+            tzinfo=timezone(timedelta(days=-1, seconds=64800)),
+        )
+
+        mock_cmd_executor.set_result(
+            returncode=rc,
+            stdout=json.dumps(snapshots_output).encode("utf-8"),
+            stderr=b"",
+        )
+
+        result = restic_client_mock_cmd.snapshots()
+
+        assert len(result.snapshots) == 1
+        s = result.snapshots[0]
+        sm = s.summary
+
+        assert expected_restic_cmd(["snapshots"]) in mock_cmd_executor.invoked_commands
+        assert s.time == expected_time
+        assert (
+            s.parent
+            == "0000000100000000000000000000000000000000000000000000000000000000"
+        )
+        assert (
+            s.tree == "1000000100000000000000000000000000000000000000000000000000000000"
+        )
+        assert s.paths == [Path("/data/src/1")]
+        assert s.hostname == "test"
+        assert s.username == "root"
+        assert s.program_version == "restic 0.18.0"
+        assert (
+            s.id == "0000000200000000000000000000000000000000000000000000000000000000"
+        )
+        assert s.short_id == "00000002"
+        assert sm.backup_start == expected_backup_start
+        assert sm.backup_end == expected_backup_end
+        assert sm.files_new == 0
+        assert sm.files_changed == 0
+        assert sm.files_unmodified == 1989
+        assert sm.dirs_new == 0
+        assert sm.dirs_changed == 865
+        assert sm.dirs_unmodified == 18
+        assert sm.data_blobs == 0
+        assert sm.tree_blobs == 866
+        assert sm.data_added == 1016451
+        assert sm.data_added_packed == 434650
+        assert sm.total_files_processed == 1989
+        assert sm.total_bytes_processed == 435508331
+
+    @pytest.mark.parametrize("latest", [1, 2])
+    def test_snapshots_passes_latest_with_latest_arg(
+        self,
+        expected_restic_cmd: ExpectedResticCommand,
+        mock_cmd_executor: MockCommandExecutor,
+        restic_client_mock_cmd: ResticClient,
+        snapshots_output: list[dict],
+        latest: int,
+    ) -> None:
+        """
+        Ensures that the restic client passes the --latest option with
+        a parameter when latest is passed to the snapshots method.
+        """
+        rc = 0
+        mock_cmd_executor.set_result(
+            returncode=rc,
+            stdout=json.dumps(snapshots_output).encode("utf-8"),
+            stderr=b"",
+        )
+        restic_client_mock_cmd.snapshots(latest=latest)
+
+        assert (
+            expected_restic_cmd(["snapshots", "--latest", str(latest)])
+            in mock_cmd_executor.invoked_commands
+        )
