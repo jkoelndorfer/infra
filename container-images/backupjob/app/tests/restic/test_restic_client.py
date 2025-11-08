@@ -68,8 +68,10 @@ class TestResticClientMockCommandExecutor:
         expected_invocation = MockInvokedCommand(expected_cmd, source_path.parent)
 
         result = restic_client_mock_cmd.backup(source_path, True)
+        summary = result.summary
 
-        assert result.snapshot_id == snapshot_id
+        assert summary is not None
+        assert summary.snapshot_id == snapshot_id
         assert expected_invocation in mock_cmd_executor.invoked_commands
 
     def test_check_no_read_data(
@@ -93,8 +95,10 @@ class TestResticClientMockCommandExecutor:
         expected_cmd = expected_restic_cmd(["check"])
 
         result = restic_client_mock_cmd.check(read_data=False)
+        summary = result.summary
 
-        assert result.num_errors == 0
+        assert summary is not None
+        assert summary.num_errors == 0
         assert expected_cmd in mock_cmd_executor.invoked_commands
 
     def test_check_with_read_data(
@@ -118,8 +122,10 @@ class TestResticClientMockCommandExecutor:
         expected_cmd = expected_restic_cmd(["check", "--read-data"])
 
         result = restic_client_mock_cmd.check(read_data=True)
+        summary = result.summary
 
-        assert result.num_errors == 0
+        assert summary is not None
+        assert summary.num_errors == 0
         assert expected_cmd in mock_cmd_executor.invoked_commands
 
     def test_repository_is_initialized_executes_correct_command(

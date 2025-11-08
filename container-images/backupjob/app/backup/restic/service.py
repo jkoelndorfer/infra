@@ -69,25 +69,35 @@ class ResticService:
         report.new_field("Repository", self.client.repository_path, lambda x: None)
 
         result = self.client.check(read_data=True)
-        summary = result.summary or dict()
+
+        if result.returncode != ResticReturnCode.RC_OK:
+            report.new_field(
+                "Error Code",
+                result.returncode,
+                lambda x: A.OK if x == ResticReturnCode.RC_OK else A.ERROR,
+            )
+            return report
+
+        summary = result.summary
+        assert summary is not None
 
         report.new_field(
             "Errors",
-            summary.get("num_errors", None),
+            summary.num_errors,
             lambda x: A.OK if x == 0 else A.ERROR,
         )
         report.new_field(
             "Repair Suggested",
-            summary.get("suggest_repair_index", None),
+            summary.suggest_repair_index,
             lambda x: A.OK if x is False else A.ERROR,
         )
         report.new_field(
             "Prune Suggested",
-            summary.get("suggest_prune", None),
+            summary.suggest_prune,
             lambda x: A.OK if x is False else A.ERROR,
         )
 
-        if summary.get("num_errors", 1) == 0:
+        if summary.num_errors == 0:
             report.successful = True
 
         return report
@@ -138,38 +148,37 @@ class ResticService:
             report.new_field("Error", str(e), lambda x: A.MULTILINE_TEXT)
             return
 
-        summary = dict()
-        if result.summary is not None:
-            summary = result.summary
-
-        snapshot_id = summary.get("snapshot_id", None)
+        summary = result.summary
 
         if result.returncode != ResticReturnCode.RC_OK:
             report.new_field(
                 "Error",
-                summary.get("message", None) or "(no message)",
-                lambda x: A.MULTILINE_TEXT,
+                "backup failed",
+                lambda x: None,
             )
             return
 
+        assert summary is not None
+        snapshot_id = summary.snapshot_id
+
         report.new_field(
             "New Files",
-            summary.get("files_new", None),
+            summary.files_new,
             lambda x: A.ERROR if x is None else None,
         )
         report.new_field(
             "Files Changed",
-            summary.get("files_changed", None),
+            summary.files_changed,
             lambda x: A.ERROR if x is None else None,
         )
         report.new_field(
             "Data Added",
-            summary.get("data_added", None),
+            summary.data_added,
             lambda x: A.ERROR if x is None else None,
         )
         report.new_field(
             "Total Bytes Processed",
-            summary.get("total_bytes_processed", None),
+            summary.total_bytes_processed,
             lambda x: A.ERROR if x is None else None,
         )
         report.new_field(
