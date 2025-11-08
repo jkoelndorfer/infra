@@ -104,7 +104,12 @@ class GoogleChatReportRenderer:
         Renders a backup report into a Google Chat message.
         """
         sio = StringIO()
-        sio.write(f"*{backup_report.name}*\n")
+        if backup_report.successful:
+            report_emoji = self.annotation_emoji[A.OK.value]
+        else:
+            report_emoji = self.annotation_emoji[A.ERROR.value]
+
+        sio.write(f"*{backup_report.name}* {report_emoji}\n")
 
         current_line_length = 0
         field_padding = "  "

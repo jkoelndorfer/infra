@@ -37,6 +37,7 @@ def single_backup_report() -> BackupReport:
     A single backup report with no subreports.
     """
     r = BackupReport("Test Single Report")
+    r.successful = True
     r.new_field("Init OK", True, lambda x: A.OK if x else A.ERROR)
     r.new_field("New Repo", True, lambda x: A.OK if not x else A.WARNING)
     r.new_field("Src", "/data", lambda x: None)
@@ -54,6 +55,7 @@ def multi_backup_report() -> BackupReport:
     r1.new_field("Init OK", True, lambda x: A.OK if x else A.ERROR)
     r1.new_field("New Repo", False, lambda x: A.OK if not x else A.WARNING)
     r1_backup_start = r1.new_field("Backup Start", datetime.now(), lambda x: None)
+    r1.successful = True
 
     r2 = r1.new_subreport("Backup Sub1")
     r2_backup_start = r2.new_field(
@@ -63,6 +65,7 @@ def multi_backup_report() -> BackupReport:
         "Backup End", r2_backup_start.data + timedelta(minutes=1), lambda x: None
     )
     r2.new_field("New Files", 1024, lambda x: None)
+    r2.successful = True
 
     r3 = r1.new_subreport("Backup Sub2")
     r3_backup_start = r3.new_field(
@@ -72,6 +75,7 @@ def multi_backup_report() -> BackupReport:
         "Backup End", r3_backup_start.data + timedelta(minutes=10), lambda x: None
     )
     r3.new_field("New Files", 2048, lambda x: None)
+    r3.successful = True
 
     r1.new_field(
         "Backup End", r3_backup_end.data + timedelta(seconds=10), lambda x: None
@@ -216,6 +220,7 @@ class TestGoogleChatReportRenderer:
         Tests the render_report method using a comprehensive backup report.
         """
         report = BackupReport("Test Single Report")
+        report.successful = True
         report.new_field("Init OK", True, lambda x: A.OK if x else A.ERROR)
         report.new_field("New Repo", False, lambda x: A.OK if not x else A.WARNING)
         report.new_field("Src", "/data", lambda x: None)
@@ -227,7 +232,7 @@ class TestGoogleChatReportRenderer:
         )
 
         expected = dedent("""
-            *Test Single Report*
+            *Test Single Report* ✅
             *Init OK* yes ✅  *New Repo* no ✅
             *Src* /data  *Dest* /dest
             *New Files* 32  *Data Added* 2048
