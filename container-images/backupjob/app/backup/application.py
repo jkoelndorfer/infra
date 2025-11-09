@@ -242,7 +242,7 @@ class BackupApplication:
                         "missing required environment variable GOOGLE_CHAT_WEBHOOK_URL"
                     )
                 return GoogleChatBackupReporter(
-                    webhook_url, GoogleChatReportRenderer(), Session()
+                    webhook_url.strip(), GoogleChatReportRenderer(), Session()
                 )
 
             case _:  # pragma: nocover
