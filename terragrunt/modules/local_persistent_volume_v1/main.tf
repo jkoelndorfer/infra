@@ -6,6 +6,54 @@ locals {
   storage_class = "local-path"
 
   pv_attrs = var.directory_override != null ? var.directory_override : { namespace = var.namespace, name = var.name }
+
+  directory_current = {
+    user  = tonumber(data.external.directory.result.user)
+    group = tonumber(data.external.directory.result.group)
+    mode  = data.external.directory.result.mode
+  }
+
+  directory_desired = {
+    user  = var.user
+    group = var.group
+    mode  = var.mode
+  }
+}
+
+data "external" "directory" {
+  program = ["${path.module}/pvdata"]
+
+  query = {
+    REMOTE_HOST  = local.node.address
+    PV_DIRECTORY = local.node.pv_directory
+  }
+}
+
+resource "null_resource" "directory" {
+  count = var.skip_directory_management ? 0 : 1
+
+  triggers = {
+    reprovision = local.directory_current == local.directory_desired ? "ok" : uuid()
+  }
+
+  provisioner "local-exec" {
+    command = "${path.module}/pvsetup"
+
+    environment = {
+      PV_DIRECTORY = local.node.pv_directory
+      PV_USER      = var.user
+      PV_GROUP     = var.group
+      PV_MODE      = var.mode
+      REMOTE_HOST  = local.node.address
+    }
+  }
+
+  lifecycle {
+    precondition {
+      condition     = length(data.kubernetes_nodes.with_volume.nodes) == 1
+      error_message = "expected to find exactly one node with backing volume ${var.backing_volume}; found ${length(data.kubernetes_nodes.with_volume)}"
+    }
+  }
 }
 
 resource "kubernetes_persistent_volume_v1" "this" {
@@ -26,7 +74,7 @@ resource "kubernetes_persistent_volume_v1" "this" {
 
     persistent_volume_source {
       local {
-        path = "${local.volume_path}/${local.pv_attrs.namespace}/${local.pv_attrs.name}"
+        path = local.node.pv_directory
       }
     }
 
@@ -42,6 +90,8 @@ resource "kubernetes_persistent_volume_v1" "this" {
       }
     }
   }
+
+  depends_on = [null_resource.directory]
 }
 
 resource "kubernetes_persistent_volume_claim_v1" "this" {

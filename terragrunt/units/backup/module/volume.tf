@@ -12,6 +12,8 @@ module "syncthing_data_volume" {
   storage        = "200Gi"
   access_modes   = ["ReadOnlyMany"]
   backing_volume = var.syncthing_data_volume.backing_volume
+
+  skip_directory_management = true
 }
 
 module "local_backup_volume" {
