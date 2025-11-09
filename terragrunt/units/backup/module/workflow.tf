@@ -248,6 +248,44 @@ locals {
         ]
       }
     },
+
+    {
+      name    = "compare-latest-snapshot"
+      depends = "rclone-to-s3"
+
+      container = {
+        image = "{{ workflow.parameters.ctrimage }}"
+        command = [
+          "/app/backup.py",
+          "--reporter",
+          "googlechat",
+          "--name",
+          "Snapshot Comparison",
+          "restic",
+          "--repository",
+          local.restic_repo_path,
+          "--cache-dir",
+          local.restic_cache_path,
+          "--password-file",
+          local.restic_password_file,
+          "compare-latest-snapshots",
+          local.backup_s3_restic_repository,
+        ]
+        env = local.backup_container_base.env,
+
+        volumeMounts = [
+          {
+            name      = "local-backup"
+            mountPath = local.backup_volume_path
+          },
+          {
+            name      = "secrets"
+            mountPath = local.secret_volume_path
+            readOnly  = true
+          },
+        ]
+      }
+    },
   ]
 
   workflow_tasks = [
@@ -294,6 +332,15 @@ locals {
       }
       depends = "restic-check.Succeeded"
     },
+
+    {
+      name     = "compare-latest-snapshot"
+      template = "compare-latest-snapshot"
+      arguments = {
+        parameters = []
+      }
+      depends = "rclone-to-s3.Succeeded"
+    }
   ]
 }
 
