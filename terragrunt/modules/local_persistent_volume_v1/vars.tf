@@ -33,6 +33,30 @@ variable "access_modes" {
   type        = list(string)
 }
 
+variable "user" {
+  description = "the owner of the volume's backing directory"
+  type        = number
+  default     = 0
+}
+
+variable "group" {
+  description = "the group of the volume's backing directory"
+  type        = number
+  default     = 0
+}
+
+variable "mode" {
+  description = "the mode of the volume's backing directory"
+  type        = string
+  default     = "0755"
+}
+
+variable "skip_directory_management" {
+  description = "if true, skips creation, owner, group, and mode management of the directory"
+  type        = bool
+  default     = false
+}
+
 # This is a name we choose.
 #
 # Currently, with only one node, the only acceptable value is "data0".

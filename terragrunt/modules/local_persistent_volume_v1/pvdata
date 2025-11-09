@@ -1,0 +1,49 @@
+#!/bin/bash
+
+##########
+# pvdata #
+##########
+#
+# This script gets inforation about locally backed
+# PersistentVolume directories on a Kubernetes node.
+
+set -eo pipefail
+
+TF_QUERY=$(jq .)
+PV_DIRECTORY=$(jq -r '.PV_DIRECTORY // empty' <<<"$TF_QUERY")
+REMOTE_HOST=$(jq -r '.REMOTE_HOST // empty' <<<"$TF_QUERY")
+
+missing_vars=0
+for reqd_var in PV_DIRECTORY REMOTE_HOST; do
+	if [[ -z "${!reqd_var}" ]]; then
+		printf 'missing required query value %s\n' "$reqd_var" >&2
+		missing_vars=1
+	fi
+done
+
+if [[ "$missing_vars" == 1 ]]; then
+	exit 1
+fi
+
+stat_result=$(
+	ssh \
+		-o StrictHostKeyChecking=no \
+		-o UserKnownHostsFile='/dev/null' \
+		"$REMOTE_HOST" \
+		"sudo stat --format='%u:%g:%.4a' $(printf '%q' "$PV_DIRECTORY") || printf '::'"
+)
+
+function statf() {
+	local field_num=$1
+
+	awk -F: "{ print \$${field_num} }" <<<"$stat_result"
+}
+
+jq \
+	--null-input \
+	--monochrome-output \
+	--arg 'path' "$PV_DIRECTORY" \
+	--arg 'user' "$(statf 1)" \
+	--arg 'group' "$(statf 2)" \
+	--arg 'mode' "$(statf 3)" \
+	'{ path: $path, user: $user, group: $group, mode: $mode }'

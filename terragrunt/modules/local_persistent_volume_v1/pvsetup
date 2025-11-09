@@ -1,0 +1,39 @@
+#!/bin/bash
+
+###########
+# pvsetup #
+###########
+#
+# This script sets up locally backed PersistentVolume
+# directories on a Kubernetes node.
+
+set -eo pipefail
+
+missing_vars=0
+
+for reqd_var in PV_DIRECTORY PV_USER PV_GROUP PV_MODE REMOTE_HOST; do
+	if [[ -z "${!reqd_var}" ]]; then
+		printf 'missing required environment variable %s\n' "$reqd_var" >&2
+		missing_vars=1
+	fi
+done
+
+if [[ "$missing_vars" == 1 ]]; then
+	exit 1
+fi
+
+ssh \
+	-o StrictHostKeyChecking=no \
+	-o UserKnownHostsFile='/dev/null' \
+	"$REMOTE_HOST" \
+	'sudo bash' \
+<<-EOF
+	PV_DIRECTORY=$(printf '%q' "$PV_DIRECTORY")
+	PV_USER=$(printf '%q' "$PV_USER")
+	PV_GROUP=$(printf '%q' "$PV_GROUP")
+	PV_MODE=$(printf '%q' "$PV_MODE")
+
+	mkdir -p "\$PV_DIRECTORY"
+	chown "\${PV_USER}:\${PV_GROUP}" "\$PV_DIRECTORY"
+	chmod "\${PV_MODE}" "\${PV_DIRECTORY}"
+EOF

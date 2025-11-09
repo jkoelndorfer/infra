@@ -13,6 +13,16 @@ output "env" {
   value       = var.env
 }
 
+output "group" {
+  description = "the group that owns the volume"
+  value       = var.group
+}
+
+output "mode" {
+  description = "the mode of the volume root"
+  value       = var.mode
+}
+
 output "pv" {
   description = "the created persistent volume"
   value = {
@@ -31,6 +41,11 @@ output "pvc" {
 output "storage" {
   description = "the requested storage capacity of the volume"
   value       = var.storage
+}
+
+output "user" {
+  description = "the user that owns the volume"
+  value       = var.user
 }
 
 output "volume_reclaim_policy" {
