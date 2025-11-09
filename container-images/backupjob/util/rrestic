@@ -1,0 +1,19 @@
+#!/bin/bash
+
+##############################
+# rrestic -- "remote restic" #
+##############################
+#
+# This script invokes restic with implicit parameters for interacting
+# with the remote copy of the restic backup repository, hosted on S3.
+#
+# This script is intended to be executed inside the "backup debug"
+# container, where the referenced environment variables are set.
+#
+# See terragrunt/units/backup/module/backup-debug.tf.
+
+exec restic \
+	--repo "$BACKUP_S3_RESTIC_REPOSITORY" \
+	--password-file "$BACKUP_RESTIC_PASSWORD_FILE" \
+	--cache-dir "$BACKUP_S3_RESTIC_CACHE_DIR" \
+	"$@"

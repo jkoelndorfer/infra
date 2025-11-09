@@ -1,0 +1,19 @@
+#!/bin/bash
+
+#############################
+# lrestic -- "local restic" #
+#############################
+#
+# This script invokes restic with implicit parameters for interacting
+# with the local copy of the restic backup repository.
+#
+# This script is intended to be executed inside the "backup debug"
+# container, where the referenced environment variables are set.
+#
+# See terragrunt/units/backup/module/backup-debug.tf.
+
+exec restic \
+	--repo "$BACKUP_LOCAL_RESTIC_REPOSITORY" \
+	--password-file "$BACKUP_RESTIC_PASSWORD_FILE" \
+	--cache-dir "$BACKUP_LOCAL_RESTIC_CACHE_DIR" \
+	"$@"

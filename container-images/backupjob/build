@@ -49,8 +49,19 @@ app)
 	buildah rm "$appdeps_ctr"
 	;&
 
+util)
+	util_ctr=$(buildah from 'backupjob:app')
+
+	for f in lrestic rrestic srclone; do
+		buildah add "$util_ctr" "util/${f}" "/usr/local/bin/${f}"
+	done
+
+	buildah commit "$util_ctr" "backupjob:util"
+	buildah rm "$util_ctr"
+	;&
+
 cfg)
-	app_ctr=$(buildah from 'backupjob:app')
+	app_ctr=$(buildah from 'backupjob:util')
 
 	buildah config --env 'BACKUPJOB_CONTAINER=1' "$app_ctr"
 	buildah config --env "PYTHONPATH=/app:/app/tests" "$app_ctr"

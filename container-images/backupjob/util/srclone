@@ -1,0 +1,20 @@
+#!/bin/bash
+
+##########################
+# srclone -- "s3 rclone" #
+##########################
+#
+# This script invokes rclone with implicit parameters for interacting
+# copying files to the S3 backup bucket.
+#
+# This script is intended to be executed inside the "backup debug"
+# container, where the referenced environment variables are set.
+#
+# See terragrunt/units/backup/module/backup-debug.tf.
+
+rclone \
+	--s3-env-auth \
+	--s3-provider 'AWS' \
+	--s3-acl 'private' \
+	--s3-storage-class 'STANDARD' \
+	"$@"
