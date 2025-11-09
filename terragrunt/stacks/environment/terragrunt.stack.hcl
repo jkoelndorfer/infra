@@ -9,6 +9,7 @@ locals {
     homelab_dns            = "homelab_dns"
     homelab_traefik        = "homelab_traefik"
     homelab_syncthing      = "homelab_syncthing"
+    homelab_vaultwarden    = "homelab_vaultwarden"
   }
   unit_paths_values = { for k, v in local.unit_paths: k => "../${v}" }
 
@@ -71,6 +72,19 @@ locals {
         }
       }
       homelab_traefik = {}
+      homelab_vaultwarden = {
+        deployment = {
+          namespace = "mock-vaultwarden"
+          name      = "vaultwarden"
+        }
+
+        data_volume = {
+          name    = "mock-vaultwarden-data"
+          storage = "50Gi"
+
+          storage_class_name = "local-path"
+        }
+      }
     }
   }
 }
@@ -142,6 +156,14 @@ unit "homelab_argo_workflows" {
 unit "homelab_syncthing" {
   source = "${local.units_dir}/homelab_syncthing"
   path   = local.unit_paths.homelab_syncthing
+  values = local.common_values
+
+  no_dot_terragrunt_stack = true
+}
+
+unit "homelab_vaultwarden" {
+  source = "${local.units_dir}/homelab_vaultwarden"
+  path   = local.unit_paths.homelab_vaultwarden
   values = local.common_values
 
   no_dot_terragrunt_stack = true
