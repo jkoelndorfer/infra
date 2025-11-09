@@ -101,6 +101,7 @@ centurylink = CenturyLink.from_dict(_s["centurylink"])
 dyndns = DynDNSConfig.from_dict(_s["dyndns"])
 dns = [DNS.from_dict(name, d) for name, d in _s["dns"].items()]
 hosts: Dict[str, Host] = dict()
+kserv_static_dhcp = StaticDHCPs(StaticDHCP.from_dict(name, d) for name, d in _s["kserv_static_dhcp"].items())
 port_forwards = [PortForward.from_dict(d) for d in _s["port_forwards"]]
 static_dhcp = StaticDHCPs(StaticDHCP.from_dict(name, d) for name, d in _s["static_dhcp"].items())
 wireguard_key = _s["wireguard_key"]

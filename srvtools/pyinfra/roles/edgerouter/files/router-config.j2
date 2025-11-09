@@ -117,6 +117,9 @@ firewall {
 }
 interfaces {
     ethernet eth0 {
+        address {{ vars.router_ip_kserv_network_cidr }}
+        address {{ vars.router_ip_kube_cluster_network_cidr }}
+        address {{ vars.router_ip_kube_service_network_cidr }}
         duplex auto
         poe {
             output off
@@ -234,6 +237,20 @@ service {
                 {% endfor %}
             }
         }
+        shared-network-name kserv {
+            authoritative enable
+            subnet {{ vars.kserv_network }} {
+              default-router {{ vars.router_ip_kserv_network }}
+              dns-server {{ vars.router_ip_kserv_network }}
+              lease 86400
+              {% for i in secrets.kserv_static_dhcp %}
+              static-mapping {{ i.name }} {
+                  ip-address   {{ i.ip }}
+                  mac-address  {{ i.mac }}
+              }
+              {% endfor %}
+            }
+        }
         static-arp disable
         use-dnsmasq disable
     }
@@ -241,6 +258,7 @@ service {
         forwarding {
             cache-size 10000
             listen-on vtun0
+            listen-on eth0
             listen-on eth5
             {% for i in vars.upstream_dns %}
             name-server {{ i }}
@@ -281,6 +299,33 @@ service {
             protocol all
             source {
                 address {{ vars.lan_network }}
+            }
+            type masquerade
+        }
+        rule 7001 {
+            description "NAT: kserv <-> Internet"
+            outbound-interface {{ vars.wan_iface }}
+            protocol all
+            source {
+                address {{ vars.kserv_network }}
+            }
+            type masquerade
+        }
+        rule 7002 {
+            description "NAT: kube cluster <-> Internet"
+            outbound-interface {{ vars.wan_iface }}
+            protocol all
+            source {
+                address {{ vars.kube_cluster_network }}
+            }
+            type masquerade
+        }
+        rule 7003 {
+            description "NAT: kube service <-> Internet"
+            outbound-interface {{ vars.wan_iface }}
+            protocol all
+            source {
+                address {{ vars.kube_service_network }}
             }
             type masquerade
         }

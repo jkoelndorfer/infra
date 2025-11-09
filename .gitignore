@@ -121,6 +121,13 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Terragrunt generated stack directories
+**/.terragrunt-stack/*
+
+# The globals module is auto-generated.
+!terragrunt/modules/globals/README.md
+terragrunt/modules/globals
+
 # Local .terraform directories
 **/.terraform/*
 
@@ -128,6 +135,7 @@ dmypy.json
 *.tfstate
 *.tfstate.backup
 !terraform/stacks/bootstrap/**/*.tfstate
+!terragrunt/stacks/bootstrap/*.tfstate
 
 # Crash log files
 crash.log

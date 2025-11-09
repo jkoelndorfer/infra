@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -euo pipefail
+
+script_path=$(readlink -f "$0")
+script_dir=$(dirname "$script_path")
+
+cd "$script_dir"
+
+if [[ -z "${VIRTUAL_ENV:-}" ]] && [[ "${BACKUPJOB_CONTAINER:-0}" != 1 ]]; then
+	export PYTHONPATH="$script_dir"
+	exec ./with-venv "${script_path}" "$@"
+fi
+
+coverage erase
+coverage run --source 'backup' -m pytest "$@" || true
+coverage report --show-missing

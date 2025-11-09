@@ -1,0 +1,19 @@
+provider "aws" {
+%{ if alias != null ~}
+  alias = "${alias}"
+%{~ endif }
+
+  region = "${region != null ? region : globals.aws_organization.default_region}"
+
+  default_tags {
+    tags = local.default_labels
+  }
+
+%{ if assume_role != null ~}
+  assume_role {
+    role_arn = "${assume_role}"
+  }
+%{~ endif }
+  profile                  = "${profile}"
+  shared_credentials_files = ["${globals.paths.aws_credentials}"]
+}
