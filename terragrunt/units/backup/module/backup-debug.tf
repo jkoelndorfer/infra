@@ -31,7 +31,7 @@ resource "kubernetes_deployment_v1" "backup_debug" {
           name  = "backup-debug"
           image = local.backup_ctr_image
 
-          image_pull_policy = "IfNotPresent"
+          image_pull_policy = "Always"
 
           command = [
             "bash",
