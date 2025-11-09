@@ -230,7 +230,7 @@ locals {
           "S3 Restic Repository",
           "rclone",
           "--s3-storage-class",
-          "STANDARD_IA",
+          "STANDARD",
           "--bwlimit",
           local.backup_bwlimit,
           "sync",
