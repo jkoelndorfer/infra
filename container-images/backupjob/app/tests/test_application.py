@@ -130,6 +130,7 @@ class TestBackupApplicationIntegration:
         rclone_sync_app = BackupApplication()
         restic_backup_app = BackupApplication()
         restic_check_app = BackupApplication()
+        restic_compare_latest_snapshots_app = BackupApplication()
 
         rclone_sync_app.main(
             [
@@ -176,6 +177,24 @@ class TestBackupApplicationIntegration:
                 "--password-file",
                 str(restic_password_file),
                 "check",
+            ]
+        )
+
+        restic_compare_latest_snapshots_app.main(
+            [
+                "--name",
+                "Compare Snapshots",
+                "--reporter",
+                "googlechat",
+                "restic",
+                "--repository",
+                str(restic_repository),
+                "--cache-dir",
+                str(restic_cache_dir),
+                "--password-file",
+                str(restic_password_file),
+                "compare-latest-snapshots",
+                str(restic_repository),
             ]
         )
 

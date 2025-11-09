@@ -136,6 +136,17 @@ class BackupApplication:
         restic_check = restic_sub.add_parser("check", help="restic check")
         restic_check.set_defaults(func=self.restic_check)
 
+        restic_compare_latest_snapshots = restic_sub.add_parser(
+            "compare-latest-snapshots",
+            help="compare the latest restic snapshots across copies of a repository",
+        )
+        restic_compare_latest_snapshots.add_argument(
+            "remote_repository", help="remote repository to compare against"
+        )
+        restic_compare_latest_snapshots.set_defaults(
+            func=self.restic_compare_latest_snapshots
+        )
+
     def configure_logger(self) -> None:
         """
         Configures the logger for this application.
@@ -207,6 +218,17 @@ class BackupApplication:
         """
         restic_service = self.restic_service(args)
         return restic_service.check()
+
+    def restic_compare_latest_snapshots(self, args: Namespace) -> BackupReport:
+        """
+        Snapshot comparison operation for restic.
+        """
+        restic_service = self.restic_service(args)
+        remote_client = ResticClient(
+            cmdexec, args.remote_repository, args.password_file, None
+        )
+
+        return restic_service.compare_latest_snapshots(remote_client)
 
     def reporter(self, args: Namespace) -> BackupReporter:
         """
