@@ -65,8 +65,13 @@ resource "kubernetes_deployment_v1" "backup_debug" {
           }
 
           env {
-            name  = "BACKUP_LOCAL_REPOSITORY"
-            value = local.restic_repo_path
+            name  = "BACKUP_LOCAL_RESTIC_REPOSITORY"
+            value = local.backup_local_restic_repository
+          }
+
+          env {
+            name  = "BACKUP_S3_BUCKET"
+            value = local.backup_s3_bucket
           }
 
           env {
@@ -85,13 +90,18 @@ resource "kubernetes_deployment_v1" "backup_debug" {
           }
 
           env {
-            name  = "BACKUP_PASSWORD_FILE"
-            value = "/secret/restic-repository-password"
+            name  = "BACKUP_S3_RESTIC_CACHE_DIR"
+            value = local.backup_s3_restic_cache_dir
           }
 
           env {
-            name  = "BACKUP_RESTIC_CACHE_DIR"
-            value = local.restic_cache_path
+            name  = "BACKUP_RESTIC_PASSWORD_FILE"
+            value = local.backup_restic_password_file
+          }
+
+          env {
+            name  = "BACKUP_LOCAL_RESTIC_CACHE_DIR"
+            value = local.backup_local_restic_cache_dir
           }
 
           env {

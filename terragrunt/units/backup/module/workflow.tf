@@ -37,6 +37,10 @@ locals {
       # These are mostly present for reference if we ever exec
       # into the backup container.
       {
+        name  = "BACKUP_S3_BUCKET"
+        value = local.backup_s3_bucket
+      },
+      {
         name  = "BACKUP_S3_ROOT"
         value = local.backup_s3_root
       },
@@ -49,16 +53,20 @@ locals {
         value = local.backup_s3_restic_repository
       },
       {
-        name  = "BACKUP_VOLUME_PATH"
-        value = local.backup_volume_path
+        name  = "BACKUP_S3_RESTIC_CACHE_DIR"
+        value = local.backup_s3_restic_cache_dir
       },
       {
-        name  = "RESTIC_REPO_PATH"
-        value = local.restic_repo_path
+        name  = "BACKUP_LOCAL_RESTIC_REPOSITORY"
+        value = local.backup_local_restic_repository
       },
       {
-        name  = "RESTIC_CACHE_PATH"
-        value = local.restic_cache_path
+        name  = "BACKUP_LOCAL_RESTIC_CACHE_DIR"
+        value = local.backup_local_restic_cache_dir
+      },
+      {
+        name  = "BACKUP_RESTIC_PASSWORD_FILE"
+        value = local.backup_restic_password_file
       },
       {
         name  = "TZ"
@@ -150,11 +158,11 @@ locals {
           "Backup Syncthing",
           "restic",
           "--repository",
-          local.restic_repo_path,
+          local.backup_local_restic_repository,
           "--cache-dir",
-          local.restic_cache_path,
+          local.backup_local_restic_cache_dir,
           "--password-file",
-          local.restic_password_file,
+          local.backup_restic_password_file,
           "backup",
           local.syncthing_volume_path,
         ]
@@ -193,11 +201,11 @@ locals {
           "Restic Check",
           "restic",
           "--repository",
-          local.restic_repo_path,
+          local.backup_local_restic_repository,
           "--cache-dir",
-          local.restic_cache_path,
+          local.backup_local_restic_cache_dir,
           "--password-file",
-          local.restic_password_file,
+          local.backup_restic_password_file,
           "check",
         ]
         env = local.backup_container_base.env,
@@ -234,7 +242,7 @@ locals {
           "--bwlimit",
           local.backup_bwlimit,
           "sync",
-          local.restic_repo_path,
+          local.backup_local_restic_repository,
           local.backup_s3_rclone_repository,
         ]
         env = local.backup_container_base.env,
@@ -263,11 +271,11 @@ locals {
           "Snapshot Comparison",
           "restic",
           "--repository",
-          local.restic_repo_path,
+          local.backup_local_restic_repository,
           "--cache-dir",
-          local.restic_cache_path,
+          local.backup_local_restic_cache_dir,
           "--password-file",
-          local.restic_password_file,
+          local.backup_restic_password_file,
           "compare-latest-snapshots",
           local.backup_s3_restic_repository,
         ]
@@ -402,7 +410,7 @@ resource "kubernetes_manifest" "backup_workflow" {
               items = [
                 {
                   key  = "repository_password"
-                  path = basename(local.restic_password_file)
+                  path = basename(local.backup_restic_password_file)
                 },
               ]
             }
