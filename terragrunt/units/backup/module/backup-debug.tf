@@ -27,6 +27,10 @@ resource "kubernetes_deployment_v1" "backup_debug" {
       }
 
       spec {
+        image_pull_secrets {
+          name = kubernetes_secret_v1.registry_image_pull.metadata[0].name
+        }
+
         container {
           name  = "backup-debug"
           image = local.backup_ctr_image
