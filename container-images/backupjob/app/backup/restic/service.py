@@ -67,6 +67,8 @@ class ResticService:
         """
         report = BackupReport("Repository Check")
         report.new_field("Repository", self.client.repository_path, lambda x: None)
+        report.new_field("Check Start", datetime.now(), lambda x: None)
+        check_end = report.new_field("Check End", datetime.now(), lambda x: None)
 
         result = self.client.check(read_data=True)
 
@@ -99,6 +101,8 @@ class ResticService:
 
         if summary.num_errors == 0:
             report.successful = True
+
+        check_end.data = datetime.now()
 
         return report
 
