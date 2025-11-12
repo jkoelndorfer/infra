@@ -7,6 +7,10 @@ module "config_volume" {
   storage        = "512Mi"
   access_modes   = ["ReadWriteOnce"]
   backing_volume = var.backing_volume
+
+  user  = var.syncthing_uid
+  group = var.syncthing_gid
+  mode  = "0700"
 }
 
 module "data_volume" {
@@ -18,4 +22,8 @@ module "data_volume" {
   storage        = "200Gi"
   access_modes   = ["ReadWriteOnce"]
   backing_volume = var.backing_volume
+
+  user  = var.syncthing_uid
+  group = var.syncthing_gid
+  mode  = "0700"
 }
