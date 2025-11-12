@@ -87,6 +87,16 @@ resource "kubernetes_deployment_v1" "syncthing" {
 
           image_pull_policy = "IfNotPresent"
 
+          env {
+            name  = "PUID"
+            value = var.syncthing_uid
+          }
+
+          env {
+            name  = "PGID"
+            value = var.syncthing_gid
+          }
+
           port {
             container_port = local.sync_protocol_port
             host_port      = local.sync_protocol_port
