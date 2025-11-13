@@ -56,6 +56,7 @@ inputs = merge(
   dependency.homelab_ctr_registry.outputs,
   {
     syncthing_deployment = dependency.homelab_syncthing.outputs.deployment,
+    syncthing_config_volume = dependency.homelab_syncthing.outputs.config_volume,
     syncthing_data_volume = dependency.homelab_syncthing.outputs.data_volume,
   },
 )
