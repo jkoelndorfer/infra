@@ -65,6 +65,10 @@ resource "kubernetes_deployment_v1" "syncthing" {
   spec {
     replicas = 1
 
+    strategy {
+      type = "Recreate"
+    }
+
     selector {
       match_labels = {
         "local/syncthing-service" = "true"
