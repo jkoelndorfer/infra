@@ -145,8 +145,14 @@ locals {
     },
 
     {
-      name    = "restic-backup-syncthing"
-      depends = "scale-down-syncthing"
+      name = "restic-backup"
+
+      inputs = {
+        parameters = [
+          { name = "name" },
+          { name = "path" },
+        ]
+      }
 
       container = {
         image = "{{ workflow.parameters.ctrimage }}"
@@ -155,7 +161,7 @@ locals {
           "--reporter",
           "googlechat",
           "--name",
-          "Backup Syncthing",
+          "{{ inputs.parameters.name }}",
           "restic",
           "--repository",
           local.backup_local_restic_repository,
@@ -164,7 +170,7 @@ locals {
           "--password-file",
           local.backup_restic_password_file,
           "backup",
-          local.syncthing_volume_path,
+          "{{ inputs.parameters.path }}",
         ]
         env = local.backup_container_base.env
 
@@ -307,7 +313,7 @@ locals {
 
     {
       name     = "restic-backup-syncthing"
-      template = "restic-backup-syncthing"
+      template = "restic-backup"
       arguments = {
         parameters = []
       }
