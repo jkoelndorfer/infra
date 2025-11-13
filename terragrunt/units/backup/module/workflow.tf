@@ -180,8 +180,13 @@ locals {
             mountPath = local.backup_volume_path
           },
           {
+            name      = "syncthing-config"
+            mountPath = local.syncthing_config_volume_path
+            readOnly  = true
+          },
+          {
             name      = "syncthing-data"
-            mountPath = local.syncthing_volume_path
+            mountPath = local.syncthing_data_volume_path
             readOnly  = true
           },
           {
@@ -195,7 +200,7 @@ locals {
 
     {
       name    = "restic-check"
-      depends = "restic-backup-syncthing"
+      depends = "restic-backup-syncthing-data"
 
       container = {
         image = "{{ workflow.parameters.ctrimage }}"
@@ -312,10 +317,37 @@ locals {
     },
 
     {
-      name     = "restic-backup-syncthing"
+      name     = "restic-backup-syncthing-data"
       template = "restic-backup"
       arguments = {
-        parameters = []
+        parameters = [
+          {
+            name  = "name"
+            value = "Backup Syncthing Data"
+          },
+          {
+            name  = "path"
+            value = local.syncthing_data_volume_path
+          }
+        ]
+      }
+      depends = "scale-down-syncthing"
+    },
+
+    {
+      name     = "restic-backup-config"
+      template = "restic-backup"
+      arguments = {
+        parameters = [
+          {
+            name  = "name"
+            value = "Backup Config"
+          },
+          {
+            name  = "path"
+            value = local.config_path
+          }
+        ]
       }
       depends = "scale-down-syncthing"
     },
@@ -326,7 +358,13 @@ locals {
       arguments = {
         parameters = []
       }
-      depends = "restic-backup-syncthing.Succeeded || restic-backup-syncthing.Failed || restic-backup-syncthing.Errored"
+      depends = join(
+        " && ",
+        [
+          for s in ["restic-backup-config", "restic-backup-syncthing-data"] :
+          "( ${s}.Succeeded || ${s}.Failed || ${s}.Errored )"
+        ]
+      )
     },
 
     {
@@ -335,7 +373,13 @@ locals {
       arguments = {
         parameters = concat(local.scale_params.syncthing, [{ name = "replicas", value = "1" }])
       }
-      depends = "restic-backup-syncthing.Succeeded || restic-backup-syncthing.Failed || restic-backup-syncthing.Errored"
+      depends = join(
+        " && ",
+        [
+          for s in ["restic-backup-config", "restic-backup-syncthing-data"] :
+          "( ${s}.Succeeded || ${s}.Failed || ${s}.Errored )"
+        ]
+      )
     },
 
     {
@@ -399,6 +443,13 @@ resource "kubernetes_manifest" "backup_workflow" {
             name = "local-backup"
             persistentVolumeClaim = {
               claimName = module.local_backup_volume.pvc.name
+            }
+          },
+
+          {
+            name = "syncthing-config"
+            persistentVolumeClaim = {
+              claimName = module.syncthing_config_volume.pvc.name
             }
           },
 

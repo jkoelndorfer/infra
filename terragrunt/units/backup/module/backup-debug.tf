@@ -119,9 +119,15 @@ resource "kubernetes_deployment_v1" "backup_debug" {
           }
 
           volume_mount {
+            name       = "syncthing-config"
+            read_only  = true
+            mount_path = local.syncthing_config_volume_path
+          }
+
+          volume_mount {
             name       = "syncthing-data"
             read_only  = true
-            mount_path = local.syncthing_volume_path
+            mount_path = local.syncthing_data_volume_path
           }
 
           volume_mount {
@@ -135,6 +141,13 @@ resource "kubernetes_deployment_v1" "backup_debug" {
           name = "local-backup"
           persistent_volume_claim {
             claim_name = module.local_backup_volume.pvc.name
+          }
+        }
+
+        volume {
+          name = "syncthing-config"
+          persistent_volume_claim {
+            claim_name = module.syncthing_config_volume.pvc.name
           }
         }
 

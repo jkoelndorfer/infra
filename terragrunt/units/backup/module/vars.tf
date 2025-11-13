@@ -25,6 +25,18 @@ variable "registry_ro_secret" {
   type        = object({ namespace = string, name = string })
 }
 
+variable "syncthing_config_volume" {
+  description = "the persistent volume containing syncthing config"
+  type = object({
+    access_modes   = list(string)
+    backing_volume = string
+    env            = string
+    pv             = object({ name = string })
+    pvc            = object({ namespace = string, name = string })
+    storage        = string
+  })
+}
+
 variable "syncthing_data_volume" {
   description = "the persistent volume containing syncthing data"
   type = object({

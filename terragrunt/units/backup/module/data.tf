@@ -41,6 +41,12 @@ locals {
   # The local backup container path to the volume containing secrets.
   secret_volume_path = "/secret"
 
+  # The local backup container path to the directory containing all configuration.
+  config_path = "/config"
+
+  # The local backup container path to the volume containing syncthing config.
+  syncthing_config_volume_path = "${local.config_path}/syncthing"
+
   # The local backup container path to the volume containing syncthing data.
-  syncthing_volume_path = "/data/syncthing"
+  syncthing_data_volume_path = "/data/syncthing"
 }
