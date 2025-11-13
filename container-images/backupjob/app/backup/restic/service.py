@@ -24,6 +24,7 @@ class ResticService:
 
     def __init__(self, client: ResticClient) -> None:
         self.client = client
+        self.implicit_exclude_file_name = "backupignore"
 
     def backup(
         self,
@@ -31,6 +32,7 @@ class ResticService:
         source: Path,
         for_each: bool,
         skip_if_unchanged: bool,
+        exclude_files: list[Path],
     ) -> BackupReport:
         """
         Performs a backup of the source directory, performing any required
@@ -48,14 +50,20 @@ class ResticService:
         report.new_field("Backup Start", datetime.now(), lambda x: None)
         backup_end = report.new_field("Backup End", datetime.now(), lambda x: None)
 
+        exclude_files = exclude_files.copy()
+
         try:
             if not self._init_repo(new_backup_repo, init_ok):
                 return report
 
             if for_each:
-                self._backup_for_each(source, skip_if_unchanged, report)
+                self._backup_for_each(
+                    source, skip_if_unchanged, exclude_files.copy(), report
+                )
             else:
-                self._backup_single(source, skip_if_unchanged, report)
+                self._backup_single(
+                    source, skip_if_unchanged, exclude_files.copy(), report
+                )
 
             return report
         finally:
@@ -154,6 +162,7 @@ class ResticService:
         self,
         source: Path,
         skip_if_unchanged: bool,
+        exclude_files: list[Path],
         report: BackupReport,
     ) -> None:
         """
@@ -162,6 +171,11 @@ class ResticService:
         A subreport is produced for each backed-up directory if there were changes.
         """
         all_subreports: list[BackupReport] = list()
+        try:
+            self._add_implicit_exclude_file(source, exclude_files)
+        except Exception as e:
+            report.new_field("Error", str(e), lambda x: A.MULTILINE_TEXT)
+            return
 
         for p in source.iterdir():
             if p.is_file() or p.is_dir():
@@ -172,7 +186,9 @@ class ResticService:
                     "Backup End", datetime.now(), lambda x: None
                 )
                 try:
-                    self._backup_single(p, skip_if_unchanged, subreport)
+                    self._backup_single(
+                        p, skip_if_unchanged, exclude_files.copy(), subreport
+                    )
                     report.add_subreport(subreport)
                 finally:
                     backup_end.data = datetime.now()
@@ -183,15 +199,23 @@ class ResticService:
         self,
         source: Path,
         skip_if_unchanged: bool,
+        exclude_files: list[Path],
         report: BackupReport,
     ) -> None:
         """
         Performs a single directory backup.
         """
         report.new_field("Directory", str(source), lambda x: None)
+        try:
+            self._add_implicit_exclude_file(source, exclude_files)
+        except Exception as e:
+            report.new_field("Error", str(e), lambda x: A.MULTILINE_TEXT)
+            return
 
         try:
-            result = self.client.backup(source, skip_if_unchanged)
+            result = self.client.backup(
+                source, skip_if_unchanged, exclude_files=exclude_files
+            )
         except Exception as e:  # pragma: nocover
             report.new_field("Error", str(e), lambda x: A.MULTILINE_TEXT)
             return
@@ -239,6 +263,20 @@ class ResticService:
             report.omittable = True
 
         report.successful = True
+
+    def _add_implicit_exclude_file(
+        self, source: Path, exclude_files: list[Path]
+    ) -> None:
+        """
+        Adds the implicit backup exclude file to the list of exclude files.
+
+        The implicit backup exclude file is at the root of the backup directory
+        with the name "backupignore".
+        """
+        exclude_file_path = source / self.implicit_exclude_file_name
+
+        if exclude_file_path.is_file():
+            exclude_files.append(exclude_file_path)
 
     def _init_repo(self, new_backup_repo: F[bool], init_ok: F[bool]) -> bool:
         """
