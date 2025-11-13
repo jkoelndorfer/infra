@@ -6,6 +6,11 @@ output "deployment" {
   }
 }
 
+output "config_volume" {
+  description = "the volume containing syncthing data"
+  value       = module.config_volume
+}
+
 output "data_volume" {
   description = "the volume containing syncthing data"
   value       = module.data_volume

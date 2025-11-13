@@ -1,3 +1,21 @@
+# This points at syncthing's config volume using the directory_override parameter.
+module "syncthing_config_volume" {
+  source = "${var.paths.modules_root}/local_persistent_volume_v1"
+
+  directory_override = {
+    namespace = var.syncthing_config_volume.pvc.namespace,
+    name      = var.syncthing_config_volume.pvc.name,
+  }
+  env            = var.env
+  namespace      = module.namespace.name
+  name           = "syncthing-config-backup"
+  storage        = "2Gi"
+  access_modes   = ["ReadOnlyMany"]
+  backing_volume = var.syncthing_config_volume.backing_volume
+
+  skip_directory_management = true
+}
+
 # This points at syncthing's data volume using the directory_override parameter.
 module "syncthing_data_volume" {
   source = "${var.paths.modules_root}/local_persistent_volume_v1"
