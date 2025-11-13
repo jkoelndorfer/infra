@@ -55,6 +55,7 @@ class TestResticServiceIntegration:
             source=backup_src_info.path,
             for_each=False,
             skip_if_unchanged=False,
+            exclude_files=[],
         )
         init_ok = report.find_one_field(lambda f: f.label == "Init OK")
 
@@ -63,6 +64,43 @@ class TestResticServiceIntegration:
         assert init_ok.data is False
 
         restic_dir.chmod(0o700)
+
+    @pytest.mark.slow
+    def test_backup_with_ignore(
+        self,
+        backup_src_info: BackupSourceInfo,
+        restic_service: ResticService,
+    ) -> None:
+        """
+        Tests running a backup with an ignore file.
+
+        All files are ignored except for one -- the ignore file itself.
+        """
+
+        for d in backup_src_info.directories:
+            with open(
+                backup_src_info.path
+                / d.path
+                / restic_service.implicit_exclude_file_name,
+                "w",
+            ) as f:
+                f.write("backupjob-datagen-*\n")
+
+        report = restic_service.backup(
+            name="test_backup_with_ignore",
+            source=backup_src_info.path,
+            for_each=True,
+            skip_if_unchanged=True,
+            exclude_files=[],
+        )
+
+        all_reports = list(report.all_reports())
+
+        for r in all_reports[1:]:
+            new_files = r.find_one_field(lambda f: f.label == "New Files")
+
+            assert new_files is not None
+            assert new_files.data == 1
 
     @pytest.mark.slow
     def test_backup_single_directory_uninitialized_repo(
@@ -76,6 +114,7 @@ class TestResticServiceIntegration:
             source=backup_src_info.path,
             for_each=False,
             skip_if_unchanged=False,
+            exclude_files=[],
         )
 
         new_repo = report.find_one_field(lambda f: f.label == "New Repo")
@@ -104,6 +143,7 @@ class TestResticServiceIntegration:
             source=backup_src_info.path,
             for_each=True,
             skip_if_unchanged=False,
+            exclude_files=[],
         )
         total_count = 0
         total_bytes_processed = 0
@@ -139,12 +179,14 @@ class TestResticServiceIntegration:
             source=backup_src_info.path,
             for_each=True,
             skip_if_unchanged=True,
+            exclude_files=[],
         )
         report = restic_service.backup(
             name="test_double_backup_omittable_reports_second",
             source=backup_src_info.path,
             for_each=True,
             skip_if_unchanged=True,
+            exclude_files=[],
         )
 
         all_reports = list(report.all_reports())
@@ -184,6 +226,7 @@ class TestResticServiceIntegration:
             source=backup_src_info.path,
             for_each=False,
             skip_if_unchanged=False,
+            exclude_files=[],
         )
 
         error = report.find_one_field(lambda f: f.label == "Error")
@@ -205,6 +248,7 @@ class TestResticServiceIntegration:
             source=backup_src_info.path,
             for_each=False,
             skip_if_unchanged=False,
+            exclude_files=[],
         )
         check_report = restic_service.check()
 
@@ -236,6 +280,7 @@ class TestResticServiceIntegration:
             source=backup_src_info.path,
             for_each=False,
             skip_if_unchanged=False,
+            exclude_files=[],
         )
         compare_report = restic_service.compare_latest_snapshots(restic_service.client)
         local_snap_id = compare_report.find_one_field(
@@ -275,12 +320,14 @@ class TestResticServiceIntegration:
             source=backup_src_info.path,
             for_each=False,
             skip_if_unchanged=False,
+            exclude_files=[],
         )
         remote_restic_service.backup(
             name="test_compare_latest_snapshots_different_repositories_remote",
             source=backup_src_info.path,
             for_each=False,
             skip_if_unchanged=False,
+            exclude_files=[],
         )
 
         report = restic_service.compare_latest_snapshots(remote_restic_client)

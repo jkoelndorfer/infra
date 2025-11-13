@@ -68,7 +68,7 @@ class TestResticClientMockCommandExecutor:
         "source_path",
         [(Path("/home/user/my-backup-data")), (Path("/var/local/important-stuff"))],
     )
-    def test_backup(
+    def test_backup_no_exclude_file(
         self,
         expected_restic_cmd: ExpectedResticCommand,
         mock_cmd_executor: MockCommandExecutor,
@@ -76,7 +76,8 @@ class TestResticClientMockCommandExecutor:
         source_path: Path,
     ) -> None:
         """
-        Tests that the backup method correctly invokes restic to perform a backup.
+        Tests that the backup method correctly invokes restic to perform a backup with
+        no exclude_files passed.
         """
         rc = 0
         snapshot_id = "9e920286b898dd7f493dd31413ed689c641bff30cd58a5206b7fa1d500ffe502"
@@ -105,7 +106,69 @@ class TestResticClientMockCommandExecutor:
         )
         expected_invocation = MockInvokedCommand(expected_cmd, source_path.parent)
 
-        result = restic_client_mock_cmd.backup(source_path, True)
+        result = restic_client_mock_cmd.backup(source_path, True, exclude_files=[])
+        summary = result.summary
+
+        assert summary is not None
+        assert summary.snapshot_id == snapshot_id
+        assert expected_invocation in mock_cmd_executor.invoked_commands
+
+    @pytest.mark.parametrize(
+        "exclude_files",
+        [
+            [
+                Path("/home/user/backupignore.global"),
+                Path("/var/local/important-stuff/backupignore"),
+            ],
+            [Path("/var/local/important-stuff/backupignore")],
+        ],
+    )
+    def test_backup_with_exclude_file(
+        self,
+        expected_restic_cmd: ExpectedResticCommand,
+        mock_cmd_executor: MockCommandExecutor,
+        restic_client_mock_cmd: ResticClient,
+        exclude_files: list[Path],
+    ) -> None:
+        """
+        Tests that the backup method correctly invokes restic to perform a backup when
+        exclude_files are passed.
+        """
+        rc = 0
+        snapshot_id = "9e920286b898dd7f493dd31413ed689c641bff30cd58a5206b7fa1d500ffe502"
+        msg = {
+            "message_type": "summary",
+            "files_new": 19,
+            "files_changed": 0,
+            "files_unmodified": 0,
+            "dirs_new": 5,
+            "dirs_changed": 0,
+            "dirs_unmodified": 0,
+            "data_blobs": 19,
+            "tree_blobs": 6,
+            "data_added": 22215,
+            "data_added_packed": 10440,
+            "total_files_processed": 19,
+            "total_bytes_processed": 10549,
+            "total_duration": 0.714634746,
+            "backup_start": "2025-10-18T19:02:51.792880666-05:00",
+            "backup_end": "2025-10-18T19:02:52.507515422-05:00",
+            "snapshot_id": snapshot_id,
+        }
+        mock_cmd_executor.set_result_json_messages(rc, [msg])
+
+        source_path = Path("/home/user/important-data")
+        expected_subcmd = ["backup", "--skip-if-unchanged"]
+        for e in exclude_files:
+            expected_subcmd.extend(["--exclude-file", str(e)])
+        expected_subcmd.append(source_path.name)
+
+        expected_cmd = expected_restic_cmd(expected_subcmd)
+        expected_invocation = MockInvokedCommand(expected_cmd, source_path.parent)
+
+        result = restic_client_mock_cmd.backup(
+            source_path, True, exclude_files=exclude_files
+        )
         summary = result.summary
 
         assert summary is not None
