@@ -55,6 +55,7 @@ class TestResticServiceIntegration:
             source=backup_src_info.path,
             for_each=False,
             skip_if_unchanged=False,
+            exclude_files=[],
         )
         init_ok = report.find_one_field(lambda f: f.label == "Init OK")
 
@@ -76,6 +77,7 @@ class TestResticServiceIntegration:
             source=backup_src_info.path,
             for_each=False,
             skip_if_unchanged=False,
+            exclude_files=[],
         )
 
         new_repo = report.find_one_field(lambda f: f.label == "New Repo")
@@ -104,6 +106,7 @@ class TestResticServiceIntegration:
             source=backup_src_info.path,
             for_each=True,
             skip_if_unchanged=False,
+            exclude_files=[],
         )
         total_count = 0
         total_bytes_processed = 0
@@ -139,12 +142,14 @@ class TestResticServiceIntegration:
             source=backup_src_info.path,
             for_each=True,
             skip_if_unchanged=True,
+            exclude_files=[],
         )
         report = restic_service.backup(
             name="test_double_backup_omittable_reports_second",
             source=backup_src_info.path,
             for_each=True,
             skip_if_unchanged=True,
+            exclude_files=[],
         )
 
         all_reports = list(report.all_reports())
@@ -184,6 +189,7 @@ class TestResticServiceIntegration:
             source=backup_src_info.path,
             for_each=False,
             skip_if_unchanged=False,
+            exclude_files=[],
         )
 
         error = report.find_one_field(lambda f: f.label == "Error")
@@ -205,6 +211,7 @@ class TestResticServiceIntegration:
             source=backup_src_info.path,
             for_each=False,
             skip_if_unchanged=False,
+            exclude_files=[],
         )
         check_report = restic_service.check()
 
@@ -236,6 +243,7 @@ class TestResticServiceIntegration:
             source=backup_src_info.path,
             for_each=False,
             skip_if_unchanged=False,
+            exclude_files=[],
         )
         compare_report = restic_service.compare_latest_snapshots(restic_service.client)
         local_snap_id = compare_report.find_one_field(
@@ -275,12 +283,14 @@ class TestResticServiceIntegration:
             source=backup_src_info.path,
             for_each=False,
             skip_if_unchanged=False,
+            exclude_files=[],
         )
         remote_restic_service.backup(
             name="test_compare_latest_snapshots_different_repositories_remote",
             source=backup_src_info.path,
             for_each=False,
             skip_if_unchanged=False,
+            exclude_files=[],
         )
 
         report = restic_service.compare_latest_snapshots(remote_restic_client)

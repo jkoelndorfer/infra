@@ -105,7 +105,7 @@ class TestResticClientMockCommandExecutor:
         )
         expected_invocation = MockInvokedCommand(expected_cmd, source_path.parent)
 
-        result = restic_client_mock_cmd.backup(source_path, True)
+        result = restic_client_mock_cmd.backup(source_path, True, exclude_files=[])
         summary = result.summary
 
         assert summary is not None

@@ -72,13 +72,18 @@ class ResticClient:
                     self.log.error(f"restic error: {str(m)}")
                 raise ResticError("unhandled error from restic", result)
 
-    def backup(self, source: Path, skip_if_unchanged: bool) -> ResticBackupResult:
+    def backup(
+        self, source: Path, skip_if_unchanged: bool, exclude_files: list[Path]
+    ) -> ResticBackupResult:
         """
         Performs a restic backup for the given source directory.
         """
         optional_args: list[str] = list()
         if skip_if_unchanged:
             optional_args.append("--skip-if-unchanged")
+
+        for p in exclude_files:
+            optional_args.extend(["--exclude-file", str(p)])
 
         # Here, we force use of relative paths. Using absolute paths means that if any
         # parent directory metadata changes, restic will produce a new snapshot [1],

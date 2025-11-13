@@ -210,6 +210,7 @@ class BackupApplication:
             source=Path(args.source),
             for_each=True,
             skip_if_unchanged=True,
+            exclude_files=[],
         )
 
     def restic_check(self, args: Namespace) -> BackupReport:
