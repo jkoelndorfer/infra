@@ -272,6 +272,37 @@ class TestResticServiceIntegration:
         assert repair_suggested.data is False
         assert prune_suggested.data is False
 
+    @pytest.mark.slow
+    def test_check_failure(
+        self,
+        backup_src_info: BackupSourceInfo,
+        restic_service: ResticService,
+        restic_repository_path: str,
+    ) -> None:
+        """
+        Performs a test backup, then makes the repository unreadable, then performs a check.
+
+        This tests the case where a restic check fails.
+        """
+        repo = Path(restic_repository_path)
+        restic_service.backup(
+            name="test_check_failure",
+            source=backup_src_info.path,
+            for_each=False,
+            skip_if_unchanged=False,
+            exclude_files=[],
+        )
+
+        repo.chmod(0o000)
+        try:
+            check_report = restic_service.check()
+
+            assert not check_report.successful
+            assert check_report.result is not None
+            assert check_report.result.returncode != 0
+        finally:
+            repo.chmod(0o700)
+
     def test_compare_latest_snapshots_same_client(
         self, backup_src_info: BackupSourceInfo, restic_service: ResticService
     ) -> None:
