@@ -180,23 +180,28 @@ class ResticService:
         all_subreports: list[BackupReport] = list()
         self._add_implicit_exclude_file(source, exclude_files)
 
-        for p in source.iterdir():
-            if p.is_file() or p.is_dir():
-                subreport = BackupReport(f"{report.name} / {p.name}")
-                all_subreports.append(subreport)
-                subreport.new_field("Backup Start", datetime.now(), lambda x: None)
-                backup_end = subreport.new_field(
-                    "Backup End", datetime.now(), lambda x: None
-                )
-                try:
-                    self._backup_single(
-                        p, skip_if_unchanged, exclude_files.copy(), subreport
+        try:
+            for p in source.iterdir():
+                if p.is_file() or p.is_dir():
+                    subreport = BackupReport(f"{report.name} / {p.name}")
+                    all_subreports.append(subreport)
+                    subreport.new_field("Backup Start", datetime.now(), lambda x: None)
+                    backup_end = subreport.new_field(
+                        "Backup End", datetime.now(), lambda x: None
                     )
-                    report.add_subreport(subreport)
-                finally:
-                    backup_end.data = datetime.now()
+                    try:
+                        self._backup_single(
+                            p, skip_if_unchanged, exclude_files.copy(), subreport
+                        )
+                        report.add_subreport(subreport)
+                    finally:
+                        backup_end.data = datetime.now()
+        except Exception as e:
+            report.new_field("Error", str(e), lambda _: None)
 
-        report.successful = all(r.successful for r in all_subreports)
+        report.successful = (
+            all(r.successful for r in all_subreports) and len(all_subreports) > 0
+        )
 
     def _backup_single(
         self,
