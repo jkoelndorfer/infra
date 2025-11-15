@@ -69,7 +69,7 @@ class BackupReportField[T]:
         return f"{self.__class__.__name__}(label={self.label})"
 
 
-class BackupReport:
+class BackupReport[T]:
     """
     Common interface for reporting backup information.
     """
@@ -78,6 +78,10 @@ class BackupReport:
         self.name: str = name
         self.fields: list[BackupReportField] = list()
         self.subreports: list[Self] = list()
+
+        # This is the command execution result that this
+        # BackupReport is based on.
+        self.result: Optional[T] = None
 
         # If True, a BackupReport may be excluded from whatever action
         # a backup reporter takes.

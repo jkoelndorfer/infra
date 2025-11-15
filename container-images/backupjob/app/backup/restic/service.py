@@ -7,6 +7,7 @@ Contains the implementation for the restic service.
 
 from datetime import datetime
 from pathlib import Path
+from typing import Optional, Tuple
 
 from ..report import (
     BackupReport,
@@ -14,7 +15,8 @@ from ..report import (
     BackupReportFieldAnnotation as A,
 )
 from .client import ResticClient
-from .model import ResticReturnCode
+from .error import ResticError
+from .model import ResticCheckResult, ResticResult, ResticReturnCode
 
 
 class ResticService:
@@ -53,7 +55,9 @@ class ResticService:
         exclude_files = exclude_files.copy()
 
         try:
-            if not self._init_repo(new_backup_repo, init_ok):
+            inited, result = self._init_repo(new_backup_repo, init_ok)
+            if not inited:
+                report.result = result
                 return report
 
             if for_each:
@@ -69,7 +73,7 @@ class ResticService:
         finally:
             backup_end.data = datetime.now()
 
-    def check(self) -> BackupReport:
+    def check(self) -> BackupReport[ResticCheckResult]:
         """
         Performs a restic repository check.
         """
@@ -79,6 +83,7 @@ class ResticService:
         check_end = report.new_field("Check End", datetime.now(), lambda x: None)
 
         result = self.client.check(read_data=True)
+        report.result = result
 
         if result.returncode != ResticReturnCode.RC_OK:
             report.new_field(
@@ -134,6 +139,8 @@ class ResticService:
         remote_snap_result = remote_client.snapshots(latest=1)
         no_snapshot = "(none)"
 
+        report.result = (local_snap_result, remote_snap_result)
+
         local_snap_id = no_snapshot
         if len(local_snap_result.snapshots) > 0:
             local_snap_id = local_snap_result.snapshots[-1].id
@@ -171,11 +178,7 @@ class ResticService:
         A subreport is produced for each backed-up directory if there were changes.
         """
         all_subreports: list[BackupReport] = list()
-        try:
-            self._add_implicit_exclude_file(source, exclude_files)
-        except Exception as e:
-            report.new_field("Error", str(e), lambda x: A.MULTILINE_TEXT)
-            return
+        self._add_implicit_exclude_file(source, exclude_files)
 
         for p in source.iterdir():
             if p.is_file() or p.is_dir():
@@ -206,11 +209,7 @@ class ResticService:
         Performs a single directory backup.
         """
         report.new_field("Directory", str(source), lambda x: None)
-        try:
-            self._add_implicit_exclude_file(source, exclude_files)
-        except Exception as e:
-            report.new_field("Error", str(e), lambda x: A.MULTILINE_TEXT)
-            return
+        self._add_implicit_exclude_file(source, exclude_files)
 
         try:
             result = self.client.backup(
@@ -219,6 +218,8 @@ class ResticService:
         except Exception as e:  # pragma: nocover
             report.new_field("Error", str(e), lambda x: A.MULTILINE_TEXT)
             return
+
+        report.result = result
 
         summary = result.summary
 
@@ -275,10 +276,22 @@ class ResticService:
         """
         exclude_file_path = source / self.implicit_exclude_file_name
 
-        if exclude_file_path.is_file():
-            exclude_files.append(exclude_file_path)
+        try:
+            if exclude_file_path.is_file():
+                exclude_files.append(exclude_file_path)
+        except Exception:
+            # If we cannot determine whether the implicit exclude file is a file,
+            # we probably can't read the backup source.
+            #
+            # We'll eat this error so that the backup tries to proceed.
+            #
+            # In the worst case, restic will fail and produce a result that can
+            # be returned later.
+            pass
 
-    def _init_repo(self, new_backup_repo: F[bool], init_ok: F[bool]) -> bool:
+    def _init_repo(
+        self, new_backup_repo: F[bool], init_ok: F[bool]
+    ) -> Tuple[bool, Optional[ResticResult]]:
         """
         Ensures the backup repository is initialized. Adds fields to the report
         to indicate the repository status.
@@ -286,20 +299,21 @@ class ResticService:
         Returns True if initialization succeeds, False otherwise.
         """
         init_ok.data = False
+        init_result: Optional[ResticResult] = None
 
         if not self.client.repository_is_initialized():
             new_backup_repo.data = True
 
             try:
                 init_result = self.client.init()
-            except Exception:
-                return False
+            except ResticError as e:
+                return False, e.result
 
             if init_result.returncode != ResticReturnCode.RC_OK:  # pragma: nocover
                 # The client should always raise an exception if init fails.
                 # Just in case, we double-check here.
-                return False
+                return False, init_result
 
         init_ok.data = True
 
-        return True
+        return True, init_result
