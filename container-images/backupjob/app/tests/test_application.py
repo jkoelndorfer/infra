@@ -5,6 +5,7 @@ Tests the backup commandline application.
 from os import environ
 from pathlib import Path
 import random
+import shutil
 from string import ascii_letters, digits
 from typing import Generator
 
@@ -223,3 +224,36 @@ class TestBackupApplicationIntegration:
                     str(restic_backup_source),
                 ]
             )
+
+    def test_failed_backup_job(
+        self,
+        restic_backup_source: Path,
+        restic_cache_dir: Path,
+        restic_password_file: Path,
+        restic_repository: Path,
+    ) -> None:
+        """
+        Tests a backup job that returns an code indicating failure.
+        """
+        # Delete the restic backup source, which should cause the backup to
+        # fail because the directory does not exist.
+        shutil.rmtree(restic_backup_source)
+
+        restic_backup_app = BackupApplication()
+        restic_backup_app.main(
+            [
+                "--name",
+                "Failed Data Backup",
+                "--reporter",
+                "googlechat",
+                "restic",
+                "--repository",
+                str(restic_repository),
+                "--cache-dir",
+                str(restic_cache_dir),
+                "--password-file",
+                str(restic_password_file),
+                "backup",
+                str(restic_backup_source),
+            ]
+        )

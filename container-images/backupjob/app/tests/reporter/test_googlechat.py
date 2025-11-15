@@ -243,6 +243,21 @@ class TestGoogleChatReportRenderer:
 
         assert renderer.render_report(report) == expected
 
+    def test_render_failed_report(self, renderer: GoogleChatReportRenderer) -> None:
+        """
+        Tests the render_report method using a failed backup report.
+        """
+        report = BackupReport("Test Failed Report")
+        report.successful = False
+        report.new_field("Init OK", False, lambda x: A.OK if x else A.ERROR)
+
+        expected = dedent("""
+            *Test Failed Report* 🚨
+            *Init OK* no 🚨
+        """).strip()
+
+        assert renderer.render_report(report) == expected
+
 
 class TestGoogleChatBackupReporterMockSession:
     """
@@ -276,6 +291,25 @@ class TestGoogleChatBackupReporterMockSession:
             kwargs["params"]["messageReplyOption"]
             == "REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD"
         )
+
+    @pytest.mark.parametrize("num_omittable", [1, 2])
+    def test_report_with_omittable_backup_reports(
+        self,
+        google_chat_backup_reporter_mock: GoogleChatBackupReporter,
+        multi_backup_report: BackupReport,
+        num_omittable: int,
+    ) -> None:
+        """
+        Tests that the report method does not send backup reports marked omittable.
+        """
+        post = cast(MagicMock, google_chat_backup_reporter_mock.session.post)
+        all_reports = list(multi_backup_report.all_reports())
+        for r in all_reports[-1 * num_omittable :]:
+            r.omittable = True
+
+        google_chat_backup_reporter_mock.report(multi_backup_report)
+
+        assert post.call_count == (len(all_reports) - num_omittable)
 
     def test_report_429_retry(
         self,
