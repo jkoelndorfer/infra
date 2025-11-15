@@ -9,6 +9,7 @@ from datetime import datetime
 
 from ..report import BackupReport, BackupReportFieldAnnotation as A
 from .client import RcloneClient
+from .model import RcloneResult
 
 
 class RcloneService:
@@ -19,7 +20,9 @@ class RcloneService:
     def __init__(self, client: RcloneClient) -> None:
         self.client = client
 
-    def sync(self, name: str, source: str, destination: str) -> BackupReport:
+    def sync(
+        self, name: str, source: str, destination: str
+    ) -> BackupReport[RcloneResult]:
         """
         Performs an rclone sync from the source to the destination,
         producing a backup report.
@@ -31,6 +34,7 @@ class RcloneService:
         backup_end = report.new_field("Backup End", datetime.now(), lambda x: None)
 
         result = self.client.sync(source, destination)
+        report.result = result
 
         report.successful = result.stats.errors == 0
         report.new_field(

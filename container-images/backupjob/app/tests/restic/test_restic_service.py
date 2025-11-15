@@ -60,6 +60,8 @@ class TestResticServiceIntegration:
         init_ok = report.find_one_field(lambda f: f.label == "Init OK")
 
         assert not report.successful
+        assert report.result is not None
+        assert report.result.returncode != 0
         assert init_ok is not None
         assert init_ok.data is False
 
@@ -232,6 +234,8 @@ class TestResticServiceIntegration:
         error = report.find_one_field(lambda f: f.label == "Error")
 
         assert not report.successful
+        assert report.result is not None
+        assert report.result.returncode != 0
         assert error is not None
 
         backup_src_info.path.chmod(0o700)
