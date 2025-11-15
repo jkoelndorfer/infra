@@ -263,6 +263,25 @@ class ResticSnapshot:
         self.short_id = short_id
         self.summary = summary
 
+    @classmethod
+    def from_dict(cls, d: dict) -> Self:
+        """
+        Given a dictionary with fields representing a restic snapshot, returns
+        a ResticSnapshot.
+        """
+        return cls(
+            time=datetime.fromisoformat(d["time"]),
+            parent=d.get("parent", None),
+            tree=d["tree"],
+            paths=[Path(p) for p in d["paths"]],
+            hostname=d["hostname"],
+            username=d["username"],
+            program_version=d["program_version"],
+            id=d["id"],
+            short_id=d["short_id"],
+            summary=ResticBackupSummary.from_dict(snapshot_id=d["id"], d=d["summary"]),
+        )
+
 
 class ResticSnapshotsResult(ResticResult):
     """
@@ -289,19 +308,4 @@ class ResticSnapshotsResult(ResticResult):
 
         if self.returncode == ResticReturnCode.RC_OK:
             for sd in self.messages:
-                self.snapshots.append(
-                    ResticSnapshot(
-                        time=datetime.fromisoformat(sd["time"]),
-                        parent=sd.get("parent", None),
-                        tree=sd["tree"],
-                        paths=[Path(p) for p in sd["paths"]],
-                        hostname=sd["hostname"],
-                        username=sd["username"],
-                        program_version=sd["program_version"],
-                        id=sd["id"],
-                        short_id=sd["short_id"],
-                        summary=ResticBackupSummary.from_dict(
-                            snapshot_id=sd["id"], d=sd["summary"]
-                        ),
-                    )
-                )
+                self.snapshots.append(ResticSnapshot.from_dict(sd))
