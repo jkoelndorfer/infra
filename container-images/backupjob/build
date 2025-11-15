@@ -82,6 +82,7 @@ buildah tag "backupjob:${repo_revision}" 'backupjob:latest'
 podman run \
 	--user 50000 \
 	--rm -it \
+	--env 'TEST_CONTAINER=1' \
 	--env 'COVERAGE_FILE=/tmp/coverage' \
 	'backupjob:latest' \
 	'/app/test' -m 'not live' -p 'no:cacheprovider'
