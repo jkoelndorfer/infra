@@ -234,6 +234,58 @@ class ResticCheckResult(ResticResult):
             )
 
 
+class ResticForgetResult(ResticResult):
+    """
+    Object representing the result of a `restic forget` invocation.
+
+    `restic forget` returns a single JSON document with the following form:
+
+        [
+            {
+                "tags": <list of tags>,  # can be null
+                "host": <hostname performing backup>,
+                "paths": <list of paths in this backup>,
+                "keep": [
+                    <snapshot to keep>...
+                ],  # possibly null ?
+                "remove": [
+                    <snapshot to remove>...
+                ]   # can be null
+            }
+        ]
+    """
+
+    def __init__(
+        self,
+        repository: str,
+        cmd: list[str],
+        full_cmd: list[str],
+        returncode: int,
+        messages: list[dict[str, Any]],
+    ) -> None:
+        super().__init__(
+            repository=repository,
+            cmd=cmd,
+            full_cmd=full_cmd,
+            returncode=returncode,
+            messages=messages,
+        )
+
+        self.kept_snapshots: list[ResticSnapshot] = list()
+        self.removed_snapshots: list[ResticSnapshot] = list()
+
+        for m in self.messages:
+            keep = m["keep"]
+            if keep is not None:
+                for snap_raw in keep:
+                    self.kept_snapshots.append(ResticSnapshot.from_dict(snap_raw))
+
+            remove = m["remove"]
+            if remove is not None:
+                for snap_raw in remove:
+                    self.removed_snapshots.append(ResticSnapshot.from_dict(snap_raw))
+
+
 class ResticSnapshot:
     """
     Object representing an individual restic snapshot.
