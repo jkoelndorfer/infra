@@ -12,6 +12,11 @@ if [[ -z "${VIRTUAL_ENV:-}" ]] && [[ "${BACKUPJOB_CONTAINER:-0}" != 1 ]]; then
 	exec ./with-venv "${script_path}" "$@"
 fi
 
+if [[ -z "${GOOGLE_CHAT_WEBHOOK_URL:-}" ]] && [[ "${TEST_CONTAINER:-0}" != 1 ]]; then
+	GOOGLE_CHAT_WEBHOOK_URL=$(kubectl -n prod-backup get 'secret/google-chat-webhook' --template='{{ .data.dev_url }}' | base64 -d)
+	export GOOGLE_CHAT_WEBHOOK_URL
+fi
+
 coverage erase
 coverage run --source 'backup' -m pytest "$@" || true
 coverage report --show-missing
