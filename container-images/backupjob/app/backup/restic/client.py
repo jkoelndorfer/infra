@@ -157,16 +157,19 @@ class ResticClient:
 
         full_cmd = self.full_cmd(*cmd)
         proc = self.cmdexec(full_cmd, cwd=cwd, combine_stdout_stderr=True)
-        if single_json_document:
-            json_obj = json.loads(proc.stdout)
-            if isinstance(json_obj, list):
-                messages = json_obj
+        try:
+            if single_json_document:
+                json_obj = json.loads(proc.stdout)
+                if isinstance(json_obj, list):
+                    messages = json_obj
+                else:
+                    messages = [json_obj]
             else:
-                messages = [json_obj]
-        else:
-            messages = list(
-                map(lambda ln: json.loads(ln), proc.stdout.splitlines(b"\n"))
-            )
+                messages = list(
+                    map(lambda ln: json.loads(ln), proc.stdout.splitlines(b"\n"))
+                )
+        except json.JSONDecodeError:
+            messages = []
 
         return result_type(
             repository=self.repository_path,
