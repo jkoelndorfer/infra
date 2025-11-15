@@ -229,6 +229,254 @@ class TestResticClientMockCommandExecutor:
         assert summary.num_errors == 0
         assert expected_cmd in mock_cmd_executor.invoked_commands
 
+    def test_forget_comprehensive(
+        self,
+        expected_restic_cmd: ExpectedResticCommand,
+        mock_cmd_executor: MockCommandExecutor,
+        restic_client_mock_cmd: ResticClient,
+    ) -> None:
+        """
+        Tests that the forget method invokes the correct restic command.
+        """
+        rc = 0
+        msg = {
+            "tags": None,
+            "host": "test",
+            "paths": ["/data/backup-src"],
+            "keep": [
+                {
+                    "time": "2025-11-15T16:31:16.315602123-06:00",
+                    "tree": "0ef3831aeb17dbe742adba43c9c7ee8539baaa7554ddc902a565da66d389b928",
+                    "paths": ["/data/backup-src"],
+                    "hostname": "test",
+                    "username": "root",
+                    "uid": 0,
+                    "gid": 0,
+                    "program_version": "restic 0.18.1",
+                    "summary": {
+                        "backup_start": "2025-11-15T16:31:16.315602123-06:00",
+                        "backup_end": "2025-11-15T16:31:17.053451912-06:00",
+                        "files_new": 1,
+                        "files_changed": 0,
+                        "files_unmodified": 0,
+                        "dirs_new": 2,
+                        "dirs_changed": 0,
+                        "dirs_unmodified": 0,
+                        "data_blobs": 0,
+                        "tree_blobs": 3,
+                        "data_added": 1416,
+                        "data_added_packed": 1132,
+                        "total_files_processed": 1,
+                        "total_bytes_processed": 0,
+                    },
+                    "id": "7ba29d0fd24763968a3d83fb508c4e61a7c2193e103ac3d0cdbabe135e612ab5",
+                    "short_id": "7ba29d0f",
+                }
+            ],
+            "remove": None,
+            "reasons": [
+                {
+                    "snapshot": {
+                        "time": "2025-11-15T16:31:16.315602123-06:00",
+                        "tree": "0ef3831aeb17dbe742adba43c9c7ee8539baaa7554ddc902a565da66d389b928",
+                        "paths": ["/data/backup-src"],
+                        "hostname": "test",
+                        "username": "root",
+                        "uid": 0,
+                        "gid": 0,
+                        "program_version": "restic 0.18.1",
+                        "summary": {
+                            "backup_start": "2025-11-15T16:31:16.315602123-06:00",
+                            "backup_end": "2025-11-15T16:31:17.053451912-06:00",
+                            "files_new": 1,
+                            "files_changed": 0,
+                            "files_unmodified": 0,
+                            "dirs_new": 2,
+                            "dirs_changed": 0,
+                            "dirs_unmodified": 0,
+                            "data_blobs": 0,
+                            "tree_blobs": 3,
+                            "data_added": 1416,
+                            "data_added_packed": 1132,
+                            "total_files_processed": 1,
+                            "total_bytes_processed": 0,
+                        },
+                        "id": "7ba29d0fd24763968a3d83fb508c4e61a7c2193e103ac3d0cdbabe135e612ab5",
+                        "short_id": "7ba29d0f",
+                    },
+                    "matches": [
+                        "last snapshot",
+                        "hourly within 48h",
+                        "daily within 30d",
+                        "weekly within 3m",
+                        "monthly within 1y",
+                        "yearly within 3y",
+                    ],
+                }
+            ],
+        }
+
+        mock_cmd_executor.set_result_json_messages(rc, [msg])
+
+        restic_client_mock_cmd.forget(
+            keep_last=1,
+            keep_within_hourly="48h",
+            keep_within_daily="30d",
+            keep_within_weekly="3m",
+            keep_within_monthly="1y",
+            keep_within_yearly="3y",
+            prune=True,
+            repack_small=True,
+        )
+
+        assert (
+            expected_restic_cmd(
+                [
+                    "forget",
+                    "--quiet",
+                    "--keep-last",
+                    "1",
+                    "--keep-within-hourly",
+                    "48h",
+                    "--keep-within-daily",
+                    "30d",
+                    "--keep-within-weekly",
+                    "3m",
+                    "--keep-within-monthly",
+                    "1y",
+                    "--keep-within-yearly",
+                    "3y",
+                    "--prune",
+                    "--repack-small",
+                ]
+            )
+            in mock_cmd_executor.invoked_commands
+        )
+        assert len(mock_cmd_executor.invoked_commands) == 1
+
+    def test_forget_kept_removed_snapshots(
+        self,
+        expected_restic_cmd: ExpectedResticCommand,
+        mock_cmd_executor: MockCommandExecutor,
+        restic_client_mock_cmd: ResticClient,
+    ) -> None:
+        """
+        Tests that the forget method returns the kept and removed snapshots.
+        """
+        rc = 0
+        msg = {
+            "tags": None,
+            "host": "test",
+            "paths": ["/data/backup-src"],
+            "keep": [
+                {
+                    "time": "2025-11-15T16:48:59.035973217-06:00",
+                    "parent": "7ba29d0fd24763968a3d83fb508c4e61a7c2193e103ac3d0cdbabe135e612ab5",
+                    "tree": "0ef3831aeb17dbe742adba43c9c7ee8539baaa7554ddc902a565da66d389b928",
+                    "paths": ["/data/backup-src"],
+                    "hostname": "test",
+                    "username": "root",
+                    "uid": 0,
+                    "gid": 0,
+                    "program_version": "restic 0.18.1",
+                    "summary": {
+                        "backup_start": "2025-11-15T16:48:59.035973217-06:00",
+                        "backup_end": "2025-11-15T16:48:59.777517282-06:00",
+                        "files_new": 0,
+                        "files_changed": 0,
+                        "files_unmodified": 1,
+                        "dirs_new": 0,
+                        "dirs_changed": 0,
+                        "dirs_unmodified": 2,
+                        "data_blobs": 0,
+                        "tree_blobs": 0,
+                        "data_added": 0,
+                        "data_added_packed": 0,
+                        "total_files_processed": 1,
+                        "total_bytes_processed": 0,
+                    },
+                    "id": "3b0ba6d541b751703da20e1fc2d81edc3d8c6b6d3411cd78401aa92b17146355",
+                    "short_id": "3b0ba6d5",
+                }
+            ],
+            "remove": [
+                {
+                    "time": "2025-11-15T16:31:16.315602123-06:00",
+                    "tree": "0ef3831aeb17dbe742adba43c9c7ee8539baaa7554ddc902a565da66d389b928",
+                    "paths": ["/data/backup-src"],
+                    "hostname": "test",
+                    "username": "root",
+                    "uid": 0,
+                    "gid": 0,
+                    "program_version": "restic 0.18.1",
+                    "summary": {
+                        "backup_start": "2025-11-15T16:31:16.315602123-06:00",
+                        "backup_end": "2025-11-15T16:31:17.053451912-06:00",
+                        "files_new": 1,
+                        "files_changed": 0,
+                        "files_unmodified": 0,
+                        "dirs_new": 2,
+                        "dirs_changed": 0,
+                        "dirs_unmodified": 0,
+                        "data_blobs": 0,
+                        "tree_blobs": 3,
+                        "data_added": 1416,
+                        "data_added_packed": 1132,
+                        "total_files_processed": 1,
+                        "total_bytes_processed": 0,
+                    },
+                    "id": "7ba29d0fd24763968a3d83fb508c4e61a7c2193e103ac3d0cdbabe135e612ab5",
+                    "short_id": "7ba29d0f",
+                }
+            ],
+            "reasons": [
+                {
+                    "snapshot": {
+                        "time": "2025-11-15T16:48:59.035973217-06:00",
+                        "parent": "7ba29d0fd24763968a3d83fb508c4e61a7c2193e103ac3d0cdbabe135e612ab5",
+                        "tree": "0ef3831aeb17dbe742adba43c9c7ee8539baaa7554ddc902a565da66d389b928",
+                        "paths": ["/data/backup-src"],
+                        "hostname": "test",
+                        "username": "root",
+                        "uid": 0,
+                        "gid": 0,
+                        "program_version": "restic 0.18.1",
+                        "summary": {
+                            "backup_start": "2025-11-15T16:48:59.035973217-06:00",
+                            "backup_end": "2025-11-15T16:48:59.777517282-06:00",
+                            "files_new": 0,
+                            "files_changed": 0,
+                            "files_unmodified": 1,
+                            "dirs_new": 0,
+                            "dirs_changed": 0,
+                            "dirs_unmodified": 2,
+                            "data_blobs": 0,
+                            "tree_blobs": 0,
+                            "data_added": 0,
+                            "data_added_packed": 0,
+                            "total_files_processed": 1,
+                            "total_bytes_processed": 0,
+                        },
+                        "id": "3b0ba6d541b751703da20e1fc2d81edc3d8c6b6d3411cd78401aa92b17146355",
+                        "short_id": "3b0ba6d5",
+                    },
+                    "matches": ["last snapshot"],
+                }
+            ],
+        }
+
+        mock_cmd_executor.set_result_json_messages(rc, [msg])
+
+        result = restic_client_mock_cmd.forget(
+            keep_last=1,
+        )
+
+        assert len(result.kept_snapshots) == 1
+        assert len(result.removed_snapshots) == 1
+
+        assert result.kept_snapshots[0].short_id == "3b0ba6d5"
+        assert result.removed_snapshots[0].short_id == "7ba29d0f"
+
     def test_repository_is_initialized_executes_correct_command(
         self,
         expected_restic_cmd: ExpectedResticCommand,

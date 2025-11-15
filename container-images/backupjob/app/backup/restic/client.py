@@ -16,6 +16,7 @@ from .model import (
     ResticResult,
     ResticBackupResult,
     ResticCheckResult,
+    ResticForgetResult,
     ResticSnapshotsResult,
     ResticReturnCode,
 )
@@ -112,6 +113,61 @@ class ResticClient:
             *optional_args,
             result_type=ResticCheckResult,
             single_json_document=False,
+        )
+
+    def forget(
+        self,
+        keep_last: Optional[int] = None,
+        keep_within_hourly: Optional[str] = None,
+        keep_within_daily: Optional[str] = None,
+        keep_within_weekly: Optional[str] = None,
+        keep_within_monthly: Optional[str] = None,
+        keep_within_yearly: Optional[str] = None,
+        prune: bool = False,
+        repack_small: bool = False,
+    ) -> ResticForgetResult:
+        """
+        Prunes snapshots from the repository according to the provided parameters.
+
+        The `keep_within` parameters expect duration indicating how snapshots will
+        be maintained within the given window, e.g. "1y5m7d2h".
+
+        See `restic forget --help` to for more information about the expected values
+        for parameters to this function.
+        """
+        optional_args: list[str] = list()
+
+        if keep_last is not None:
+            optional_args.extend(["--keep-last", str(keep_last)])
+
+        if keep_within_hourly is not None:
+            optional_args.extend(["--keep-within-hourly", keep_within_hourly])
+
+        if keep_within_daily is not None:
+            optional_args.extend(["--keep-within-daily", keep_within_daily])
+
+        if keep_within_weekly is not None:
+            optional_args.extend(["--keep-within-weekly", keep_within_weekly])
+
+        if keep_within_monthly is not None:
+            optional_args.extend(["--keep-within-monthly", keep_within_monthly])
+
+        if keep_within_yearly is not None:
+            optional_args.extend(["--keep-within-yearly", keep_within_yearly])
+
+        if prune:
+            optional_args.append("--prune")
+
+        if repack_small:
+            optional_args.append("--repack-small")
+
+        # --quiet is necessary here, otherwise restic will write non-JSON.
+        return self.run(
+            "forget",
+            "--quiet",
+            *optional_args,
+            result_type=ResticForgetResult,
+            single_json_document=True,
         )
 
     def full_cmd(self, *subcmd: str) -> list[str]:
