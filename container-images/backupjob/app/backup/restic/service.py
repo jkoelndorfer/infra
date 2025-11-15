@@ -44,13 +44,13 @@ class ResticService:
         file that is a child of the source directory.
         """
         report = BackupReport(name=name)
-        report.new_field("Repository", self.client.repository_path, lambda x: None)
+        report.new_field("Repository", self.client.repository_path, lambda _: None)
         new_backup_repo = report.new_field(
             "New Repo", False, lambda x: A.OK if not x else A.WARNING
         )
         init_ok = report.new_field("Init OK", False, lambda x: A.OK if x else A.ERROR)
-        report.new_field("Backup Start", datetime.now(), lambda x: None)
-        backup_end = report.new_field("Backup End", datetime.now(), lambda x: None)
+        report.new_field("Backup Start", datetime.now(), lambda _: None)
+        backup_end = report.new_field("Backup End", datetime.now(), lambda _: None)
 
         exclude_files = exclude_files.copy()
 
@@ -78,9 +78,9 @@ class ResticService:
         Performs a restic repository check.
         """
         report = BackupReport("Repository Check")
-        report.new_field("Repository", self.client.repository_path, lambda x: None)
-        report.new_field("Check Start", datetime.now(), lambda x: None)
-        check_end = report.new_field("Check End", datetime.now(), lambda x: None)
+        report.new_field("Repository", self.client.repository_path, lambda _: None)
+        report.new_field("Check Start", datetime.now(), lambda _: None)
+        check_end = report.new_field("Check End", datetime.now(), lambda _: None)
 
         result = self.client.check(read_data=True)
         report.result = result
@@ -130,10 +130,10 @@ class ResticService:
         """
         report = BackupReport("Snapshot Comparison")
         report.new_field(
-            "Local Repository", self.client.repository_path, lambda x: None
+            "Local Repository", self.client.repository_path, lambda _: None
         )
         report.new_field(
-            "Remote Repository", remote_client.repository_path, lambda x: None
+            "Remote Repository", remote_client.repository_path, lambda _: None
         )
         local_snap_result = self.client.snapshots(latest=1)
         remote_snap_result = remote_client.snapshots(latest=1)
@@ -185,9 +185,9 @@ class ResticService:
                 if p.is_file() or p.is_dir():
                     subreport = BackupReport(f"{report.name} / {p.name}")
                     all_subreports.append(subreport)
-                    subreport.new_field("Backup Start", datetime.now(), lambda x: None)
+                    subreport.new_field("Backup Start", datetime.now(), lambda _: None)
                     backup_end = subreport.new_field(
-                        "Backup End", datetime.now(), lambda x: None
+                        "Backup End", datetime.now(), lambda _: None
                     )
                     try:
                         self._backup_single(
@@ -213,7 +213,7 @@ class ResticService:
         """
         Performs a single directory backup.
         """
-        report.new_field("Directory", str(source), lambda x: None)
+        report.new_field("Directory", str(source), lambda _: None)
         self._add_implicit_exclude_file(source, exclude_files)
 
         try:
@@ -232,7 +232,7 @@ class ResticService:
             report.new_field(
                 "Error",
                 "backup failed",
-                lambda x: None,
+                lambda _: None,
             )
             return
 

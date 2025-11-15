@@ -40,8 +40,8 @@ def single_backup_report() -> BackupReport:
     r.successful = True
     r.new_field("Init OK", True, lambda x: A.OK if x else A.ERROR)
     r.new_field("New Repo", True, lambda x: A.OK if not x else A.WARNING)
-    r.new_field("Src", "/data", lambda x: None)
-    r.new_field("Dest", "/dest", lambda x: None)
+    r.new_field("Src", "/data", lambda _: None)
+    r.new_field("Dest", "/dest", lambda _: None)
 
     return r
 
@@ -54,31 +54,31 @@ def multi_backup_report() -> BackupReport:
     r1 = BackupReport("Test Multi Report")
     r1.new_field("Init OK", True, lambda x: A.OK if x else A.ERROR)
     r1.new_field("New Repo", False, lambda x: A.OK if not x else A.WARNING)
-    r1_backup_start = r1.new_field("Backup Start", datetime.now(), lambda x: None)
+    r1_backup_start = r1.new_field("Backup Start", datetime.now(), lambda _: None)
     r1.successful = True
 
     r2 = r1.new_subreport("Backup Sub1")
     r2_backup_start = r2.new_field(
-        "Backup Start", r1_backup_start.data + timedelta(seconds=2), lambda x: None
+        "Backup Start", r1_backup_start.data + timedelta(seconds=2), lambda _: None
     )
     r2_backup_end = r2.new_field(
-        "Backup End", r2_backup_start.data + timedelta(minutes=1), lambda x: None
+        "Backup End", r2_backup_start.data + timedelta(minutes=1), lambda _: None
     )
-    r2.new_field("New Files", 1024, lambda x: None)
+    r2.new_field("New Files", 1024, lambda _: None)
     r2.successful = True
 
     r3 = r1.new_subreport("Backup Sub2")
     r3_backup_start = r3.new_field(
-        "Backup Start", r2_backup_end.data + timedelta(minutes=1), lambda x: None
+        "Backup Start", r2_backup_end.data + timedelta(minutes=1), lambda _: None
     )
     r3_backup_end = r3.new_field(
-        "Backup End", r3_backup_start.data + timedelta(minutes=10), lambda x: None
+        "Backup End", r3_backup_start.data + timedelta(minutes=10), lambda _: None
     )
-    r3.new_field("New Files", 2048, lambda x: None)
+    r3.new_field("New Files", 2048, lambda _: None)
     r3.successful = True
 
     r1.new_field(
-        "Backup End", r3_backup_end.data + timedelta(seconds=10), lambda x: None
+        "Backup End", r3_backup_end.data + timedelta(seconds=10), lambda _: None
     )
 
     return r1
@@ -153,8 +153,8 @@ class TestGoogleChatReportRenderer:
         [
             (F("n/a", True, lambda x: A.OK if x else A.ERROR), " ", " ", " ✅ "),
             (F("n/a", True, lambda x: A.OK if x else A.ERROR), "  ", "  ", "  ✅  "),
-            (F("n/a", True, lambda x: A.MULTILINE_TEXT), "  ", "  ", ""),
-            (F("n/a", True, lambda x: None), "  ", "  ", ""),
+            (F("n/a", True, lambda _: A.MULTILINE_TEXT), "  ", "  ", ""),
+            (F("n/a", True, lambda _: None), "  ", "  ", ""),
             (F("n/a", False, lambda x: A.OK if x else A.ERROR), " ", " ", " 🚨 "),
         ],
     )
@@ -184,7 +184,7 @@ class TestGoogleChatReportRenderer:
                 "*New Repository* yes ⚠️",
             ),
             (
-                F("Snapshot Taken", True, lambda x: None),
+                F("Snapshot Taken", True, lambda _: None),
                 "*Snapshot Taken* yes",
             ),
             (
@@ -195,7 +195,7 @@ class TestGoogleChatReportRenderer:
                 F(
                     "Error",
                     "Traceback (most recent call last):\n...\nKeyError: 'k'",
-                    lambda x: A.MULTILINE_TEXT,
+                    lambda _: A.MULTILINE_TEXT,
                 ),
                 "*Error*\nTraceback (most recent call last):\n...\nKeyError: 'k'",
             ),
@@ -223,12 +223,12 @@ class TestGoogleChatReportRenderer:
         report.successful = True
         report.new_field("Init OK", True, lambda x: A.OK if x else A.ERROR)
         report.new_field("New Repo", False, lambda x: A.OK if not x else A.WARNING)
-        report.new_field("Src", "/data", lambda x: None)
-        report.new_field("Dest", "/dest", lambda x: None)
-        report.new_field("New Files", 32, lambda x: None)
-        report.new_field("Data Added", 2048, lambda x: None)
+        report.new_field("Src", "/data", lambda _: None)
+        report.new_field("Dest", "/dest", lambda _: None)
+        report.new_field("New Files", 32, lambda _: None)
+        report.new_field("Data Added", 2048, lambda _: None)
         report.new_field(
-            "Output", "Backup run successful!\nBon voyage!", lambda x: A.MULTILINE_TEXT
+            "Output", "Backup run successful!\nBon voyage!", lambda _: A.MULTILINE_TEXT
         )
 
         expected = dedent("""

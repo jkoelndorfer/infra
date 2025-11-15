@@ -30,10 +30,10 @@ class TestBackupReportField:
         "f1, f2, eq",
         [
             # Test case 1: two fields with the same constructor definition are equal.
-            (F("t1", 0, lambda x: A.OK), F("t1", 0, lambda x: A.OK), True),
+            (F("t1", 0, lambda _: A.OK), F("t1", 0, lambda _: A.OK), True),
             # Test case 2: two fields with the same values, but a different annotation
             # are not equal.
-            (F("t1", 0, lambda x: A.OK), F("t1", 0, lambda x: A.ERROR), False),
+            (F("t1", 0, lambda _: A.OK), F("t1", 0, lambda _: A.ERROR), False),
             # Test case 3: two fields with the same label but different data are not equal.
             (F("t1", 0, None), F("t1", 1, None), False),
         ],
@@ -126,8 +126,8 @@ class TestBackupReport:
         """
         Tests that find_one_field can find a backup report field when searching a single report.
         """
-        backup_report.new_field("New Files", 1000, lambda x: None)
-        backup_report.new_field("Changed Files", 50, lambda x: None)
+        backup_report.new_field("New Files", 1000, lambda _: None)
+        backup_report.new_field("Changed Files", 50, lambda _: None)
 
         f = backup_report.find_one_field(lambda x: x.data == 50)
 
@@ -141,7 +141,7 @@ class TestBackupReport:
         include_subreports is False.
         """
         sub_a = backup_report.new_subreport("SubA")
-        sub_a.new_field("Files Added", 1000, lambda x: None)
+        sub_a.new_field("Files Added", 1000, lambda _: None)
 
         def flt(f: F):
             return f.label == "Files Added"
@@ -163,7 +163,7 @@ class TestBackupReport:
         sub_a = backup_report.new_subreport("SubA")
         sub_a1 = sub_a.new_subreport("SubA1")
 
-        sub_a1.new_field("Files Added", 1000, lambda x: None)
+        sub_a1.new_field("Files Added", 1000, lambda _: None)
 
         f = backup_report.find_one_field(
             lambda x: x.label == "Files Added", include_subreports=True
