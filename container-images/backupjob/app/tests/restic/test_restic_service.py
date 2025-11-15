@@ -375,3 +375,47 @@ class TestResticServiceIntegration:
         assert local_snap_id is not None
         assert remote_snap_id is not None
         assert local_snap_id.data != remote_snap_id.data
+
+    @pytest.mark.slow
+    def test_prune_repack(
+        self, backup_src_info: BackupSourceInfo, restic_service: ResticService
+    ) -> None:
+        """
+        Tests the prune_repack method.
+        """
+        restic_service.backup(
+            name="test_prune_repack backup 1",
+            source=backup_src_info.path,
+            for_each=False,
+            skip_if_unchanged=False,
+            exclude_files=[],
+        )
+
+        restic_service.backup(
+            name="test_prune_repack backup 2",
+            source=backup_src_info.path,
+            for_each=False,
+            skip_if_unchanged=False,
+            exclude_files=[],
+        )
+
+        report = restic_service.prune_repack(
+            name="Prune/Repack",
+            keep_last=1,
+            keep_within_hourly=None,
+            keep_within_daily=None,
+            keep_within_weekly=None,
+            keep_within_monthly=None,
+            keep_within_yearly=None,
+        )
+
+        snapshots_kept = report.find_one_field(lambda f: f.label == "Snapshots Kept")
+        snapshots_removed = report.find_one_field(
+            lambda f: f.label == "Snapshots Removed"
+        )
+
+        assert snapshots_kept is not None
+        assert snapshots_kept.data == 1
+
+        assert snapshots_removed is not None
+        assert snapshots_removed.data == 1

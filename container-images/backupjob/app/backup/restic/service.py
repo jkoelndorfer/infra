@@ -165,6 +165,51 @@ class ResticService:
 
         return report
 
+    def prune_repack(
+        self,
+        name: str,
+        keep_last: Optional[int],
+        keep_within_hourly: Optional[str],
+        keep_within_daily: Optional[str],
+        keep_within_weekly: Optional[str],
+        keep_within_monthly: Optional[str],
+        keep_within_yearly: Optional[str],
+    ) -> BackupReport:
+        """
+        Prunes snapshots and repacks objects in the restic repository.
+        """
+        report = BackupReport(name)
+
+        report.new_field("Repository", self.client.repository_path, lambda _: None)
+        report.new_field("Start Time", datetime.now(), lambda _: None)
+
+        result = self.client.forget(
+            keep_last=keep_last,
+            keep_within_hourly=keep_within_hourly,
+            keep_within_daily=keep_within_daily,
+            keep_within_weekly=keep_within_weekly,
+            keep_within_monthly=keep_within_monthly,
+            keep_within_yearly=keep_within_yearly,
+            prune=True,
+            repack_small=True,
+        )
+
+        report.new_field("End Time", datetime.now(), lambda _: None)
+        num_kept_snapshots = len(result.kept_snapshots)
+        num_removed_snapshots = len(result.removed_snapshots)
+
+        report.new_field("Snapshots Kept", num_kept_snapshots, lambda _: None)
+        report.new_field(
+            "Snapshots Removed",
+            num_removed_snapshots,
+            lambda x: A.WARNING if x > 10 else None,
+        )
+
+        if result.returncode == ResticReturnCode.RC_OK:
+            report.successful = True
+
+        return report
+
     def _backup_for_each(
         self,
         source: Path,
