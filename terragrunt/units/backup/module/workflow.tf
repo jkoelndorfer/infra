@@ -199,6 +199,54 @@ locals {
     },
 
     {
+      name = "restic-prune-repack"
+
+      inputs = {
+        parameters = []
+      }
+
+      container = {
+        image = "{{ workflow.parameters.ctrimage }}"
+        command = [
+          "/app/backup.py",
+          "--reporter",
+          "googlechat",
+          "--name",
+          "Prune/Repack",
+          "restic",
+          "--repository",
+          local.backup_local_restic_repository,
+          "--cache-dir",
+          local.backup_local_restic_cache_dir,
+          "--password-file",
+          local.backup_restic_password_file,
+          "prune-repack",
+          "--keep-last",
+          "5",
+          "--keep-within-daily",
+          "30d",
+          "--keep-within-monthly",
+          "2y",
+          "--keep-within-yearly",
+          "5y",
+        ]
+        env = local.backup_container_base.env
+
+        volumeMounts = [
+          {
+            name      = "local-backup"
+            mountPath = local.backup_volume_path
+          },
+          {
+            name      = "secrets"
+            mountPath = local.secret_volume_path
+            readOnly  = true
+          },
+        ]
+      }
+    },
+
+    {
       name    = "restic-check"
       depends = "restic-backup-syncthing-data"
 
@@ -353,8 +401,8 @@ locals {
     },
 
     {
-      name     = "restic-check"
-      template = "restic-check"
+      name     = "restic-prune-repack"
+      template = "restic-prune-repack"
       arguments = {
         parameters = []
       }
@@ -365,6 +413,15 @@ locals {
           "( ${s}.Succeeded || ${s}.Failed || ${s}.Errored )"
         ]
       )
+    },
+
+    {
+      name     = "restic-check"
+      template = "restic-check"
+      arguments = {
+        parameters = []
+      }
+      depends = "restic-prune-repack.Succeeded || restic-prune-repack.Failed || restic-prune-repack.Errored"
     },
 
     {
