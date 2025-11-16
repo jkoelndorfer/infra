@@ -130,6 +130,7 @@ class TestBackupApplicationIntegration:
 
         rclone_sync_app = BackupApplication()
         restic_backup_app = BackupApplication()
+        restic_prune_repack_app = BackupApplication()
         restic_check_app = BackupApplication()
         restic_compare_latest_snapshots_app = BackupApplication()
 
@@ -161,6 +162,35 @@ class TestBackupApplicationIntegration:
                 str(restic_password_file),
                 "backup",
                 str(restic_backup_source),
+            ]
+        )
+
+        restic_prune_repack_app.main(
+            [
+                "--name",
+                "Prune/Repack",
+                "--reporter",
+                "googlechat",
+                "restic",
+                "--repository",
+                str(restic_repository),
+                "--cache-dir",
+                str(restic_cache_dir),
+                "--password-file",
+                str(restic_password_file),
+                "prune-repack",
+                "--keep-last",
+                "5",
+                "--keep-within-hourly",
+                "48h",
+                "--keep-within-daily",
+                "30d",
+                "--keep-within-weekly",
+                "56d",
+                "--keep-within-monthly",
+                "24m",
+                "--keep-within-yearly",
+                "5y",
             ]
         )
 

@@ -147,6 +147,55 @@ class BackupApplication:
             func=self.restic_compare_latest_snapshots
         )
 
+        self.argparser_restic_prune_repack(restic_sub)
+
+    def argparser_restic_prune_repack(self, a: _SubParsersAction) -> None:
+        """
+        Configures the restic arguments for the argument prune-repack action.
+        """
+        pr = a.add_parser(
+            "prune-repack",
+            help="prune snapshots and repack data objects in the repository",
+        )
+        pr.add_argument(
+            "--keep-last",
+            type=int,
+            default=None,
+            help="keep this many of the most recent snapshots",
+        )
+        pr.add_argument(
+            "--keep-within-hourly",
+            type=str,
+            default=None,
+            help="keep hourly snapshots taken within this duration",
+        )
+        pr.add_argument(
+            "--keep-within-daily",
+            type=str,
+            default=None,
+            help="keep daily snapshots taken within this duration",
+        )
+        pr.add_argument(
+            "--keep-within-weekly",
+            type=str,
+            default=None,
+            help="keep weekly snapshots taken within this duration",
+        )
+        pr.add_argument(
+            "--keep-within-monthly",
+            type=str,
+            default=None,
+            help="keep monthly snapshots taken within this duration",
+        )
+        pr.add_argument(
+            "--keep-within-yearly",
+            type=str,
+            default=None,
+            help="keep yearly snapshots taken within this duration",
+        )
+
+        pr.set_defaults(func=self.restic_prune_repack)
+
     def configure_logger(self) -> None:
         """
         Configures the logger for this application.
@@ -230,6 +279,25 @@ class BackupApplication:
         )
 
         return restic_service.compare_latest_snapshots(remote_client)
+
+    def restic_prune_repack(self, args: Namespace) -> BackupReport:
+        """
+        Prune and repack operation for restic.
+
+        Prunes old snapshots in accordance with the defined retention policy
+        and repacks objects.
+        """
+        restic_service = self.restic_service(args)
+
+        return restic_service.prune_repack(
+            name=args.name,
+            keep_last=args.keep_last,
+            keep_within_hourly=args.keep_within_hourly,
+            keep_within_daily=args.keep_within_daily,
+            keep_within_weekly=args.keep_within_weekly,
+            keep_within_monthly=args.keep_within_monthly,
+            keep_within_yearly=args.keep_within_yearly,
+        )
 
     def reporter(self, args: Namespace) -> BackupReporter:
         """
