@@ -50,6 +50,11 @@ resource "kubernetes_deployment_v1" "registry" {
 
           image_pull_policy = "IfNotPresent"
 
+          security_context {
+            run_as_user  = module.uid_gid.uid
+            run_as_group = module.uid_gid.gid
+          }
+
           port {
             container_port = local.registry_port
           }

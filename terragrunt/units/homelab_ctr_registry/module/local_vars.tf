@@ -3,3 +3,10 @@ locals {
   registry_ro_host = "ctr-registry-ro.${var.homelab_shared01_zone.host}"
   registry_rw_host = "ctr-registry-rw.${var.homelab_shared01_zone.host}"
 }
+
+module "uid_gid" {
+  source = "${var.paths.modules_root}/uid_gid"
+
+  env     = var.env
+  service = "ctr_registry"
+}
