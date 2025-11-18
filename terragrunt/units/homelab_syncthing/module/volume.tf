@@ -8,8 +8,8 @@ module "config_volume" {
   access_modes   = ["ReadWriteOnce"]
   backing_volume = var.backing_volume
 
-  user  = var.syncthing_uid
-  group = var.syncthing_gid
+  user  = module.uid_gid.uid
+  group = module.uid_gid.gid
   mode  = "0700"
 }
 
@@ -23,7 +23,7 @@ module "data_volume" {
   access_modes   = ["ReadWriteOnce"]
   backing_volume = var.backing_volume
 
-  user  = var.syncthing_uid
-  group = var.syncthing_gid
+  user  = module.uid_gid.uid
+  group = module.uid_gid.gid
   mode  = "0700"
 }

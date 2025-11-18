@@ -1,3 +1,10 @@
+module "uid_gid" {
+  source = "${var.paths.modules_root}/uid_gid"
+
+  env     = var.env
+  service = "syncthing"
+}
+
 resource "kubernetes_service_v1" "syncthing_sync" {
   metadata {
     namespace = module.namespace.name
@@ -93,12 +100,12 @@ resource "kubernetes_deployment_v1" "syncthing" {
 
           env {
             name  = "PUID"
-            value = var.syncthing_uid
+            value = module.uid_gid.uid
           }
 
           env {
             name  = "PGID"
-            value = var.syncthing_gid
+            value = module.uid_gid.gid
           }
 
           port {
