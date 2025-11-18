@@ -5,6 +5,13 @@ module "namespace" {
   name = "traefik"
 }
 
+module "uid_gid" {
+  source = "${var.paths.modules_root}/uid_gid"
+
+  env     = var.env
+  service = "traefik"
+}
+
 module "cert_volume" {
   source = "${var.paths.modules_root}/local_persistent_volume_v1"
 
@@ -14,6 +21,9 @@ module "cert_volume" {
   storage        = "128Mi"
   access_modes   = ["ReadWriteOnce"]
   backing_volume = var.backing_volume
+
+  user  = module.uid_gid.uid
+  group = module.uid_gid.gid
 }
 
 resource "kubernetes_secret_v1" "traefik_gcp_serviceaccount" {
@@ -96,6 +106,11 @@ module "traefik_helm_chart" {
       path    = "/data"
 
       existingClaim = module.cert_volume.pvc.name
+    }
+
+    podSecurityContext = {
+      runAsUser  = module.uid_gid.uid
+      runAsGroup = module.uid_gid.gid
     }
 
     ports = {
