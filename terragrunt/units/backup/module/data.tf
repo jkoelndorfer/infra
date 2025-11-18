@@ -50,3 +50,10 @@ locals {
   # The local backup container path to the volume containing syncthing data.
   syncthing_data_volume_path = "/data/syncthing"
 }
+
+module "uid_gid" {
+  source = "${var.paths.modules_root}/uid_gid"
+
+  env     = var.env
+  service = "backup"
+}

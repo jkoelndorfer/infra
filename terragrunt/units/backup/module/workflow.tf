@@ -1,6 +1,13 @@
 locals {
   backup_container_base = {
     image = "{{ workflow.parameters.ctrimage }}"
+
+    securityContext = {
+      runAsNonRoot = true
+      runAsUser    = "TODO"
+      runAsGroup   = "TODO"
+    }
+
     env = [
       {
         name = "GOOGLE_CHAT_WEBHOOK_URL"

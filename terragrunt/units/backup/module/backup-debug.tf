@@ -37,6 +37,15 @@ resource "kubernetes_deployment_v1" "backup_debug" {
 
           image_pull_policy = "Always"
 
+          security_context {
+            capabilities {
+              add = ["DAC_READ_SEARCH"]
+            }
+
+            run_as_user  = module.uid_gid.uid
+            run_as_group = module.uid_gid.gid
+          }
+
           command = [
             "bash",
             "-c",
@@ -161,7 +170,7 @@ resource "kubernetes_deployment_v1" "backup_debug" {
         volume {
           name = "secrets"
           secret {
-            default_mode = "0400"
+            default_mode = "0444"
             secret_name  = "restic"
             items {
               key  = "repository_password"
