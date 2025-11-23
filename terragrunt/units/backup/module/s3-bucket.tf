@@ -28,17 +28,17 @@ resource "aws_s3_bucket_lifecycle_configuration" "backup" {
   bucket = aws_s3_bucket.backup.bucket
 
   rule {
-    id     = "deep-archive"
+    id     = "restic-archive-data"
     status = "Enabled"
 
     filter {
-      prefix = "deep-archive/"
+      prefix = "archive/restic/data/"
     }
 
     transition {
-      days = 1
+      days = 3
 
-      storage_class = "DEEP_ARCHIVE"
+      storage_class = "GLACIER_IR"
     }
   }
 

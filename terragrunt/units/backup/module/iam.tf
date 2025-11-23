@@ -50,6 +50,7 @@ data "aws_iam_policy_document" "home_backup" {
     effect  = "Allow"
     actions = local.backup_rw_object_permissions
     resources = [
+      "${aws_s3_bucket.backup.arn}/archive/*",
       "${aws_s3_bucket.backup.arn}/syncthing/*",
       "${aws_s3_bucket.backup.arn}/photoprism/*",
       "${aws_s3_bucket.backup.arn}/restic/*",

@@ -1,4 +1,16 @@
 locals {
+  # Path to the volume containing archival data.
+  archive_volume_path = "/data/archive"
+
+  # The local backup container path to the the restic archive cache directory.
+  archive_s3_restic_cache_dir = "${local.backup_caches_dir}/s3-archive"
+
+  # The path to the restic archive password file.
+  archive_restic_password_file = "${local.secret_volume_path}/archive-restic-repository-password"
+
+  # The restic path to the S3-hosted restic archive repository.
+  archive_s3_restic_repository = "s3:https://s3.amazonaws.com/${aws_s3_bucket.backup.bucket}/archive/restic"
+
   # The container image used to perform backups.
   backup_ctr_image = "${data.kubernetes_secret_v1.registry_ro.data.hostname}/${var.backup_image}"
 
