@@ -90,6 +90,20 @@ locals {
         value = var.syncthing_deployment.name
       },
     ]
+    vaultwarden = [
+      {
+        name  = "kind"
+        value = "deployment"
+      },
+      {
+        name  = "namespace"
+        value = var.vaultwarden_deployment.namespace
+      },
+      {
+        name  = "name"
+        value = var.vaultwarden_deployment.name
+      },
+    ]
   }
 
   workflow_templates = [
@@ -284,6 +298,65 @@ locals {
     },
 
     {
+      name = "local-rclone"
+      inputs = {
+        parameters = [
+          { name = "source" },
+          { name = "destination" },
+          { name = "file_user" },
+          { name = "file_group" },
+        ]
+      }
+
+      container = {
+        image = "{{ workflow.parameters.ctrimage }}"
+        command = [
+          "bash",
+          "-c",
+          <<-EOT
+            set -euxo pipefail
+            rclone -v --checksum --stats=0 sync "$SOURCE" "$DESTINATION"
+            chown -R "$${FILE_USER}:$${FILE_GROUP}" "$DESTINATION"
+          EOT
+        ]
+        env = concat(
+          local.backup_container_base.env,
+          [
+            {
+              name  = "SOURCE"
+              value = "{{ inputs.parameters.source }}"
+            },
+            {
+              name  = "DESTINATION"
+              value = "{{ inputs.parameters.destination }}"
+            },
+            {
+              name  = "FILE_USER"
+              value = "{{ inputs.parameters.file_user }}"
+            },
+            {
+              name  = "FILE_GROUP"
+              value = "{{ inputs.parameters.file_group }}"
+            },
+          ]
+        )
+
+
+        volumeMounts = [
+          {
+            name      = "syncthing-data"
+            mountPath = local.syncthing_data_volume_path
+          },
+          {
+            name      = "vaultwarden-data"
+            mountPath = local.vaultwarden_data_volume_path
+            readOnly  = true
+          },
+        ]
+      }
+    },
+
+    {
       name    = "rclone-to-s3"
       depends = "restic-backup-syncthing"
 
@@ -357,11 +430,60 @@ locals {
 
   workflow_tasks = [
     {
+      name     = "scale-down-vaultwarden"
+      template = "scale-app"
+      arguments = {
+        parameters = concat(local.scale_params.vaultwarden, [{ name = "replicas", value = "0" }])
+      }
+    },
+
+    {
       name     = "scale-down-syncthing"
       template = "scale-app"
       arguments = {
         parameters = concat(local.scale_params.syncthing, [{ name = "replicas", value = "0" }])
       }
+    },
+
+    {
+      name     = "copy-vaultwarden-data-to-syncthing"
+      template = "local-rclone"
+
+      depends = "scale-down-vaultwarden && scale-down-syncthing"
+
+      arguments = {
+        parameters = [
+          {
+            name  = "source"
+            value = local.vaultwarden_data_volume_path
+          },
+
+          {
+            name  = "destination"
+            value = "${local.syncthing_data_volume_path}/vaultwarden/data"
+          },
+
+          {
+            name  = "file_user"
+            value = var.syncthing_data_volume.user
+          },
+
+          {
+            name  = "file_group"
+            value = var.syncthing_data_volume.group
+          },
+        ]
+      }
+    },
+
+    {
+      name     = "scale-up-vaultwarden"
+      template = "scale-app"
+      arguments = {
+        parameters = concat(local.scale_params.vaultwarden, [{ name = "replicas", value = "1" }])
+      }
+
+      depends = join(" || ", [for s in ["Succeeded", "Errored", "Failed"] : "copy-vaultwarden-data-to-syncthing.${s}"])
     },
 
     {
@@ -379,7 +501,7 @@ locals {
           }
         ]
       }
-      depends = "scale-down-syncthing"
+      depends = "copy-vaultwarden-data-to-syncthing"
     },
 
     {
@@ -514,6 +636,13 @@ resource "kubernetes_manifest" "backup_workflow" {
             name = "syncthing-data"
             persistentVolumeClaim = {
               claimName = module.syncthing_data_volume.pvc.name
+            }
+          },
+
+          {
+            name = "vaultwarden-data"
+            persistentVolumeClaim = {
+              claimName = module.vaultwarden_data_volume.pvc.name
             }
           },
 

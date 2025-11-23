@@ -43,13 +43,34 @@ variable "syncthing_data_volume" {
     access_modes   = list(string)
     backing_volume = string
     env            = string
+    group          = number
     pv             = object({ name = string })
     pvc            = object({ namespace = string, name = string })
     storage        = string
+    user           = number
   })
 }
 
 variable "syncthing_deployment" {
   description = "the deployment supporting the syncthing service"
+  type        = object({ namespace = string, name = string })
+}
+
+variable "vaultwarden_data_volume" {
+  description = "the persistent volume containing vaultwarden data"
+  type = object({
+    access_modes   = list(string)
+    backing_volume = string
+    env            = string
+    group          = number
+    pv             = object({ name = string })
+    pvc            = object({ namespace = string, name = string })
+    storage        = string
+    user           = number
+  })
+}
+
+variable "vaultwarden_deployment" {
+  description = "the deployment supporting the vaultwarden service"
   type        = object({ namespace = string, name = string })
 }

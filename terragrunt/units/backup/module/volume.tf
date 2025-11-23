@@ -34,6 +34,24 @@ module "syncthing_data_volume" {
   skip_directory_management = true
 }
 
+# This points at vaultwarden's data volume using the directory_override parameter.
+module "vaultwarden_data_volume" {
+  source = "${var.paths.modules_root}/local_persistent_volume_v1"
+
+  directory_override = {
+    namespace = var.vaultwarden_data_volume.pvc.namespace,
+    name      = var.vaultwarden_data_volume.pvc.name,
+  }
+  env            = var.env
+  namespace      = module.namespace.name
+  name           = "vaultwarden-data-backup"
+  storage        = "50Gi"
+  access_modes   = ["ReadOnlyMany"]
+  backing_volume = var.vaultwarden_data_volume.backing_volume
+
+  skip_directory_management = true
+}
+
 module "local_backup_volume" {
   source = "${var.paths.modules_root}/local_persistent_volume_v1"
 

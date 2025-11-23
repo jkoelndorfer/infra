@@ -34,6 +34,12 @@ dependency "homelab_syncthing" {
   mock_outputs = values.mock_outputs.homelab_syncthing
 }
 
+dependency "homelab_vaultwarden" {
+  config_path = values.unit_paths.homelab_vaultwarden
+
+  mock_outputs = values.mock_outputs.homelab_vaultwarden
+}
+
 generate "aws_provider" {
   path      = "aws_provider.tf"
   if_exists = "overwrite"
@@ -58,5 +64,9 @@ inputs = merge(
     syncthing_deployment = dependency.homelab_syncthing.outputs.deployment,
     syncthing_config_volume = dependency.homelab_syncthing.outputs.config_volume,
     syncthing_data_volume = dependency.homelab_syncthing.outputs.data_volume,
+  },
+  {
+    vaultwarden_deployment = dependency.homelab_vaultwarden.outputs.deployment,
+    vaultwarden_data_volume = dependency.homelab_vaultwarden.outputs.data_volume,
   },
 )

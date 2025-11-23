@@ -49,4 +49,7 @@ locals {
 
   # The local backup container path to the volume containing syncthing data.
   syncthing_data_volume_path = "/data/syncthing"
+
+  # The local backup container path to the volume containing vaultwarden data.
+  vaultwarden_data_volume_path = "/data/vaultwarden"
 }
