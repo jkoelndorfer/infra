@@ -8,9 +8,9 @@ locals {
   pv_attrs = var.directory_override != null ? var.directory_override : { namespace = var.namespace, name = var.name }
 
   directory_current = {
-    user  = tonumber(data.external.directory.result.user)
-    group = tonumber(data.external.directory.result.group)
-    mode  = data.external.directory.result.mode
+    user  = try(tonumber(data.external.directory.result.user), -1)
+    group = try(tonumber(data.external.directory.result.group), -1)
+    mode  = try(data.external.directory.result.mode, "unset")
   }
 
   directory_desired = {
