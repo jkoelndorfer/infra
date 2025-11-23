@@ -52,7 +52,7 @@ app)
 util)
 	util_ctr=$(buildah from 'backupjob:app')
 
-	for f in lrestic rrestic srclone; do
+	for f in arrestic lrestic rrestic srclone; do
 		buildah add "$util_ctr" "util/${f}" "/usr/local/bin/${f}"
 	done
 

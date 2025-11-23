@@ -52,6 +52,21 @@ module "vaultwarden_data_volume" {
   skip_directory_management = true
 }
 
+# This volume is used to temporarily store archival data.
+#
+# The archive data is backed up to a restic repository hosted on
+# cloud storage on an ad-hoc basis.
+module "archive_volume" {
+  source = "${var.paths.modules_root}/local_persistent_volume_v1"
+
+  env            = var.env
+  namespace      = module.namespace.name
+  name           = "archive"
+  storage        = "100Gi"
+  access_modes   = ["ReadWriteOnce"]
+  backing_volume = var.backing_volume
+}
+
 module "local_backup_volume" {
   source = "${var.paths.modules_root}/local_persistent_volume_v1"
 

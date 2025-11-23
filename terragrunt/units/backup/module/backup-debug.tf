@@ -69,6 +69,20 @@ resource "kubernetes_deployment_v1" "backup_debug" {
           }
 
           env {
+            name  = "ARCHIVE_RESTIC_PASSWORD_FILE"
+            value = local.archive_restic_password_file
+          }
+
+          env {
+            name  = "ARCHIVE_S3_RESTIC_REPOSITORY"
+            value = local.archive_s3_restic_repository
+          }
+          env {
+            name  = "ARCHIVE_S3_RESTIC_CACHE_DIR"
+            value = local.archive_s3_restic_cache_dir
+          }
+
+          env {
             name  = "BACKUP_LOCAL_RESTIC_REPOSITORY"
             value = local.backup_local_restic_repository
           }
@@ -114,6 +128,12 @@ resource "kubernetes_deployment_v1" "backup_debug" {
           }
 
           volume_mount {
+            name       = "archive"
+            mount_path = local.archive_volume_path
+            read_only  = true
+          }
+
+          volume_mount {
             name       = "local-backup"
             mount_path = local.backup_volume_path
           }
@@ -134,6 +154,13 @@ resource "kubernetes_deployment_v1" "backup_debug" {
             name       = "secrets"
             read_only  = true
             mount_path = local.secret_volume_path
+          }
+        }
+
+        volume {
+          name = "archive"
+          persistent_volume_claim {
+            claim_name = module.archive_volume.pvc.name
           }
         }
 
@@ -163,9 +190,15 @@ resource "kubernetes_deployment_v1" "backup_debug" {
           secret {
             default_mode = "0400"
             secret_name  = "restic"
+
             items {
               key  = "repository_password"
               path = "restic-repository-password"
+            }
+
+            items {
+              key  = "archive_repository_password"
+              path = "archive-restic-repository-password"
             }
           }
         }
