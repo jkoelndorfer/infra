@@ -1,6 +1,6 @@
 output "notice" {
   description = "notice indicating that SMTP password must be set"
-  value       = "NOTICE: Configure Kubernetes secret SMTP containing Sendgrid API key"
+  value       = "NOTICE: Configure Kubernetes SMTP secret containing SMTP2Go credentials"
 }
 
 output "deployment" {
