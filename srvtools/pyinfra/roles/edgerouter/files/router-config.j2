@@ -76,31 +76,31 @@ firewall {
         }
         rule 600 {
             action accept
-            description "Allow miniserv HTTPS access to authorized VPN clients"
+            description "Allow server HTTPS access to authorized VPN clients"
             log disable
             protocol tcp
             source {
                 group {
-                    network-group wireguard-miniserv-https
+                    network-group wireguard-serv-https
                 }
             }
             destination {
-                address  {{ secrets.static_dhcp["miniserv"].ip }}
+                address  {{ secrets.kserv_static_dhcp["kserv"].ip }}
                 port     443
             }
         }
         rule 610 {
             action accept
-            description "Allow miniserv ICMP to authorized VPN clients"
+            description "Allow server ICMP to authorized VPN clients"
             log disable
             protocol icmp
             source {
                 group {
-                    network-group wireguard-miniserv-https
+                    network-group wireguard-serv-https
                 }
             }
             destination {
-                address  {{ secrets.static_dhcp["miniserv"].ip }}
+                address  {{ secrets.kserv_static_dhcp["kserv"].ip }}
             }
         }
         rule 700 {
@@ -260,6 +260,7 @@ service {
             listen-on vtun0
             listen-on eth0
             listen-on eth5
+            listen-on wg0
             {% for i in vars.upstream_dns %}
             name-server {{ i }}
             {% endfor %}
