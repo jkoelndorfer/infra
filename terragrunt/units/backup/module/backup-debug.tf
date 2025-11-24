@@ -11,6 +11,10 @@ resource "kubernetes_deployment_v1" "backup_debug" {
     # manually if backups require debugging.
     replicas = 0
 
+    strategy {
+      type = "Recreate"
+    }
+
     selector {
       match_labels = {
         "local/backup-debug" = "true"
