@@ -62,8 +62,7 @@ Under the `bootstrap` stack, apply the `google_bootstrap` unit:
 
 ```
 $ cd terragrunt/stacks/bootstrap
-$ terragrunt stack clean && terragrunt stack generate
-$ (cd .terragrunt-stack/google_bootstrap && terragrunt run apply)
+$ ./unit google_bootstrap apply
 ```
 
 The `bootstrap` stack should apply in a single pass. If this is a
@@ -86,8 +85,7 @@ Under the `bootstrap` stack, apply the `aws_bootstrap` unit:
 
 ```
 $ cd terragrunt/stacks/bootstrap
-$ terragrunt stack clean && terragrunt stack generate
-$ (cd .terragrunt-stack/aws_bootstrap && terragrunt run apply)
+$ ./unit aws_bootstrap apply
 ```
 
 Next, create access credentials for the created `terragrunt` IAM user
@@ -97,7 +95,7 @@ shared credential file in accordance with the instructions in `root.hcl`.
 Finally, finish AWS bootstrapping by applying the `aws_infra_mgmt` unit.
 
 ```
-$ (cd .terragrunt-stack/aws_infra_mgmt && terragrunt run apply)
+$ ./unit aws_infra_mgmt apply
 ```
 
 Post-Bootstrap
