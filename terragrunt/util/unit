@@ -1,0 +1,50 @@
+#!/bin/bash
+
+##########################
+#          unit          #
+##########################
+#
+# This script helps perform Terraform operations
+# against a single Terragrunt unit.
+#
+# This script is shared between stacks, but it should
+# be *symlinked to* from a stack directory and invoked
+# via that path.
+
+set -euo pipefail
+
+script_path=$0
+script_dir=$(readlink -f "$(dirname "$script_path")")
+
+if ! [[ "$script_dir" =~ terragrunt/stacks/(bootstrap|dev|prod) ]]; then
+	printf 'script must be symlinked and invoked from a valid terragrunt stack directory\n' >&2
+	exit 1
+fi
+
+stack=$(basename "$script_dir")
+terragrunt_root=$(readlink -f "${script_dir}/../..")
+
+unit=${1:-}
+shift
+
+if [[ -z "$unit" ]]; then
+	printf 'you must specify the unit name as the first argument\n' >&2
+	exit 1
+fi
+
+if ! [[ -d "${terragrunt_root}/units/${unit}" ]]; then
+	printf 'invalid unit: %s\n' >&2
+	exit 1
+fi
+
+terragrunt stack clean
+terragrunt stack generate
+
+if [[ "$stack" == 'bootstrap' ]]; then
+	unit_dir="${script_dir}/.terragrunt-stack/${unit}"
+else
+	unit_dir="${script_dir}/.terragrunt-stack/${stack}/${unit}"
+fi
+cd "$unit_dir"
+
+terragrunt run "$@"
