@@ -24,6 +24,20 @@ firewall {
     {% endfor %}
     }
 
+    modify WG_MSS_CLAMP {
+        rule 10 {
+            action modify
+            description "Clamp MSS for improved WireGuard performance"
+            modify {
+                tcp-mss 1340
+            }
+            protocol tcp
+            tcp {
+                flags SYN,!RST
+            }
+        }
+    }
+
     name WAN_INBOUND {
         default-action drop
         rule 500 {
@@ -184,7 +198,11 @@ interfaces {
 
         firewall {
             in {
-                name WIREGUARD_INBOUND
+                name   WIREGUARD_INBOUND
+                modify WG_MSS_CLAMP
+            }
+            out {
+                modify WG_MSS_CLAMP
             }
         }
 
