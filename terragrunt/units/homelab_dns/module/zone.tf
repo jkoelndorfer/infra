@@ -12,3 +12,31 @@ module "homelab_shared01_zone" {
   function        = "homelab"
   project         = module.project
 }
+
+resource "google_dns_record_set" "homelab_shared01_apex_txt" {
+  project = module.project.project_id
+
+  name = module.homelab_shared01_zone.dns_name
+  type = "TXT"
+  ttl  = 300
+
+  managed_zone = module.homelab_shared01_zone.name
+
+  rrdatas = [
+    "\"${data.dns_txt_record_set.smtp2go_spf.record}\"",
+  ]
+}
+
+resource "google_dns_record_set" "homelab_shared01_dmarc" {
+  project = module.project.project_id
+
+  name = "_dmarc.${module.homelab_shared01_zone.dns_name}"
+  type = "TXT"
+  ttl  = 300
+
+  managed_zone = module.homelab_shared01_zone.name
+
+  rrdatas = [
+    "\"v=DMARC1;p=reject;rua=mailto:dmarc@${module.homelab_shared01_zone.host};pct=100;fo=1\"",
+  ]
+}

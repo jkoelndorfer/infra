@@ -21,3 +21,7 @@ resource "google_dns_record_set" "smtp2go_dkim" {
 
   rrdatas = ["dkim.smtp2go.net."]
 }
+
+data "dns_txt_record_set" "smtp2go_spf" {
+  host = "return.smtp2go.net"
+}
