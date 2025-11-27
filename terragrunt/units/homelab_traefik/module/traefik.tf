@@ -113,6 +113,10 @@ module "traefik_helm_chart" {
       runAsGroup = module.uid_gid.gid
     }
 
+    gzip = {
+      enabled = false
+    }
+
     ports = {
       web = {
         port        = 8888
