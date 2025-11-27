@@ -11,6 +11,11 @@ terraform {
       version = "6.10.0"
     }
 
+    dns = {
+      source  = "hashicorp/dns"
+      version = "3.4.3"
+    }
+
     google = {
       source  = "hashicorp/google"
       version = "6.46.0"
