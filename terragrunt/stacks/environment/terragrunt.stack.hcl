@@ -8,6 +8,7 @@ locals {
     homelab_ctr_registry   = "homelab_ctr_registry"
     homelab_dns            = "homelab_dns"
     homelab_traefik        = "homelab_traefik"
+    homelab_speedtest      = "homelab_speedtest"
     homelab_syncthing      = "homelab_syncthing"
     homelab_vaultwarden    = "homelab_vaultwarden"
   }
@@ -71,6 +72,7 @@ locals {
           storage_class_name = "local-path"
         }
       }
+      homelab_speedtest = {}
       homelab_traefik = {}
       homelab_vaultwarden = {
         deployment = {
@@ -148,6 +150,14 @@ unit "homelab_argo_workflows" {
   # support multiple installations per Kubernetes cluster.
   source = values.env == "prod" ? "${local.units_dir}/homelab_argo_workflows" : "${local.units_dir}/noop"
   path   = local.unit_paths.homelab_argo_workflows
+  values = local.common_values
+
+  no_dot_terragrunt_stack = true
+}
+
+unit "homelab_speedtest" {
+  source = "${local.units_dir}/homelab_speedtest"
+  path   = local.unit_paths.homelab_speedtest
   values = local.common_values
 
   no_dot_terragrunt_stack = true

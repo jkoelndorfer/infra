@@ -17,6 +17,7 @@ locals {
     syncthing    = 2
     backup       = 3
     vaultwarden  = 4
+    speedtest    = 5
   }
 
   service_id = local.base_ids[var.env] + local.service_ids[var.service]
