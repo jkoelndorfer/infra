@@ -10,6 +10,7 @@ locals {
     homelab_traefik        = "homelab_traefik"
     homelab_speedtest      = "homelab_speedtest"
     homelab_syncthing      = "homelab_syncthing"
+    homelab_unifi          = "homelab_unifi"
     homelab_vaultwarden    = "homelab_vaultwarden"
   }
   unit_paths_values = { for k, v in local.unit_paths: k => "../${v}" }
@@ -166,6 +167,14 @@ unit "homelab_speedtest" {
 unit "homelab_syncthing" {
   source = "${local.units_dir}/homelab_syncthing"
   path   = local.unit_paths.homelab_syncthing
+  values = local.common_values
+
+  no_dot_terragrunt_stack = true
+}
+
+unit "homelab_unifi" {
+  source = "${local.units_dir}/homelab_unifi"
+  path   = local.unit_paths.homelab_unifi
   values = local.common_values
 
   no_dot_terragrunt_stack = true
