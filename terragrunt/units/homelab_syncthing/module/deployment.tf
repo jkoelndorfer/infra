@@ -5,25 +5,6 @@ module "uid_gid" {
   service = "syncthing"
 }
 
-resource "kubernetes_service_v1" "syncthing_sync" {
-  metadata {
-    namespace = module.namespace.name
-    name      = "syncthing-sync-protocol"
-  }
-
-  spec {
-    type = "NodePort"
-
-    selector = {
-      "local/syncthing-service" = "true"
-    }
-
-    port {
-      port = local.sync_protocol_port
-    }
-  }
-}
-
 resource "kubernetes_service_v1" "syncthing_web_ui" {
   metadata {
     namespace = module.namespace.name
@@ -109,6 +90,13 @@ resource "kubernetes_deployment_v1" "syncthing" {
           }
 
           port {
+            protocol       = "TCP"
+            container_port = local.sync_protocol_port
+            host_port      = local.sync_protocol_port
+          }
+
+          port {
+            protocol       = "UDP"
             container_port = local.sync_protocol_port
             host_port      = local.sync_protocol_port
           }
