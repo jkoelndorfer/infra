@@ -86,6 +86,13 @@ class ResticClient:
         for p in exclude_files:
             optional_args.extend(["--exclude-file", str(p)])
 
+        if source.is_dir():
+            cwd = source
+            backup_src = "."
+        else:
+            cwd = source.parent
+            backup_src = source.name
+
         # Here, we force use of relative paths. Using absolute paths means that if any
         # parent directory metadata changes, restic will produce a new snapshot [1],
         # which is almost certainly not what we want -- especially since this will
@@ -93,9 +100,9 @@ class ResticClient:
         return self.run(
             "backup",
             *optional_args,
-            str(source.name),
+            backup_src,
             result_type=ResticBackupResult,
-            cwd=source.parent,
+            cwd=cwd,
             single_json_document=False,
         )
 
