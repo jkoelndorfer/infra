@@ -6,6 +6,7 @@ Contains code to invoke commands.
 """
 
 from pathlib import Path
+from shlex import quote
 import subprocess
 from typing import Protocol
 
@@ -41,11 +42,17 @@ def cmdexec(
     else:
         stderr = subprocess.PIPE
 
-    log.info(f"executing command {cmd} in {cwd}")
+    log.info(f"\nexecuting command {' '.join(quote(c) for c in cmd)} in {cwd}")
     proc = subprocess.run(cmd, cwd=str(cwd), stdout=subprocess.PIPE, stderr=stderr)
+    log.info(
+        ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+    )
     log.info(proc.stdout)
     if not combine_stdout_stderr:
         log.info(proc.stderr)
+    log.info(
+        "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n"
+    )
     return proc
 
 
