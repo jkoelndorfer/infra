@@ -97,6 +97,8 @@ class ResticClient:
         # parent directory metadata changes, restic will produce a new snapshot [1],
         # which is almost certainly not what we want -- especially since this will
         # be running in a container via Kubernetes.
+        #
+        # [1]: https://restic.readthedocs.io/en/latest/040_backup.html#skip-creating-snapshots-if-unchanged
         return self.run(
             "backup",
             *optional_args,
