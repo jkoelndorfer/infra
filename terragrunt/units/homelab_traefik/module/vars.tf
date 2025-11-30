@@ -20,7 +20,7 @@ variable "homelab_dns_updater_role" {
 }
 
 variable "traefik_chart" {
-  description = "a description of the Traefik chart do download"
+  description = "a description of the Traefik chart to download"
   type        = object({ sha256sum = string, url = string })
   default = {
     sha256sum = "04819a82ef6aa90ee28e5a01269e5b4414149d585c3bc938b66afa64dc78a595"
