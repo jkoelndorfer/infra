@@ -112,3 +112,6 @@ for _i in dns:
 
 for _j in static_dhcp:
     hosts[_j.name] = Host.from_static_dhcp(_j)
+
+for _k in kserv_static_dhcp:
+    hosts[_k.name] = Host.from_static_dhcp(_k)
