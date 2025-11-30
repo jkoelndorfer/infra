@@ -7,11 +7,14 @@ have fun doing it and it provides me some useful services.
 
 This repository is broken into a few different top-level directories:
 
-* `aws`: contains AWS-specific bits, such as Lambda function code
-* `packer`: contains scripts and configuration to support building images
+* `aws`: *legacy*; contains AWS-specific bits, such as Lambda function code
+* `container-images`: contains custom container image builds, most notably the
+   backupjob container which runs backups
 * `srvtools`: contains tools that are deployed to servers, including pyinfra
-* `terraform`: contains terraform stacks and reusable modules for provisiong
+* `terraform`: *legacy*; contains terraform stacks and reusable modules for provisioning
   infrastructure
+* `terragrunt`: contains terragrunt global configuration, stacks, units, and reusable
+  modules for provisioning infrastructure
 
 Overview
 --------
@@ -25,14 +28,14 @@ services:
   writing.
 * A personal [Syncthing][2] file sync server.
 * A nightly backup service that saves all of the Syncthing
-  directories to S3 using [rclone][3].
-* A statically generated [blog][4].
-* A [Vaultwarden][5] ([Bitwarden][6] clone) installation.
-
+  directories to S3 using [restic][3] and [rclone][4].
+* A statically generated [blog][6].
+* A [Vaultwarden][6] ([Bitwarden][7] clone) installation.
 
 [1]: https://sourceforge.net/p/ddclient/wiki/protocols/#dyndns2
 [2]: https://syncthing.net/
-[3]: https://rclone.org/
-[4]: https://www.johnk.io
-[5]: https://github.com/dani-garcia/vaultwarden
-[6]: https://bitwarden.com/
+[3]: https://github.com/restic/restic
+[4]: https://rclone.org/
+[5]: https://www.johnk.io
+[6]: https://github.com/dani-garcia/vaultwarden
+[7]: https://bitwarden.com/
