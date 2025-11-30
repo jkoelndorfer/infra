@@ -19,6 +19,9 @@ variable "homelab_dns_updater_role" {
   type        = object({ id = string, permissions = list(string), role_id = string })
 }
 
+# See available Traefik chart releases at:
+#
+# https://github.com/traefik/traefik-helm-chart/releases
 variable "traefik_chart" {
   description = "a description of the Traefik chart to download"
   type        = object({ sha256sum = string, url = string })
