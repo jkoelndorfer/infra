@@ -242,7 +242,7 @@ service {
             authoritative enable
             subnet {{ vars.lan_network }} {
                 default-router {{ vars.router_ip }}
-                dns-server {{ secrets.hosts.miniserv.ip }}
+                dns-server {{ secrets.hosts.kserv.ip }}
                 lease 86400
                 start {{ vars.dhcp_start }} {
                     stop {{ vars.dhcp_end }}
@@ -303,11 +303,11 @@ service {
                 address {{ vars.bad_citizens_subnet }}
             }
             inside-address {
-                address {{ secrets.hosts.miniserv.ip }}
+                address {{ secrets.hosts.kserv.ip }}
                 port    53
             }
             destination {
-                address !{{ secrets.hosts.miniserv.ip }}
+                address !{{ secrets.hosts.kserv.ip }}
                 port    53
             }
             type destination

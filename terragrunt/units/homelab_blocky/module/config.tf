@@ -32,6 +32,10 @@ locals {
     ports = {
       dns = local.container_dns_port
     }
+
+    specialUseDomains = {
+      enable = false
+    }
   }
 }
 
