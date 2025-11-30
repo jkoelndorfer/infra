@@ -5,6 +5,7 @@ locals {
     backup                 = "backup"
     dns                    = "dns"
     homelab_argo_workflows = "homelab_argo_workflows"
+    homelab_blocky         = "homelab_blocky"
     homelab_ctr_registry   = "homelab_ctr_registry"
     homelab_dns            = "homelab_dns"
     homelab_traefik        = "homelab_traefik"
@@ -27,6 +28,8 @@ locals {
           name         = "not a real environment folder; use only env attribute"
           folder_id    = "000000000000"
         }
+      }
+      homelab_blocky = {
       }
       homelab_ctr_registry = {
         registry_ro_host = "ctr-registry-ro.example.com"
@@ -95,6 +98,14 @@ locals {
 unit "google_env_folder" {
   source = "${local.units_dir}/google_env_folder"
   path   = local.unit_paths.google_env_folder
+  values = local.common_values
+
+  no_dot_terragrunt_stack = true
+}
+
+unit "homelab_blocky" {
+  source = "${local.units_dir}/homelab_blocky"
+  path   = local.unit_paths.homelab_blocky
   values = local.common_values
 
   no_dot_terragrunt_stack = true
