@@ -66,7 +66,7 @@ module "traefik_helm_chart" {
     certificatesResolvers = {
       gcp = {
         acme = {
-          email   = "acme@${var.personal_email_domain}"
+          email   = "acme@${var.personal_domain}"
           storage = "/data/acme.json"
           dnsChallenge = {
             provider = "gcloud"
