@@ -1,5 +1,6 @@
 locals {
-  domain_slug = replace(var.domain, ".", "-")
+  domain      = trimsuffix(var.dns_name, ".")
+  domain_slug = replace(local.domain, ".", "-")
 }
 
 data "aws_caller_identity" "current" {}

@@ -1,8 +1,10 @@
 resource "aws_acm_certificate" "this" {
-  domain_name       = var.domain
+  region = "us-east-1"
+
+  domain_name       = local.domain
   validation_method = "DNS"
 
-  subject_alternative_names = ["www.${var.domain}"]
+  subject_alternative_names = ["www.${local.domain}"]
 
   lifecycle {
     create_before_destroy = true
@@ -17,14 +19,15 @@ resource "google_dns_record_set" "cert_validation" {
       record = dvo.resource_record_value
     }
   }
+  project = var.project
 
-  managed_zone = data.google_managed_dns_zone.site_zone.name
+  managed_zone = data.google_dns_managed_zone.site_zone.name
 
   name = each.value.name
   type = each.value.type
   ttl  = 300
 
-  rrdatas = ["\"${each.value.record}\""]
+  rrdatas = [each.value.record]
 }
 
 resource "aws_acm_certificate_validation" "this" {

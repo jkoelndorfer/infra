@@ -1,4 +1,4 @@
-variable "domain" {
+variable "dns_name" {
   description = "the domain of the site"
   type        = string
 }

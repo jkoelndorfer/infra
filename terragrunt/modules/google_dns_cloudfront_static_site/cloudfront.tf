@@ -4,7 +4,7 @@ locals {
 
 resource "aws_cloudfront_origin_access_control" "this" {
   name             = local.domain_slug
-  description      = "Permits CloudFront to access the ${var.domain} hosting bucket."
+  description      = "Permits CloudFront to access the ${local.domain} hosting bucket."
   signing_behavior = "always"
   signing_protocol = "sigv4"
 
@@ -48,14 +48,14 @@ resource "aws_cloudfront_distribution" "this" {
   origin {
     domain_name              = aws_s3_bucket.this.bucket_regional_domain_name
     origin_access_control_id = aws_cloudfront_origin_access_control.this.id
-    origin_id                = "s3-${local.s3_origin}"
+    origin_id                = local.s3_origin
   }
 
   enabled             = true
   is_ipv6_enabled     = true
   default_root_object = "index.html"
 
-  aliases = [var.domain, "www.${var.domain}"]
+  aliases = [local.domain, "www.${local.domain}"]
 
   custom_error_response {
     error_caching_min_ttl = 60

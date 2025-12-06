@@ -22,8 +22,3 @@ resource "aws_s3_bucket_public_access_block" "disallow_public" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
-
-resource "aws_s3_bucket_acl" "private" {
-  bucket = aws_s3_bucket.this.id
-  acl    = "private"
-}

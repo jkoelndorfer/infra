@@ -4,6 +4,7 @@ locals {
     google_env_folder      = "google_env_folder"
     backup                 = "backup"
     dns                    = "dns"
+    personal_website       = "personal_website"
     homelab_argo_workflows = "homelab_argo_workflows"
     homelab_blocky         = "homelab_blocky"
     homelab_ctr_registry   = "homelab_ctr_registry"
@@ -130,6 +131,14 @@ unit "dns" {
 unit "backup" {
   source = "${local.units_dir}/backup"
   path   = local.unit_paths.backup
+  values = local.common_values
+
+  no_dot_terragrunt_stack = true
+}
+
+unit "personal_website" {
+  source = "${local.units_dir}/personal_website"
+  path   = local.unit_paths.personal_website
   values = local.common_values
 
   no_dot_terragrunt_stack = true
