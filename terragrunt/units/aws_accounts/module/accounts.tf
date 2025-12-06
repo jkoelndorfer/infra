@@ -8,6 +8,14 @@ locals {
       env      = "prod"
       function = "backup"
     },
+    {
+      env      = "dev"
+      function = "personal-website"
+    },
+    {
+      env      = "prod"
+      function = "personal-website"
+    },
   ]
 
   accounts_map = { for a in local.accounts : "${a.env}-${a.function}" => a }
