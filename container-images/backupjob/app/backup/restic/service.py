@@ -234,6 +234,7 @@ class ResticService:
                 if p.is_file() or p.is_dir():
                     subreport = BackupReport(f"{report.name} / {p.name}")
                     all_subreports.append(subreport)
+                    subreport.new_field("Directory", str(p), lambda _: None)
                     subreport.new_field("Start Time", datetime.now(), lambda _: None)
                     backup_end = subreport.new_field(
                         "End Time", datetime.now(), lambda _: None
@@ -262,7 +263,6 @@ class ResticService:
         """
         Performs a single directory backup.
         """
-        report.new_field("Directory", str(source), lambda _: None)
         self._add_implicit_exclude_file(source, exclude_files)
 
         try:
