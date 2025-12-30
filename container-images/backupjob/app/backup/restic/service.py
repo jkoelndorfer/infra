@@ -49,8 +49,8 @@ class ResticService:
             "New Repo", False, lambda x: A.OK if not x else A.WARNING
         )
         init_ok = report.new_field("Init OK", False, lambda x: A.OK if x else A.ERROR)
-        report.new_field("Backup Start", datetime.now(), lambda _: None)
-        backup_end = report.new_field("Backup End", datetime.now(), lambda _: None)
+        report.new_field("Start Time", datetime.now(), lambda _: None)
+        end_time = report.new_field("End Time", datetime.now(), lambda _: None)
 
         exclude_files = exclude_files.copy()
 
@@ -71,7 +71,7 @@ class ResticService:
 
             return report
         finally:
-            backup_end.data = datetime.now()
+            end_time.data = datetime.now()
 
     def check(self) -> BackupReport[ResticCheckResult]:
         """
@@ -79,8 +79,8 @@ class ResticService:
         """
         report = BackupReport("Repository Check")
         report.new_field("Repository", self.client.repository_path, lambda _: None)
-        report.new_field("Check Start", datetime.now(), lambda _: None)
-        check_end = report.new_field("Check End", datetime.now(), lambda _: None)
+        report.new_field("Start Time", datetime.now(), lambda _: None)
+        end_time = report.new_field("End Time", datetime.now(), lambda _: None)
 
         result = self.client.check(read_data=True)
         report.result = result
@@ -115,7 +115,7 @@ class ResticService:
         if summary.num_errors == 0:
             report.successful = True
 
-        check_end.data = datetime.now()
+        end_time.data = datetime.now()
 
         return report
 
@@ -135,6 +135,8 @@ class ResticService:
         report.new_field(
             "Remote Repository", remote_client.repository_path, lambda _: None
         )
+        report.new_field("Start Time", datetime.now(), lambda _: None)
+        end_time = report.new_field("End Time", datetime.now(), lambda _: None)
         local_snap_result = self.client.snapshots(latest=1)
         remote_snap_result = remote_client.snapshots(latest=1)
         no_snapshot = "(none)"
@@ -162,6 +164,8 @@ class ResticService:
 
         if local_snap_id == remote_snap_id and local_snap_id != no_snapshot:
             report.successful = True
+
+        end_time.data = datetime.now()
 
         return report
 
@@ -230,9 +234,9 @@ class ResticService:
                 if p.is_file() or p.is_dir():
                     subreport = BackupReport(f"{report.name} / {p.name}")
                     all_subreports.append(subreport)
-                    subreport.new_field("Backup Start", datetime.now(), lambda _: None)
+                    subreport.new_field("Start Time", datetime.now(), lambda _: None)
                     backup_end = subreport.new_field(
-                        "Backup End", datetime.now(), lambda _: None
+                        "End Time", datetime.now(), lambda _: None
                     )
                     try:
                         self._backup_single(

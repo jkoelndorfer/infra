@@ -30,8 +30,8 @@ class RcloneService:
         report = BackupReport(name=f"rclone sync / {name}")
         report.new_field("Source", source, lambda _: None)
         report.new_field("Destination", destination, lambda _: None)
-        report.new_field("Backup Start", datetime.now(), lambda _: None)
-        backup_end = report.new_field("Backup End", datetime.now(), lambda _: None)
+        report.new_field("Start Time", datetime.now(), lambda _: None)
+        end_time = report.new_field("End Time", datetime.now(), lambda _: None)
 
         result = self.client.sync(source, destination)
         report.result = result
@@ -44,5 +44,5 @@ class RcloneService:
         report.new_field("Files Transferred", result.stats.transfers, lambda _: None)
         report.new_field("Deletes", result.stats.deletes, lambda _: None)
 
-        backup_end.data = datetime.now()
+        end_time.data = datetime.now()
         return report
