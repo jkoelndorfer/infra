@@ -45,6 +45,7 @@ class ResticService:
         """
         report = BackupReport(name=name)
         report.new_field("Repository", self.client.repository_path, lambda _: None)
+        report.new_field("Directory", str(source), lambda _: None)
         new_backup_repo = report.new_field(
             "New Repo", False, lambda x: A.OK if not x else A.WARNING
         )
