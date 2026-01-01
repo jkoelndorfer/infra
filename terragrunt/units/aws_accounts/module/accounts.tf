@@ -10,6 +10,14 @@ locals {
     },
     {
       env      = "dev"
+      function = "dns"
+    },
+    {
+      env      = "prod"
+      function = "dns"
+    },
+    {
+      env      = "dev"
       function = "personal-website"
     },
     {
