@@ -12,5 +12,5 @@ variable "homelab_shared01_zone" {
 variable "vaultwarden_image" {
   description = "the docker image to use to run Vaultwarden"
   type        = string
-  default     = "vaultwarden/server:1.34.0"
+  default     = "vaultwarden/server:1.35.0"
 }
