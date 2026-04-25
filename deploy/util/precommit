@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -uo pipefail
+
+script_path=$(readlink -f "$0")
+script_dir=$(dirname "$script_path")
+source_dir="${script_dir}/.."
+
+final_rc=0
+
+function errorable() {
+	"$@"
+	local rc=$?
+	if [[ "$rc" != 0 ]]; then
+		final_rc=$((final_rc + 1))
+	fi
+}
+
+cd "$source_dir"
+errorable uv run mypy --strict .
+errorable uv run ruff check .
+
+exit "$final_rc"

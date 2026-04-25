@@ -1,0 +1,17 @@
+[project]
+name = "deploy"
+version = "0.1.0"
+description = "Infrastructure deployment"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "pulumi==3.232.0",
+    "pulumi-aws>=7.27.0",
+    "pulumi-gcp>=9.21.0",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.20.2",
+    "ruff>=0.15.12",
+]
