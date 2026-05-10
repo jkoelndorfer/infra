@@ -17,7 +17,9 @@ class InfrastructureContext:
     """
 
     def __init__(
-        self, config: InfrastructureConfiguration, environment: Environment
+        self,
+        config: InfrastructureConfiguration,
+        environment: Environment,
     ) -> None:
         self.config = config
         self.environment = environment
