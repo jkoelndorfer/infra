@@ -113,20 +113,18 @@ module "traefik_helm_chart" {
       runAsGroup = module.uid_gid.gid
     }
 
-    gzip = {
-      enabled = false
-    }
-
     ports = {
       web = {
         port        = 8888
         exposedPort = local.http_port
 
-        redirections = {
-          entryPoint = {
-            to        = "websecure"
-            scheme    = "https"
-            permanent = true
+        http = {
+          redirections = {
+            entryPoint = {
+              to        = "websecure"
+              scheme    = "https"
+              permanent = true
+            }
           }
         }
       }
@@ -136,9 +134,11 @@ module "traefik_helm_chart" {
         exposedPort = local.https_port
         asDefault   = true
 
-        tls = {
-          enabled      = true
-          certResolver = "gcp"
+        http = {
+          tls = {
+            enabled      = true
+            certResolver = "gcp"
+          }
         }
       }
     }

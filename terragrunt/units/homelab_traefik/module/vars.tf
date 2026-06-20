@@ -26,7 +26,7 @@ variable "traefik_chart" {
   description = "a description of the Traefik chart to download"
   type        = object({ sha256sum = string, url = string })
   default = {
-    sha256sum = "04819a82ef6aa90ee28e5a01269e5b4414149d585c3bc938b66afa64dc78a595"
-    url       = "https://traefik.github.io/charts/traefik/traefik-37.4.0.tgz"
+    sha256sum = "2298d71aae3992a26d3317c8582e886e22f25f78386ec3332e76eda970c46796"
+    url       = "https://traefik.github.io/charts/traefik/traefik-41.0.0.tgz"
   }
 }
