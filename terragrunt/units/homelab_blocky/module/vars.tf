@@ -12,5 +12,5 @@ variable "homelab_shared01_zone" {
 variable "image" {
   description = "the blocky image to run"
   type        = string
-  default     = "spx01/blocky:v0.28.2"
+  default     = "spx01/blocky:v0.32.1"
 }
