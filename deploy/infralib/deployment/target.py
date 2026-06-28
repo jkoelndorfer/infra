@@ -1,14 +1,24 @@
 """
-infralib/target/target -- Deployment Target
-==============================================
+infralib/deployment/target -- Deployment Targets
+===============================================
 
 This file defines infrastructure deployment target. Deployment targets
-define attributes of a deployment such as the environment or cloud region.
+define attributes of a deployment such as the environment or cloud region
+that infrastructure is deployed to.
 """
+
+from enum import StrEnum
 
 from typing import Any, Optional
 
-from .environment import Environment
+
+class Environment(StrEnum):
+    """
+    An enumeration containing all deployable environments.
+    """
+
+    DEV = "dev"
+    PROD = "prod"
 
 
 class DeploymentTarget:
