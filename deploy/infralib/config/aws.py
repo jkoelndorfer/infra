@@ -7,7 +7,7 @@ This file defines data types for AWS-specific configuration.
 
 from typing import Protocol
 
-from ..context import Environment
+from ..target import Environment
 
 
 class MemberAccountEmailGenerator(Protocol):

@@ -7,13 +7,13 @@ associated classes.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, Mapping, NewType, Optional, Tuple, Type, Self
+from typing import Any, ClassVar, Mapping, NewType, Type, Self
 
-from .context import Environment, InfrastructureContext
+from .config import InfrastructureConfiguration
+from .target import DeploymentTarget
 from .pulumi.name import is_project_name, is_stack_name
 
-InfrastructureStackInstance = Optional[str]
-InfrastructureStackConfig = Tuple[Environment, InfrastructureStackInstance]
+
 InfrastructureProjectName = NewType("InfrastructureProjectName", str)
 InfrastructureStackName = NewType("InfrastructureStackName", str)
 
@@ -45,7 +45,7 @@ def stack_name(name: str) -> InfrastructureStackName:
     return InfrastructureStackName(name)
 
 
-class InfrastructureStack[P: InfrastructureProject]:
+class InfrastructureStack[P: "InfrastructureProject"]:
     """
     An infrastructure deployment. This roughly corresponds to a Pulumi stack [1].
 
@@ -55,27 +55,23 @@ class InfrastructureStack[P: InfrastructureProject]:
     def __init__(
         self,
         project: Type[P],
-        environment: Environment,
-        instance: InfrastructureStackInstance = None,
+        target: DeploymentTarget,
     ) -> None:
+        # The infrastructure project deployed by this stack.
         self.project = project
 
-        # The environment that the stack is deployed in.
-        self.environment = environment
-
-        # The name of the "instance" of the project. This might be a cloud provider region or a
-        # feature branch name.
-        self.instance = instance
+        # The deployment target for the project.
+        self.target = target
 
     @property
     def name(self) -> InfrastructureStackName:
         """
         The name used to refer to this InfrastructureStack as a dependency.
         """
-        if self.instance is not None:
-            stack_name = f"{self.environment}.{self.instance}"
+        if self.target.instance is not None:
+            stack_name = f"{self.target.environment}.{self.target.instance}"
         else:
-            stack_name = self.environment
+            stack_name = self.target.environment
 
         return InfrastructureStackName(stack_name)
 
@@ -88,8 +84,8 @@ class InfrastructureStack[P: InfrastructureProject]:
 
         return (
             self.project.name == other.project.name
-            and self.environment == other.environment
-            and self.instance == other.instance
+            and self.target.environment == other.target.environment
+            and self.target.instance == other.target.instance
         )
 
     def __repr__(self) -> str:
@@ -127,14 +123,16 @@ class InfrastructureProject(ABC):
     @classmethod
     @abstractmethod
     def dependencies(
-        cls, context: InfrastructureContext
+        cls, target: DeploymentTarget
     ) -> list[InfrastructureStack["InfrastructureProject"]]:
         """
         Returns a list of dependencies for this project in the given context.
         """
 
     @abstractmethod
-    def pulumi_program(self, context: InfrastructureContext) -> None:
+    def pulumi_program(
+        self, stack: InfrastructureStack[Self], config: InfrastructureConfiguration
+    ) -> None:
         """
         The Pulumi program that defines this infrastructure project.
         """
@@ -146,27 +144,28 @@ class InfrastructureProject(ABC):
 
         The key is the name of the InfrastructureStack.
 
-        Subclasses should not override this method. Implement _stack_configs instead.
+        Subclasses should not override this method. Implement deployment_targets instead.
         """
         smap = dict()
-        for env, instance in cls._stack_configs():
-            s = cls.stack(env, instance)
+        for target in cls.deployment_targets():
+            s = cls.stack(target)
             smap[s.name] = s
         return smap
 
     @classmethod
     @abstractmethod
-    def _stack_configs(cls) -> list[InfrastructureStackConfig]:
+    def deployment_targets(cls) -> list[DeploymentTarget]:
         """
-        A list of partial infrastructure stack configurations. Projects specify their valid
-        InfrastructureStacks using this method.
+        Returns a list of valid deployment targets for this infrastructure project.
         """
 
     @classmethod
-    def stack(
-        cls, environment: Environment, instance: InfrastructureStackInstance
-    ) -> InfrastructureStack[Self]:
+    def stack(cls, target: DeploymentTarget) -> InfrastructureStack[Self]:
         """
         Helper factory to create InfrastructureStacks for this project.
         """
-        return InfrastructureStack(cls, environment, instance)
+        if target not in cls.deployment_targets():
+            raise ValueError(
+                f"invalid deployment target {target} for project {cls.name}"
+            )
+        return InfrastructureStack(cls, target)
