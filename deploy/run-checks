@@ -1,0 +1,22 @@
+#!/bin/bash
+
+##############
+# run-checks #
+##############
+#
+# run-checks runs the linters and test suite for this project.
+
+script_path=$(readlink -f "$0")
+script_dir=$(dirname "$script_path")
+
+if [[ "$IN_INFRA_DEPLOY_VIRTUALENV" != 1 ]]; then
+	exec "${script_dir}/with-venv" "$0" "$@"
+fi
+
+cd "$script_dir"
+
+source 'lib.sh'
+errorable ./run-linters
+errorable ./run-tests
+
+exit "$final_rc"

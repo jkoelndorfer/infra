@@ -1,0 +1,26 @@
+#!/bin/bash
+
+#############
+# with-venv #
+#############
+#
+# with-venv runs a command in this project's environment using tools
+# provided by mise and packages provided by uv. It ensures that all
+# required environment configuration is performed.
+
+set -eo pipefail
+
+if [[ "$IN_INFRA_DEPLOY_VIRTUALENV" == 1 ]]; then
+	exec "$@"
+fi
+
+script_path=$(readlink -f "$0")
+script_dir=$(dirname "$script_path")
+
+export PYTHONPATH="${script_dir}:${PYTHONPATH}"
+export MISE_CONFIG_FILE="${script_dir}/mise.toml"
+export IN_INFRA_DEPLOY_VIRTUALENV=1
+
+eval "$(mise activate)"
+
+uv run --project="${script_dir}" -- "$@"

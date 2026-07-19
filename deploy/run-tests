@@ -1,0 +1,27 @@
+#!/bin/bash
+
+#############
+# run-tests #
+#############
+#
+# run-tests runs the tests for this project.
+
+set -o pipefail
+
+script_path=$(readlink -f "$0")
+script_dir=$(dirname "$script_path")
+
+if [[ "$IN_INFRA_DEPLOY_VIRTUALENV" != 1 ]]; then
+	exec "${script_dir}/with-venv" "$0" "$@"
+fi
+
+cd "$script_dir"
+
+source 'lib.sh'
+errorable coverage erase
+errorable coverage run \
+	--source='cli/,infralib/' \
+	-m pytest "tests/" "$@"
+errorable coverage report --show-missing
+
+exit "$final_rc"

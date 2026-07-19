@@ -1,0 +1,32 @@
+#!/bin/bash
+
+########
+# pcli #
+########
+#
+# pcli is the Pulumi infrastructure deployment interface for infralib projects.
+# It exposes much of the functionality that Pulumi's CLI does while eliminating
+# unnecessary project boilerplate.
+
+set -eo pipefail
+
+script_path=$(readlink -f "$0")
+script_dir=$(dirname "$script_path")
+
+# Sets the name of the program showed by Click [1] when pcli
+# is run.
+#
+# [1]: https://click.palletsprojects.com/en/stable/
+export CLICK_PROG_NAME="$0"
+
+# Skip automatic update checks from Pulumi. See:
+# https://www.pulumi.com/docs/iac/cli/environment-variables/
+export PULUMI_SKIP_UPDATE_CHECK='true'
+
+# Skip automatic installation of Pulumi plugins.
+#
+# See:
+# https://www.pulumi.com/docs/iac/cli/environment-variables/
+export PULUMI_DISABLE_AUTOMATIC_PLUGIN_ACQUISITION='true'
+
+"${script_dir}/with-venv" python3 -m cli "$@"
