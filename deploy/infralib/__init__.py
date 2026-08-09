@@ -26,7 +26,7 @@ from .pulumi.export import export_resource, exportable_resource
 from .pulumi.name import is_project_name, is_stack_name, to_logical_name
 from .pulumi.operator import PulumiOperator
 from .pulumi.provider import ProviderFactory, StandardProviderFactory
-from .pulumi.types import StackOutputResolver
+from .pulumi.types import pcast, StackOutputResolver
 
 __all__ = [
     "all_projects",
@@ -47,6 +47,7 @@ __all__ = [
     "LocalBackendProvider",
     "NotificationCategory",
     "NotificationChannel",
+    "pcast",
     "project_name",
     "ProviderFactory",
     "PulumiOperator",
