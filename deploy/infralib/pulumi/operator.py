@@ -91,6 +91,7 @@ class PulumiOperator:
         color: str | None = None,
         do_refresh: bool = True,
         output_refresh: bool = False,
+        run_program: bool = True,
         extra_args: dict[str, Any] | None = None,
     ) -> StackOperationResult:
         """
@@ -104,12 +105,18 @@ class PulumiOperator:
         # Let's do it here by default.
         if do_refresh:
             if output_refresh:
-                pstack.refresh(on_output=on_output, on_error=on_error, color=color)
+                pstack.refresh(
+                    run_program=run_program,
+                    on_output=on_output,
+                    on_error=on_error,
+                    color=color,
+                )
             else:
                 pstack.refresh()
 
         return operation(
             pstack,
+            run_program=run_program,
             on_output=on_output,
             on_error=on_error,
             color=color,
@@ -124,6 +131,7 @@ class PulumiOperator:
         color: str | None = None,
         do_refresh: bool = True,
         output_refresh: bool = False,
+        run_program: bool = True,
     ) -> auto.DestroyResult:
         """
         Destroys the given InfrastructureStack.
@@ -135,6 +143,7 @@ class PulumiOperator:
         return self._do_stack_operation(
             stack=stack,
             operation=do_destroy,
+            run_program=run_program,
             on_output=on_output,
             on_error=on_error,
             color=color,
@@ -150,6 +159,7 @@ class PulumiOperator:
         color: str | None = None,
         do_refresh: bool = True,
         output_refresh: bool = False,
+        run_program: bool = True,
         diff: bool = True,
     ) -> auto.PreviewResult:
         """
@@ -162,6 +172,7 @@ class PulumiOperator:
         return self._do_stack_operation(
             stack=stack,
             operation=do_preview,
+            run_program=run_program,
             on_output=on_output,
             on_error=on_error,
             color=color,
@@ -176,6 +187,7 @@ class PulumiOperator:
         on_output: auto.OnOutput | None = None,
         on_error: auto.OnOutput | None = None,
         color: str | None = None,
+        run_program: bool = True,
         do_refresh: bool = True,
     ) -> auto.DestroyResult:
         """
@@ -188,6 +200,7 @@ class PulumiOperator:
         return self._do_stack_operation(
             stack=stack,
             operation=do_preview_destroy,
+            run_program=run_program,
             on_output=on_output,
             on_error=on_error,
             color=color,
@@ -202,6 +215,7 @@ class PulumiOperator:
         color: str | None = None,
         do_refresh: bool = True,
         output_refresh: bool = False,
+        run_program: bool = True,
     ) -> auto.UpResult:
         """
         Ups the given InfrastructureStack.
@@ -213,6 +227,7 @@ class PulumiOperator:
         return self._do_stack_operation(
             stack=stack,
             operation=do_up,
+            run_program=run_program,
             on_output=on_output,
             on_error=on_error,
             color=color,
