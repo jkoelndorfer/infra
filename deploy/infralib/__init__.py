@@ -22,6 +22,7 @@ from .deployment.project import (
 from .deployment.stack import InfrastructureStack, stack_name
 from .deployment.target import DeploymentTarget, Environment
 from .pulumi.backend import BackendProvider, LocalBackendProvider
+from .pulumi.component import InfrastructureComponent
 from .pulumi.export import export_resource, exportable_resource
 from .pulumi.name import is_project_name, is_stack_name, to_logical_name
 from .pulumi.operator.operator import PulumiOperator
@@ -40,6 +41,7 @@ __all__ = [
     "exportable_resource",
     "export_resource",
     "get_project",
+    "InfrastructureComponent",
     "InfrastructureConfiguration",
     "InfrastructureConfigurationYAMLParser",
     "InfrastructureProject",
