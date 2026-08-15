@@ -100,6 +100,17 @@ class InvalidLocalBackendError(InfralibError):
         )
 
 
+class InvalidRegisterOutputsCallError(InfralibError):
+    """
+    Error raised when register_outputs is called on an InfrastructureComponent.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(
+            "calling register_outputs on InfrastructureComponent is not permitted"
+        )
+
+
 class StateOnlyError(InfralibError):
     """
     Error raised when an InfrastructureProject or InfrastructureStack is
