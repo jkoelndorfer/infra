@@ -5,8 +5,10 @@ tests/infralib/pulumi/conftest -- Pulumi Common Test Fixtures
 This file contains common test fixtures for Pulumi tests.
 """
 
+import asyncio
 from typing import Any, Generator
 
+import pulumi
 import pulumi_aws as aws
 import pulumi_command as command
 import pulumi_gcp as gcp
@@ -25,6 +27,16 @@ from infralib import (
     StackOutputResolver,
 )
 from infralib.pulumi.provider import ProviderFactory
+
+
+class NoopPulumiRuntimeMock(pulumi.runtime.Mocks):
+    def new_resource(
+        self, args: pulumi.runtime.MockResourceArgs
+    ) -> tuple[str, dict[str, Any]]:
+        return ("", {})
+
+    def call(self, args: pulumi.runtime.MockCallArgs) -> tuple[dict[str, Any], None]:
+        return ({}, None)
 
 
 class CommandOnlyProviderFactory(ProviderFactory):
@@ -114,6 +126,38 @@ def test_deployment_target() -> DeploymentTarget:
     DeploymentTarget suitable for use during test runs.
     """
     return DeploymentTarget(Environment.TEST, None)
+
+
+@pytest.fixture
+def noop_pulumi_runtime_mock() -> Generator[NoopPulumiRuntimeMock]:
+    """
+    Returns a Pulumi runtime mock that does nothing.
+
+    See https://www.pulumi.com/docs/iac/guides/testing/unit/.
+    """
+    # As of Python 3.14, asyncio.get_event_loop() no longer implicitly
+    # creates an event loop. Instead, it raises a RuntimeError. As of
+    # this writing (Pulumi version 3.265.0), Pulumi does not properly
+    # create an event loop when a runtime mock is set. We need to do
+    # it ourselves.
+    #
+    # TODO: Remove this once Pulumi is updated to properly support
+    # Python 3.14.
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    m = NoopPulumiRuntimeMock()
+    pulumi.runtime.set_mocks(m)
+
+    yield m
+
+    pending_tasks = asyncio.all_tasks(loop)
+    if pending_tasks:
+        loop.run_until_complete(asyncio.gather(*pending_tasks, return_exceptions=True))
+
+    pulumi.runtime.settings.reset_options()
+    asyncio.set_event_loop(None)
+    loop.close()
 
 
 @pytest.fixture
