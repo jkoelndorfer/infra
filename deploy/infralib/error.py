@@ -111,6 +111,12 @@ class InvalidRegisterOutputsCallError(InfralibError):
         )
 
 
+class KubernetesNodeLookupError(InfralibError):
+    """
+    Error raised when a Kubernetes node lookup fails or returns an unexpected result.
+    """
+
+
 class StateOnlyError(InfralibError):
     """
     Error raised when an InfrastructureProject or InfrastructureStack is

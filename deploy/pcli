@@ -19,6 +19,9 @@ script_dir=$(dirname "$script_path")
 # [1]: https://click.palletsprojects.com/en/stable/
 export CLICK_PROG_NAME="$0"
 
+# Path to the deployment directory root.
+export INFRALIB_DEPLOY_ROOT=$script_dir
+
 # Skip automatic update checks from Pulumi. See:
 # https://www.pulumi.com/docs/iac/cli/environment-variables/
 export PULUMI_SKIP_UPDATE_CHECK='true'
