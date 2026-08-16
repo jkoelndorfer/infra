@@ -10,6 +10,7 @@ dependencies = [
     "pulumi-aws>=7.41.0",
     "pulumi-command>=1.2.1",
     "pulumi-gcp>=9.33.0",
+    "pulumi-kubernetes>=4.33.0",
     "pyyaml>=6.0.3, <7",
 ]
 

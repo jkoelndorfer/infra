@@ -8,6 +8,7 @@ This file contains common test fixtures for Pulumi tests.
 import pulumi_aws as aws
 import pulumi_command as command
 import pulumi_gcp as gcp
+import pulumi_kubernetes as k8s
 import pytest
 
 from infralib import (
@@ -48,6 +49,18 @@ class CommandOnlyProviderFactory(ProviderFactory):
         return command.Provider(name)
 
     def gcp_provider(self, name: str = "gcp") -> gcp.Provider:
+        """
+        Returns no provider.
+        """
+        raise NotImplementedError(
+            "CommandOnlyProviderFactory cannot create cloud Providers"
+        )
+
+    def kubernetes_provider(
+        self,
+        name: str = "kubernetes",
+        context: str | None = None,
+    ) -> k8s.Provider:
         """
         Returns no provider.
         """

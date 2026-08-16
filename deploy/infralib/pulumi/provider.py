@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 import pulumi_aws as aws
 import pulumi_command as command
 import pulumi_gcp as gcp
+import pulumi_kubernetes as k8s
 
 
 class ProviderFactory(ABC):
@@ -42,6 +43,12 @@ class ProviderFactory(ABC):
         Returns a GCP provider.
         """
 
+    @abstractmethod
+    def kubernetes_provider(self, name: str = "kubernetes") -> k8s.Provider:
+        """
+        Returns a Kubernetes provider.
+        """
+
 
 class StandardProviderFactory(ProviderFactory):
     """
@@ -53,6 +60,7 @@ class StandardProviderFactory(ProviderFactory):
         self,
         aws_preferred_region: str,
         gcp_quota_project: str,
+        kubernetes_default_context: str,
         aws_default_profile: str = "default",
         aws_base_assume_role: str | None = None,
         gcp_impersonate_service_account: str | None = None,
@@ -62,6 +70,7 @@ class StandardProviderFactory(ProviderFactory):
         self.aws_base_assume_role = aws_base_assume_role
         self.gcp_impersonate_service_account = gcp_impersonate_service_account
         self.gcp_quota_project = gcp_quota_project
+        self.kubernetes_default_context = kubernetes_default_context
 
     def aws_provider(
         self,
@@ -101,4 +110,11 @@ class StandardProviderFactory(ProviderFactory):
             project=project,
             impersonate_service_account=self.gcp_impersonate_service_account,
             user_project_override=True,
+        )
+
+    def kubernetes_provider(self, name: str = "kubernetes") -> k8s.Provider:
+        return k8s.Provider(
+            name,
+            context=self.kubernetes_default_context,
+            enable_server_side_apply=True,
         )

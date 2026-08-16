@@ -80,6 +80,7 @@ class _Globals:
             aws_base_assume_role=self._config.aws_organization.infrastructure_manager_role,
             gcp_impersonate_service_account=self._config.gcp_organization.infrastructure_manager_service_account,
             gcp_quota_project=self._config.gcp_organization.quota_project,
+            kubernetes_default_context=self._config.homelab.kubernetes_context,
         )
 
         self._pulumi_operator = PulumiOperator(
