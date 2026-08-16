@@ -72,6 +72,9 @@ class TestInfrastructureConfigurationYAMLParser:
         )
         assert gcp_org.quota_project == "my-quota-project"
 
+        homelab = config.homelab
+        assert homelab.kubernetes_context == "k8stest"
+
         nc = config.notification_channels
         nc0 = nc[0]
         nc1 = nc[1]

@@ -8,6 +8,7 @@ This file defines configuration that is made available to Pulumi and pyinfra exe
 from .aws import AWSOrganization
 from .domain import Domains
 from .gcp import GCPOrganization
+from .homelab import Homelab
 from .notification import NotificationChannels
 
 
@@ -21,6 +22,7 @@ class InfrastructureConfiguration:
         domains: Domains,
         aws_organization: AWSOrganization,
         gcp_organization: GCPOrganization,
+        homelab: Homelab,
         notification_channels: NotificationChannels,
     ) -> None:
         # A dictionary containing a set of DNS domains. Domains are
@@ -32,6 +34,9 @@ class InfrastructureConfiguration:
 
         # The GCP organization that infrastructure is deployed to.
         self.gcp_organization = gcp_organization
+
+        # Configuration specific to my homelab.
+        self.homelab = homelab
 
         # Channels by which notifications are sent.
         self.notification_channels = notification_channels

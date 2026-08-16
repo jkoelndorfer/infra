@@ -20,6 +20,7 @@ from infralib import (
 from infralib.config.aws import AWSAccount, AWSOrganization
 from infralib.config.domain import Domain
 from infralib.config.gcp import GCPOrganization
+from infralib.config.homelab import Homelab
 from infralib.config.notification import (
     EmailChannel,
     NotificationCategory,
@@ -87,6 +88,9 @@ def test_infrastructure_configuration() -> InfrastructureConfiguration:
         infrastructure_manager_service_account="my-infra-sa@infra-mgmt-000000000888.iam.gserviceaccount.com",
         quota_project="my-quota-project",
     )
+    homelab = Homelab(
+        kubernetes_context="k8stest",
+    )
     notification_channels = NotificationChannels(
         [
             EmailChannel(
@@ -105,6 +109,7 @@ def test_infrastructure_configuration() -> InfrastructureConfiguration:
         domains=domains,
         aws_organization=aws_organization,
         gcp_organization=gcp_organization,
+        homelab=homelab,
         notification_channels=notification_channels,
     )
 
@@ -149,6 +154,9 @@ def test_infrastructure_yaml_configuration() -> str:
             quota_project:      my-quota-project
 
             infrastructure_manager_service_account: my-infra-sa@infra-mgmt-000000000888.iam.gserviceaccount.com
+
+        homelab:
+            kubernetes_context: k8stest
 
         notification_channels:
             - name: First Billing Test
