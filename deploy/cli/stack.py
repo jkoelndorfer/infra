@@ -5,6 +5,7 @@ cli/stack
 This module contains code to operate on infralib stacks.
 """
 
+import os
 from typing import Any
 
 import click
@@ -169,3 +170,21 @@ def preview(
         result = G.pulumi_operator.preview(stack, do_refresh=refresh, **_stack_kwargs())
 
     return result
+
+
+@stack.command("shell")
+@options.project
+@options.environment
+@options.region
+def shell(
+    project: str,
+    environment: Environment,
+    region: str | None,
+) -> None:  # pragma: no cover
+    """
+    Synthesizes the Pulumi project directory, then runs a shell in that directory.
+    """
+    stack = make_stack(project, environment, region)
+    shell = os.environ["SHELL"]
+
+    G.pulumi_operator.shell(stack, [shell])

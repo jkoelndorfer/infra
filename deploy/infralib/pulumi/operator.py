@@ -9,6 +9,8 @@ This module contains the Pulumi operator, which performs tasks like:
 * Providing Pulumi programs a mechanism to look up outputs from other stacks
 """
 
+import os
+import subprocess
 from tempfile import TemporaryDirectory
 from typing import Any, Protocol, TypeVar
 
@@ -205,6 +207,25 @@ class PulumiOperator:
             on_error=on_error,
             color=color,
             do_refresh=do_refresh,
+        )
+
+    def shell(
+        self, stack: InfrastructureStack, command: list[str]
+    ) -> "subprocess.CompletedProcess[bytes]":
+        """
+        Synthesizes the Pulumi project directory, then launches the given
+        shell command in that directory.
+        """
+        pstack = self.pulumi_stack(stack)
+        work_dir = pstack.workspace.work_dir
+
+        shell_env = os.environ.copy()
+        shell_env["INFRALIB_PULUMI_PROJECT_DIR"] = work_dir
+
+        return subprocess.run(
+            args=command,
+            cwd=work_dir,
+            env=shell_env,
         )
 
     def up(

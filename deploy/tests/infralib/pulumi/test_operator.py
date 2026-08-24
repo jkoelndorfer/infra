@@ -277,6 +277,22 @@ class TestPulumiOperator:
         changes = preview_result.change_summary
         assert changes.get(auto.OpType.CREATE, 0) >= 2
 
+    def test_shell(
+        self,
+        pulumi_operator: PulumiOperator,
+        local_command_stack: InfrastructureStack,
+    ) -> None:
+        """
+        Tests starting a shell for a stack.
+        """
+        pstack = pulumi_operator.pulumi_stack(local_command_stack)
+        testfile_path = Path("test_shell")
+        full_path = Path(pstack.workspace.work_dir) / testfile_path
+
+        pulumi_operator.shell(local_command_stack, ["touch", "test_shell"])
+
+        assert full_path.is_file()
+
     def test_stack_outputs_access(
         self,
         pulumi_operator: PulumiOperator,
