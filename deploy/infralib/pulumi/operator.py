@@ -11,8 +11,8 @@ This module contains the Pulumi operator, which performs tasks like:
 
 import os
 import subprocess
-from tempfile import TemporaryDirectory
-from typing import Any, Protocol, TypeVar
+from tempfile import TemporaryDirectory as RealTemporaryDirectory
+from typing import Any, Protocol, TYPE_CHECKING, TypeVar
 
 from pulumi import automation as auto
 
@@ -24,6 +24,11 @@ from ..error import UndeclaredDependencyError
 from .backend import BackendProvider
 from .provider import ProviderFactory
 from .types import StackOutputResolver
+
+if TYPE_CHECKING:
+    TemporaryDirectory = RealTemporaryDirectory[str]
+else:
+    TemporaryDirectory = RealTemporaryDirectory
 
 
 StackOperationResult = TypeVar(
@@ -68,13 +73,17 @@ class PulumiOperator:
         self.provider_factory = provider_factory
         self.project_kwargs = project_kwargs or dict()
 
+        # A map of project name to Pulumi workspace. Used as a cache to
+        # avoid unnecessarily recreating Pulumi project workspaces.
+        self._proj_ws: dict[str, auto.LocalWorkspace] = dict()
+
         # A map of stack name to constructed Pulumi stack. Used as a
         # cache to avoid unnecessarily recreating Pulumi stack objects.
         self._pstacks: dict[str, auto.Stack] = dict()
 
         # A list of Pulumi temporary directories to clean up when cleanup()
         # is called.
-        self._cleanup_dirs: list[TemporaryDirectory[str]] = list()
+        self._cleanup_dirs: list[TemporaryDirectory] = list()
 
     def cleanup(self) -> None:
         """
@@ -305,7 +314,42 @@ class PulumiOperator:
 
         return pulumi_fn
 
-    def pulumi_stack(self, stack: InfrastructureStack) -> auto.Stack:
+    def _project_settings(
+        self,
+        project_name: str | InfrastructureProjectName,
+    ) -> auto.ProjectSettings:
+        """
+        Returns ProjectSettings suitable for the given project.
+        """
+        return auto.ProjectSettings(
+            name=project_name,
+            runtime="python",
+            backend=auto.ProjectBackend(
+                url=self.backend_provider.pulumi_url(project_name)
+            ),
+        )
+
+    def pulumi_project_workspace(
+        self,
+        project_name: str | InfrastructureProjectName,
+    ) -> auto.LocalWorkspace:
+        ws = self._proj_ws.get(project_name, None)
+        if ws is not None:
+            return ws
+
+        work_dir = self._work_dir()
+        ws = auto.LocalWorkspace(
+            work_dir=work_dir.name,
+            project_settings=self._project_settings(project_name),
+        )
+        self._proj_ws[project_name] = ws
+
+        return ws
+
+    def pulumi_stack(
+        self,
+        stack: InfrastructureStack,
+    ) -> auto.Stack:
         """
         Converts an InfrastructureStack to a Pulumi Stack.
         """
@@ -313,23 +357,20 @@ class PulumiOperator:
         if s is not None:
             return s
 
-        work_dir = TemporaryDirectory(
-            prefix="infralib-pulumi-", ignore_cleanup_errors=True, delete=False
-        )
-        self._cleanup_dirs.append(work_dir)
-
+        # NOTE: It might be tempting to minimize the number of created Pulumi
+        # workspaces here. Each workspace corresponds to a project, so we only
+        # "need" one workspace per project. The issue is that workspaces maintain
+        # state. Within a workspace, there is a currently selected stack. Some
+        # operations may use this selected stack implicitly. Rather than have to
+        # worry about managing workspace state (particularly if there is ever
+        # concurrency), we simply create a dedicated workspace per-stack.
+        work_dir = self._work_dir()
         s = auto.create_or_select_stack(
             stack_name=stack.name,
             project_name=stack.project.name,
             program=self._stack_program(stack),
             opts=auto.LocalWorkspaceOptions(
-                project_settings=auto.ProjectSettings(
-                    name=stack.project.name,
-                    runtime="python",
-                    backend=auto.ProjectBackend(
-                        url=self.backend_provider.pulumi_url(stack.project.name)
-                    ),
-                ),
+                project_settings=self._project_settings(stack.project.name),
                 work_dir=work_dir.name,
             ),
         )
@@ -357,3 +398,14 @@ class PulumiOperator:
 
         self._pstacks[stack.full_name] = s
         return s
+
+    def _work_dir(self) -> TemporaryDirectory:
+        """
+        Creates a temporary Pulumi work directory.
+        """
+        work_dir = TemporaryDirectory(
+            prefix="infralib-pulumi-", ignore_cleanup_errors=True, delete=False
+        )
+        self._cleanup_dirs.append(work_dir)
+
+        return work_dir

@@ -277,6 +277,38 @@ class TestPulumiOperator:
         changes = preview_result.change_summary
         assert changes.get(auto.OpType.CREATE, 0) >= 2
 
+    def test_project_workspace_discovers_stacks(
+        self,
+        pulumi_operator: PulumiOperator,
+        local_command_stack: InfrastructureStack,
+    ) -> None:
+        """
+        Tests that a project workspace discovers existing stacks.
+        """
+        ws = pulumi_operator.pulumi_project_workspace(local_command_stack.project.name)
+        pulumi_operator.up(local_command_stack)
+
+        existing_stacks = ws.list_stacks()
+
+        assert len(existing_stacks) == 1
+        assert existing_stacks[0].name == local_command_stack.name
+
+    def test_project_workspace_uses_cache(
+        self,
+        pulumi_operator: PulumiOperator,
+        local_command_stack: InfrastructureStack,
+    ) -> None:
+        """
+        Tests that requesting a project workspace multiple times returns the
+        same workspace.
+        """
+        project_name = local_command_stack.project.name
+
+        ws_a = pulumi_operator.pulumi_project_workspace(project_name)
+        ws_b = pulumi_operator.pulumi_project_workspace(project_name)
+
+        assert ws_a is ws_b
+
     def test_shell(
         self,
         pulumi_operator: PulumiOperator,
