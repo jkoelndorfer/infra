@@ -18,6 +18,7 @@ from pulumi import automation as auto
 
 from ..config import InfrastructureConfiguration
 from ..deployment.context import DeploymentContext
+from ..deployment.project import InfrastructureProjectName
 from ..deployment.stack import InfrastructureStack
 from ..error import UndeclaredDependencyError
 from .backend import BackendProvider
@@ -326,7 +327,7 @@ class PulumiOperator:
                     name=stack.project.name,
                     runtime="python",
                     backend=auto.ProjectBackend(
-                        url=self.backend_provider.pulumi_url(stack)
+                        url=self.backend_provider.pulumi_url(stack.project.name)
                     ),
                 ),
                 work_dir=work_dir.name,

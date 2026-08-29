@@ -43,6 +43,6 @@ class TestLocalBackendProvider:
         Tests that pulumi_url() returns the expected value.
         """
         expected = f"file://{local_backend_dir}"
-        actual = local_backend_provider.pulumi_url(noop_infrastructure_stack)
+        actual = local_backend_provider.pulumi_url(noop_infrastructure_stack.name)
 
         assert actual == expected

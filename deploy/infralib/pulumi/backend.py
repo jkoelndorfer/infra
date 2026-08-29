@@ -9,19 +9,18 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 
 from ..error import InvalidLocalBackendError
-from ..deployment.stack import InfrastructureStack
+from ..deployment.project import InfrastructureProjectName
 
 
 class BackendProvider(ABC):
     """
     A backend describes how to store state files.
 
-    Typically, Pulumi backends are associated with a specific project. Projects defined via
-    this library instead make use of common backends for consistency.
+    Pulumi backends store the state for one or more projects.
     """
 
     @abstractmethod
-    def pulumi_url(self, stack: InfrastructureStack) -> str:
+    def pulumi_url(self, project_name: str | InfrastructureProjectName) -> str:
         """
         Returns the backend URL expected by Pulumi for this backend.
 
@@ -44,5 +43,5 @@ class LocalBackendProvider(BackendProvider):
 
         self.path = path
 
-    def pulumi_url(self, stack: InfrastructureStack) -> str:
+    def pulumi_url(self, project_name: str | InfrastructureProjectName) -> str:
         return f"file://{str(self.path.absolute())}"
