@@ -23,7 +23,7 @@ def main(ctx: click.Context) -> None:
 
     @ctx.call_on_close
     def cleanup() -> None:
-        G.pulumi_operator.cleanup()
+        G.pulumi_operator.tools.cleanup()
 
 
 @main.command("python-shell")

@@ -25,6 +25,7 @@ from infralib import (
     InfrastructureStack,
     ProviderFactory,
     PulumiOperator,
+    PulumiOperatorTools,
 )
 
 if TYPE_CHECKING:
@@ -162,27 +163,37 @@ def file_resource_path(resource_directory: TemporaryDirectory) -> Path:
 
 
 @pytest.fixture
-def pulumi_operator(
+def pulumi_operator_tools(
     test_infrastructure_configuration: InfrastructureConfiguration,
     local_backend_provider: BackendProvider,
     command_only_provider_factory: ProviderFactory,
     file_resource_path: Path,
-) -> Generator[PulumiOperator]:
+) -> Generator[PulumiOperatorTools]:
     """
-    Returns a PulumiOperator suitable for testing.
+    Returns a PulumiOperatorTools suitable for testing.
     """
-    operator = PulumiOperator(
-        test_infrastructure_configuration,
-        local_backend_provider,
-        command_only_provider_factory,
-        {
+    tools = PulumiOperatorTools(
+        config=test_infrastructure_configuration,
+        backend_provider=local_backend_provider,
+        provider_factory=command_only_provider_factory,
+        project_kwargs={
             "file_resource_path": file_resource_path,
         },
     )
 
-    yield operator
+    yield tools
 
-    operator.cleanup()
+    tools.cleanup()
+
+
+@pytest.fixture
+def pulumi_operator(
+    pulumi_operator_tools: PulumiOperatorTools,
+) -> PulumiOperator:
+    """
+    Returns a PulumiOperator suitable for testing.
+    """
+    return PulumiOperator.new(pulumi_operator_tools)
 
 
 class TestPulumiOperator:
@@ -199,7 +210,7 @@ class TestPulumiOperator:
         """
         Tests running `up` on a LocalCommandProject.
         """
-        up_result = pulumi_operator.up(local_command_stack)
+        up_result = pulumi_operator.stack.up(local_command_stack)
 
         assert up_result.summary.result == "succeeded"
         assert file_resource_path.is_file()
@@ -220,7 +231,7 @@ class TestPulumiOperator:
         Tests running `up` on a LocalCommandProject with output_refresh = True.
         """
         output_mock = Mock(spec=["__call__"])
-        pulumi_operator.up(
+        pulumi_operator.stack.up(
             local_command_stack,
             on_output=output_mock,
             on_error=output_mock,
@@ -238,8 +249,8 @@ class TestPulumiOperator:
         """
         Tests running `up` on a LocalCommandProject twice in a row.
         """
-        pulumi_operator.up(local_command_stack)
-        second_up_result = pulumi_operator.up(local_command_stack)
+        pulumi_operator.stack.up(local_command_stack)
+        second_up_result = pulumi_operator.stack.up(local_command_stack)
 
         assert second_up_result.summary.result == "succeeded"
 
@@ -256,11 +267,11 @@ class TestPulumiOperator:
         """
         Tests running `up` on a LocalCommandProject, then `destroy`.
         """
-        pulumi_operator.up(local_command_stack)
+        pulumi_operator.stack.up(local_command_stack)
 
         assert file_resource_path.is_file()
 
-        pulumi_operator.destroy(local_command_stack)
+        pulumi_operator.stack.destroy(local_command_stack)
 
         assert not file_resource_path.is_file()
 
@@ -272,7 +283,7 @@ class TestPulumiOperator:
         """
         Tests running `preview` on a LocalCommandProject.
         """
-        preview_result = pulumi_operator.preview(local_command_stack)
+        preview_result = pulumi_operator.stack.preview(local_command_stack)
 
         changes = preview_result.change_summary
         assert changes.get(auto.OpType.CREATE, 0) >= 2
@@ -285,8 +296,10 @@ class TestPulumiOperator:
         """
         Tests that a project workspace discovers existing stacks.
         """
-        ws = pulumi_operator.pulumi_project_workspace(local_command_stack.project.name)
-        pulumi_operator.up(local_command_stack)
+        ws = pulumi_operator.tools.pulumi_project_workspace(
+            local_command_stack.project.name
+        )
+        pulumi_operator.stack.up(local_command_stack)
 
         existing_stacks = ws.list_stacks()
 
@@ -304,8 +317,8 @@ class TestPulumiOperator:
         """
         project_name = local_command_stack.project.name
 
-        ws_a = pulumi_operator.pulumi_project_workspace(project_name)
-        ws_b = pulumi_operator.pulumi_project_workspace(project_name)
+        ws_a = pulumi_operator.tools.pulumi_project_workspace(project_name)
+        ws_b = pulumi_operator.tools.pulumi_project_workspace(project_name)
 
         assert ws_a is ws_b
 
@@ -317,11 +330,11 @@ class TestPulumiOperator:
         """
         Tests starting a shell for a stack.
         """
-        pstack = pulumi_operator.pulumi_stack(local_command_stack)
+        pstack = pulumi_operator.tools.pulumi_stack(local_command_stack)
         testfile_path = Path("test_shell")
         full_path = Path(pstack.workspace.work_dir) / testfile_path
 
-        pulumi_operator.shell(local_command_stack, ["touch", "test_shell"])
+        pulumi_operator.stack.shell(local_command_stack, ["touch", "test_shell"])
 
         assert full_path.is_file()
 
@@ -337,8 +350,8 @@ class TestPulumiOperator:
         retrieved value. The outputs are checked to ensure they are equal.
         """
         depender_stack = DependerProject.stack(DeploymentTarget(Environment.TEST, None))
-        dependency_up_result = pulumi_operator.up(local_command_stack)
-        depender_up_result = pulumi_operator.up(depender_stack)
+        dependency_up_result = pulumi_operator.stack.up(local_command_stack)
+        depender_up_result = pulumi_operator.stack.up(depender_stack)
 
         def ov(result: auto.UpResult) -> str:
             return str(result.outputs["tempfile"].value)
@@ -358,10 +371,10 @@ class TestPulumiOperator:
             DeploymentTarget(Environment.TEST, "us-west-2")
         )
 
-        pulumi_operator.up(local_command_stack)
+        pulumi_operator.stack.up(local_command_stack)
 
         # The UndeclaredDependencyError gets eaten by Pulumi. :-(
         with pytest.raises(auto.InlineSourceRuntimeError) as exc_info:
-            pulumi_operator.up(depender_stack)
+            pulumi_operator.stack.up(depender_stack)
 
         assert "UndeclaredDependencyError" in str(exc_info.value)

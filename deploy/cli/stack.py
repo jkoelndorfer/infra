@@ -87,7 +87,7 @@ def up(
     stack = make_stack(project, environment, region)
 
     if confirm:
-        G.pulumi_operator.preview(stack, do_refresh=refresh, **_stack_kwargs())
+        G.pulumi_operator.stack.preview(stack, do_refresh=refresh, **_stack_kwargs())
         confirmed = click.confirm(f"\nproceed with upping stack {stack}?")
     else:
         confirmed = True
@@ -103,7 +103,7 @@ def up(
     # If we confirmed the destroy, the refresh already happened via the
     # preview_destroy above. No reason to refresh again.
     refresh = refresh and not confirm
-    up_result = G.pulumi_operator.up(stack, do_refresh=refresh, **_stack_kwargs())
+    up_result = G.pulumi_operator.stack.up(stack, do_refresh=refresh, **_stack_kwargs())
 
     return up_result
 
@@ -124,7 +124,9 @@ def destroy(
     stack = make_stack(project, environment, region)
 
     if confirm:
-        G.pulumi_operator.preview_destroy(stack, do_refresh=refresh, **_stack_kwargs())
+        G.pulumi_operator.stack.preview_destroy(
+            stack, do_refresh=refresh, **_stack_kwargs()
+        )
         confirmed = click.confirm(f"\nproceed with destroying stack {stack}?")
     else:
         confirmed = True
@@ -140,7 +142,7 @@ def destroy(
     # If we confirmed the destroy, the refresh already happened via the
     # preview_destroy above. No reason to refresh again.
     refresh = refresh and not confirm
-    destroy_result = G.pulumi_operator.destroy(
+    destroy_result = G.pulumi_operator.stack.destroy(
         stack, do_refresh=refresh, **_stack_kwargs()
     )
     return destroy_result
@@ -165,9 +167,11 @@ def preview(
 
     result: auto.PreviewResult | auto.DestroyResult
     if destroy:
-        result = G.pulumi_operator.preview_destroy(stack, **_stack_kwargs())
+        result = G.pulumi_operator.stack.preview_destroy(stack, **_stack_kwargs())
     else:
-        result = G.pulumi_operator.preview(stack, do_refresh=refresh, **_stack_kwargs())
+        result = G.pulumi_operator.stack.preview(
+            stack, do_refresh=refresh, **_stack_kwargs()
+        )
 
     return result
 
@@ -187,4 +191,4 @@ def shell(
     stack = make_stack(project, environment, region)
     shell = os.environ["SHELL"]
 
-    G.pulumi_operator.shell(stack, [shell])
+    G.pulumi_operator.stack.shell(stack, [shell])

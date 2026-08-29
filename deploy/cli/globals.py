@@ -17,6 +17,7 @@ from infralib import (
     LocalBackendProvider,
     StandardProviderFactory,
     PulumiOperator,
+    PulumiOperatorTools,
 )
 from .error import UninitializedGlobalsError
 from .output import PulumiOutputHandler
@@ -83,9 +84,12 @@ class _Globals:
             kubernetes_default_context=self._config.homelab.kubernetes_context,
         )
 
-        self._pulumi_operator = PulumiOperator(
-            self._config, backend_provider, provider_factory
+        op_tools = PulumiOperatorTools(
+            config=config,
+            backend_provider=backend_provider,
+            provider_factory=provider_factory,
         )
+        self._pulumi_operator = PulumiOperator.new(op_tools)
         self._pulumi_output_handler = PulumiOutputHandler()
 
     def initialize_globals_from_env(self) -> None:
