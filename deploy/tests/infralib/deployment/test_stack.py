@@ -15,6 +15,7 @@ from infralib import (
     InfrastructureStack,
     InfrastructureProject,
 )
+from infralib.deployment.target import DeploymentTarget
 from infralib.error import InvalidInfrastructureNameError
 
 
@@ -115,6 +116,40 @@ class TestInfrastructureStack:
         deps = DeltaProject.stack(target).dependencies()
 
         assert CharlieProject.stack(target) in deps
+
+    @pytest.mark.parametrize(
+        "stack_name, expected_target",
+        [
+            ("test", DeploymentTarget(E.TEST, None)),
+            ("test.europe-west-1", DeploymentTarget(E.TEST, "europe-west-1")),
+            ("dev", DeploymentTarget(E.DEV, None)),
+            ("dev.us-west-1", DeploymentTarget(E.DEV, "us-west-1")),
+        ],
+    )
+    def test_parse(self, stack_name: str, expected_target: DeploymentTarget) -> None:
+        """
+        Tests that parse() produces an InfrastructureStack with the expected
+        DeploymentTarget.
+        """
+        stack = InfrastructureStack.parse(CharlieProject, stack_name)
+
+        assert stack.target == expected_target
+
+    @pytest.mark.parametrize(
+        "stack_name",
+        [
+            "test.us-west-2.",
+            "test.us-west-2.foo",
+            "test.us-west-2.foo.bar",
+        ],
+    )
+    def test_parse_raises_name_error_too_many_components(self, stack_name: str) -> None:
+        """
+        Tests that parse() raises an InvalidInfrastructureNameError when the provided
+        name has too many components.
+        """
+        with pytest.raises(InvalidInfrastructureNameError):
+            InfrastructureStack.parse(CharlieProject, stack_name)
 
     @pytest.mark.parametrize(
         "a, b",

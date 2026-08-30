@@ -7,11 +7,11 @@ This module contains the definition for a standard infralib stack.
 A stack is a deployment of a project to a deployment target.
 """
 
-from typing import Any, NewType, Type, TYPE_CHECKING
+from typing import Any, NewType, Self, Type, TYPE_CHECKING
 
 from ..error import InvalidInfrastructureNameError
 from ..pulumi.name import is_stack_name
-from .target import DeploymentTarget
+from .target import DeploymentTarget, Environment
 
 if TYPE_CHECKING:
     from .project import InfrastructureProject
@@ -51,6 +51,31 @@ class InfrastructureStack:
 
         # The deployment target for the project.
         self.target = target
+
+    @classmethod
+    def parse(
+        cls,
+        project: Type[InfrastructureProject],
+        stack_name: str | InfrastructureStackName,
+    ) -> Self:
+        """
+        Given an InfrastructureProject and a stack name, returns an
+        InfrastructureStack with a matching project and DeploymentTarget.
+        """
+        parts = stack_name.split(".")
+        environment = Environment(parts[0])
+
+        if len(parts) >= 2:
+            region = parts[1]
+        else:
+            region = None
+
+        if len(parts) >= 3:
+            raise InvalidInfrastructureNameError(stack_name, cls.__name__)
+
+        target = DeploymentTarget(environment, region)
+
+        return cls(project, target)
 
     @property
     def name(self) -> InfrastructureStackName:
