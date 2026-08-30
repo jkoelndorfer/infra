@@ -324,6 +324,74 @@ class TestPulumiOperator:
 
         assert full_path.is_file()
 
+    def test_stack_rename_cross_project(
+        self,
+        pulumi_operator: PulumiOperator,
+        local_command_stack: InfrastructureStack,
+    ) -> None:
+        """
+        Tests renaming a stack across projects.
+        """
+
+        class RenameTargetProject(InfrastructureProject):
+            """
+            Project that serves as a rename target.
+            """
+
+            name = "test.integration.renamed"
+
+            def __init__(
+                self,
+                *args: Any,
+                file_resource_path: Path,
+                **kwargs: Any,
+            ) -> None:
+                super().__init__(*args, **kwargs)
+                self.file_resource_path = file_resource_path
+
+            @classmethod
+            def dependencies(
+                cls, target: DeploymentTarget
+            ) -> list[InfrastructureStack]:
+                return []
+
+            @classmethod
+            def deployment_targets(cls) -> list[DeploymentTarget]:
+                return [
+                    DeploymentTarget(Environment.TEST, None),
+                    # us-west-2 as a DeploymentTarget allows the DependerStack to take a
+                    # attempt looking up outputs against this target. Without it, an
+                    # InvalidDeploymentTargetError is raised (which is not the scenario
+                    # we'd like to test!)
+                    DeploymentTarget(Environment.TEST, "us-west-2"),
+                ]
+
+            def pulumi_program(self) -> None: ...
+
+        up_result = pulumi_operator.stack.up(local_command_stack)
+        initial_outputs = up_result.outputs
+
+        rename_stack = RenameTargetProject.stack(local_command_stack.target)
+        rename_result = pulumi_operator.stack.rename(local_command_stack, rename_stack)
+
+        rename_pstack = pulumi_operator.stack.tools.pulumi_stack(rename_stack)
+        rename_outputs = rename_pstack.outputs()
+
+        assert rename_result.summary is not None
+        assert rename_result.summary.result == "succeeded"
+        assert rename_outputs["tempfile"].value == initial_outputs["tempfile"].value
+
+    def test_stack_rename_source_matches_dest(
+        self,
+        pulumi_operator: PulumiOperator,
+        local_command_stack: InfrastructureStack,
+    ) -> None:
+        """
+        Tests renaming a stack when the source and destination are the same.
+        """
+        with pytest.raises(auto.StackAlreadyExistsError):
+            pulumi_operator.stack.rename(local_command_stack, local_command_stack)
+
     def test_stack_outputs_access(
         self,
         pulumi_operator: PulumiOperator,

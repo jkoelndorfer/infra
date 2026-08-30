@@ -6,11 +6,13 @@ This module contains code to operate on infralib stacks.
 """
 
 import os
+import sys
 from typing import Any
 
 import click
 from click.decorators import FC
 from pulumi import automation as auto
+from pulumi.automation._stack import RenameResult
 from infralib import (
     DeploymentTarget,
     Environment,
@@ -172,6 +174,65 @@ def preview(
         result = G.pulumi_operator.stack.preview(
             stack, do_refresh=refresh, **_stack_kwargs()
         )
+
+    return result
+
+
+@stack.command("rename")
+@options.project
+@options.environment
+@options.region
+@click.option("--to-project", help="The project to move the stack to.", default=None)
+@click.option(
+    "--to-environment", help="The environment to move the stack to.", default=None
+)
+@click.option(
+    "--to-region", help="The region to move the stack to.", default="NO_REGION"
+)
+def rename(
+    project: str,
+    environment: Environment,
+    region: str | None,
+    to_project: str | None,
+    to_environment: Environment | None,
+    to_region: str | None,
+) -> RenameResult | None:
+    """
+    Move a stack to a new project, environment, and/or region.
+
+    Values passed to --to-* options set the destination. Unspecified
+    --to-* options are unchanged.
+    """
+    if to_project is None:
+        to_project = project
+    if to_environment is None:
+        to_environment = environment
+    if to_region == "NO_REGION":
+        to_region = region
+
+    same_project = to_project == project
+    same_environment = to_environment == environment
+    same_region = to_region == region
+
+    source_proj = G.pulumi_operator.stack.tools.try_state_only_project(project)
+    source_stack = source_proj.stack(DeploymentTarget(Environment(environment), region))
+
+    if same_project and same_environment and same_region:
+        click.echo(f"renaming stack {source_stack} failed: source is destination")
+        sys.exit(1)
+
+    dest_stack = make_stack(to_project, to_environment, to_region)
+
+    result = G.pulumi_operator.stack.rename(
+        source_stack,
+        dest_stack,
+    )
+
+    summary = result.summary
+    assert summary is not None
+
+    if summary.result == "succeeded":
+        click.echo(f"renamed {source_stack.full_name} to {dest_stack.full_name}")
 
     return result
 

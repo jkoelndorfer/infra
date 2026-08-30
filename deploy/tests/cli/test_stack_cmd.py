@@ -31,6 +31,30 @@ class CLITestProject(InfrastructureProject):
 
     @classmethod
     def deployment_targets(cls) -> list[DeploymentTarget]:
+        return [
+            DeploymentTarget(Environment.TEST, None),
+            DeploymentTarget(Environment.DEV, None),
+        ]
+
+    def pulumi_program(self) -> None:
+        pass
+
+
+class CLITestRenamedProject(InfrastructureProject):
+    """
+    InfrastructureProject used as a rename target for CLI testing.
+
+    This project does nothing.
+    """
+
+    name = "test.cli.rename"
+
+    @classmethod
+    def dependencies(cls, target: DeploymentTarget) -> list[InfrastructureStack]:
+        return []
+
+    @classmethod
+    def deployment_targets(cls) -> list[DeploymentTarget]:
         return [DeploymentTarget(Environment.TEST, None)]
 
     def pulumi_program(self) -> None:
@@ -182,3 +206,44 @@ class TestCLIStackSubcommand:
 
         assert stack_up.exit_code != 0
         assert "invalid deployment target for project" in stack_up.stderr
+
+    def test_up_rename_new_project(
+        self, cli_main: Group, cli_runner: CliRunner
+    ) -> None:
+        """
+        Tests upping a stack, then renaming it under a new project.
+        """
+        cli_runner.invoke(cli_main, stack_cmd("up"))
+        rename = cli_runner.invoke(
+            cli_main, stack_cmd("rename", "--to-project", CLITestRenamedProject.name)
+        )
+
+        assert rename.exit_code == 0
+
+    def test_up_rename_new_environment(
+        self, cli_main: Group, cli_runner: CliRunner
+    ) -> None:
+        """
+        Tests upping a stack, then renaming it under a new environment
+        """
+        cli_runner.invoke(cli_main, stack_cmd("up"))
+        rename = cli_runner.invoke(
+            cli_main, stack_cmd("rename", "--to-environment", Environment.DEV)
+        )
+
+        assert rename.exit_code == 0
+
+    def test_up_rename_source_matches_dest(
+        self, cli_main: Group, cli_runner: CliRunner
+    ) -> None:
+        """
+        Tests upping a stack, then attempting to rename the stack to its current name.
+
+        Pulumi does not permit this; it will raise a StackAlreadyExistsError.
+        """
+        cli_runner.invoke(cli_main, stack_cmd("up"))
+        rename = cli_runner.invoke(
+            cli_main, stack_cmd("rename", "--to-project", CLITestProject.name)
+        )
+
+        assert rename.exit_code == 1

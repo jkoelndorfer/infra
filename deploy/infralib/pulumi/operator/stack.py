@@ -11,13 +11,18 @@ import subprocess
 from typing import Any, Protocol, TypeVar
 
 from pulumi import automation as auto
+from pulumi.automation._stack import RenameResult  # this is not publicly exported :-(
 
 from ...deployment.stack import InfrastructureStack
 from .tools import PulumiOperatorTools
 
 StackOperationResult = TypeVar(
     "StackOperationResult",
-    bound=auto.RefreshResult | auto.PreviewResult | auto.UpResult | auto.DestroyResult,
+    bound=auto.RefreshResult
+    | auto.PreviewResult
+    | auto.UpResult
+    | auto.DestroyResult
+    | RenameResult,
 )
 
 
@@ -109,6 +114,36 @@ class PulumiStackOperator:
             color=color,
             do_refresh=do_refresh,
             output_refresh=output_refresh,
+        )
+
+    def rename(
+        self,
+        source_stack: InfrastructureStack,
+        destination_stack: InfrastructureStack,
+        on_output: auto.OnOutput | None = None,
+        on_error: auto.OnOutput | None = None,
+        color: str | None = None,
+    ) -> RenameResult:
+        """
+        Renames a stack.
+        """
+
+        def do_rename(stack: auto.Stack, **kwargs: Any) -> RenameResult:
+            destination_full_name = kwargs["destination_full_name"]
+            return stack.rename(
+                stack_name=f"organization/{destination_full_name}",
+                on_output=kwargs["on_output"],
+                on_error=kwargs["on_error"],
+            )
+
+        return self._do_stack_operation(
+            stack=source_stack,
+            operation=do_rename,
+            do_refresh=False,
+            on_output=on_output,
+            on_error=on_error,
+            color=color,
+            extra_args={"destination_full_name": destination_stack.full_name},
         )
 
     def preview(
