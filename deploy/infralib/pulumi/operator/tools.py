@@ -9,15 +9,20 @@ accessible to the top-level operator and all sub-operators.
 """
 
 from tempfile import TemporaryDirectory as RealTemporaryDirectory
-from typing import Any, TYPE_CHECKING
+from typing import Any, Type, TYPE_CHECKING
 
 from pulumi import automation as auto
 
 from ...config import InfrastructureConfiguration
 from ...deployment.context import DeploymentContext
-from ...deployment.project import InfrastructureProjectName
+from ...deployment.project import (
+    get_project,
+    InfrastructureProject,
+    InfrastructureProjectName,
+)
 from ...deployment.stack import InfrastructureStack
-from ...error import UndeclaredDependencyError
+from ...deployment.target import DeploymentTarget
+from ...error import NoSuchProjectError, StateOnlyError, UndeclaredDependencyError
 from ..backend import BackendProvider
 from ..provider import ProviderFactory
 from ..types import StackOutputResolver
@@ -152,6 +157,79 @@ class PulumiOperatorTools:
 
         self._pstacks[stack.full_name] = s
         return s
+
+    def try_state_only_project(
+        self,
+        project_name: str | InfrastructureProjectName,
+    ) -> Type[InfrastructureProject]:
+        """
+        Returns an InfrastructureProject with the given name. If the project
+        exists and is registered, it returns the proper project. If the project
+        does not exist, a state-only project is created and returned.
+
+        A state-only project must exist in the Pulumi state backend. The project's
+        valid deployment targets are those which are reflected in the stacks in
+        Pulumi's state backend.
+
+        Performing operations on a state-only project that require running a
+        Pulumi program, such as up(), is an error.
+
+        This method should only be used in cases where the Pulumi state for a
+        stack needs to be inspected or modified, but the project and/or stack
+        does not exist in code (e.g. refactoring).
+        """
+
+        try:
+            return get_project(project_name, include_state_only=True)
+        except NoSuchProjectError:
+            # The project doesn't exist in code. We need to build our own
+            # state-only project and return it.
+            pass
+
+        ws = auto.LocalWorkspace(
+            work_dir=self.work_dir().name,
+            project_settings=self.project_settings(project_name),
+        )
+
+        # There aren't any stacks for the requested project in state.
+        #
+        # Bail out now so that the non-existent state-only project doesn't
+        # end up in the project registry.
+        if len(ws.list_stacks()) == 0:
+            raise NoSuchProjectError(project_name)
+
+        class StateOnlyInfrastructureProject(InfrastructureProject):
+            name = project_name
+            state_only = True
+            _workspace = ws
+
+            @classmethod
+            def dependencies(
+                cls, target: DeploymentTarget
+            ) -> list[InfrastructureStack]:
+                raise StateOnlyError(
+                    "dependencies are not defined for state-only stacks"
+                )
+
+            @classmethod
+            def deployment_targets(cls) -> list[DeploymentTarget]:
+                targets: list[DeploymentTarget] = list()
+                stack_summaries = cls._workspace.list_stacks()
+                for summary in stack_summaries:
+                    stack_name = summary.name
+                    stack = InfrastructureStack.parse(
+                        StateOnlyInfrastructureProject, stack_name
+                    )
+                    targets.append(stack.target)
+
+                return targets
+
+            def pulumi_program(self) -> None:
+                raise StateOnlyError(
+                    f"{self.name}/{self.dctx.target} does not have a program"
+                )
+
+        return StateOnlyInfrastructureProject
 
     def stack_output_resolver(
         self, requesting_stack: InfrastructureStack

@@ -28,21 +28,31 @@ InfrastructureProjectName = NewType("InfrastructureProjectName", str)
 _all_projects: dict[str, Type["InfrastructureProject"]] = dict()
 
 
-def all_projects() -> list[Type["InfrastructureProject"]]:
+def all_projects(
+    include_state_only: bool = False,
+) -> list[Type["InfrastructureProject"]]:
     """
     Returns a list of all InfrastructureProjects.
     """
-    return list(_all_projects.values())
+    return [p for p in _all_projects.values() if not p.state_only or include_state_only]
 
 
-def get_project(name: str | InfrastructureProjectName) -> Type["InfrastructureProject"]:
+def get_project(
+    name: str | InfrastructureProjectName,
+    include_state_only: bool = False,
+) -> Type["InfrastructureProject"]:
     """
     Returns the project with the given name.
     """
     try:
-        return _all_projects[name]
+        project = _all_projects[name]
     except KeyError:
         raise NoSuchProjectError(name)
+
+    if project.state_only and not include_state_only:
+        raise NoSuchProjectError(name)
+
+    return project
 
 
 def project_name(name: str) -> InfrastructureProjectName:
@@ -68,6 +78,9 @@ class InfrastructureProject(ABC):
 
     # The name of the InfrastructureProject. This name must adhere to Pulumi requirements.
     name: ClassVar[str]
+
+    # If True, this project is a state-only project. The project is not defined in code.
+    state_only: bool = False
 
     def __init__(self, dctx: DeploymentContext) -> None:
         self.dctx = dctx

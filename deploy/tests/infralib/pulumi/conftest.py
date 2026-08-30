@@ -5,6 +5,8 @@ tests/infralib/pulumi/conftest -- Pulumi Common Test Fixtures
 This file contains common test fixtures for Pulumi tests.
 """
 
+from typing import Any, Generator
+
 import pulumi_aws as aws
 import pulumi_command as command
 import pulumi_gcp as gcp
@@ -12,12 +14,14 @@ import pulumi_kubernetes as k8s
 import pytest
 
 from infralib import (
+    BackendProvider,
     DeploymentContext,
     DeploymentTarget,
     Environment,
     InfrastructureConfiguration,
     InfrastructureProject,
     InfrastructureStack,
+    PulumiOperatorTools,
     StackOutputResolver,
 )
 from infralib.pulumi.provider import ProviderFactory
@@ -157,3 +161,34 @@ def noop_infrastructure_stack(
     InfrastructureStack for a project that does nothing.
     """
     return NoopTestProject.stack(test_deployment_target)
+
+
+@pytest.fixture
+def project_kwargs() -> dict[str, Any]:
+    """
+    Returns keyword arguments passed to InfrastructureProjects when
+    they are instantiated.
+    """
+    return dict()
+
+
+@pytest.fixture
+def pulumi_operator_tools(
+    test_infrastructure_configuration: InfrastructureConfiguration,
+    local_backend_provider: BackendProvider,
+    command_only_provider_factory: ProviderFactory,
+    project_kwargs: dict[str, Any],
+) -> Generator[PulumiOperatorTools]:
+    """
+    Returns a PulumiOperatorTools suitable for testing.
+    """
+    tools = PulumiOperatorTools(
+        config=test_infrastructure_configuration,
+        backend_provider=local_backend_provider,
+        provider_factory=command_only_provider_factory,
+        project_kwargs=project_kwargs,
+    )
+
+    yield tools
+
+    tools.cleanup()

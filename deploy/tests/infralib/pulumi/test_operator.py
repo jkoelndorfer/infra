@@ -16,14 +16,11 @@ from pulumi_command import local
 import pytest
 
 from infralib import (
-    BackendProvider,
     DeploymentTarget,
     Environment,
     export_resource,
-    InfrastructureConfiguration,
     InfrastructureProject,
     InfrastructureStack,
-    ProviderFactory,
     PulumiOperator,
     PulumiOperatorTools,
 )
@@ -163,27 +160,16 @@ def file_resource_path(resource_directory: TemporaryDirectory) -> Path:
 
 
 @pytest.fixture
-def pulumi_operator_tools(
-    test_infrastructure_configuration: InfrastructureConfiguration,
-    local_backend_provider: BackendProvider,
-    command_only_provider_factory: ProviderFactory,
+def project_kwargs(
     file_resource_path: Path,
-) -> Generator[PulumiOperatorTools]:
+) -> dict[str, Any]:
     """
-    Returns a PulumiOperatorTools suitable for testing.
+    Returns keyword arguments passed to InfrastructureProjects when
+    they are instantiated.
     """
-    tools = PulumiOperatorTools(
-        config=test_infrastructure_configuration,
-        backend_provider=local_backend_provider,
-        provider_factory=command_only_provider_factory,
-        project_kwargs={
-            "file_resource_path": file_resource_path,
-        },
-    )
-
-    yield tools
-
-    tools.cleanup()
+    return {
+        "file_resource_path": file_resource_path,
+    }
 
 
 @pytest.fixture

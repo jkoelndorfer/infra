@@ -100,6 +100,17 @@ class InvalidLocalBackendError(InfralibError):
         )
 
 
+class StateOnlyError(InfralibError):
+    """
+    Error raised when an InfrastructureProject or InfrastructureStack is
+    created as a state-only variant and an unsupported operation is
+    attempted.
+
+    For example, up() is not an operation that can be performed on a state-only
+    stack.
+    """
+
+
 class UndeclaredDependencyError(InfralibError):
     """
     Error raised when a project tries to access outputs for a stack that is not

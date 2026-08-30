@@ -114,6 +114,33 @@ class TestProjectLookup:
         with pytest.raises(NoSuchProjectError):
             get_project("NonexistentProject")
 
+    def test_get_state_only_excluded(self) -> None:
+        """
+        Tests that state-only projects are excluded when include_state_only is False.
+        """
+
+        class StateOnly(InfrastructureProject):
+            name = "TestProjectLookup.test_get_state_only_excluded"
+            state_only = True
+
+            @classmethod
+            def dependencies(
+                cls, target: DeploymentTarget
+            ) -> list[InfrastructureStack]:
+                return []
+
+            @classmethod
+            def deployment_targets(cls) -> list[DeploymentTarget]:
+                return []
+
+            def pulumi_program(self) -> None: ...
+
+        with pytest.raises(NoSuchProjectError):
+            get_project(
+                StateOnly.name,
+                include_state_only=False,
+            )
+
     def test_all_projects(self) -> None:
         """
         Tests that all_projects returns all expected projects.
