@@ -8,8 +8,8 @@ This file contains code to test the Pulumi operator.
 from pathlib import Path
 from shlex import join as shjoin
 from tempfile import TemporaryDirectory as RealTemporaryDirectory
-from typing import Any, Generator, TYPE_CHECKING
-from unittest.mock import call, Mock
+from typing import Any, Callable, Generator, TYPE_CHECKING
+from unittest.mock import call, Mock, patch
 
 from pulumi import automation as auto, export, ResourceOptions
 from pulumi_command import local
@@ -24,6 +24,7 @@ from infralib import (
     PulumiOperator,
     PulumiOperatorTools,
 )
+from infralib.pulumi.operator.stack import PulumiStackDescription
 
 if TYPE_CHECKING:
     TemporaryDirectory = RealTemporaryDirectory[str]
@@ -186,6 +187,133 @@ class TestPulumiOperator:
     """
     Contains tests for the PulumiOperator class.
     """
+
+    def test_list_stacks(
+        self,
+        pulumi_operator: PulumiOperator,
+        local_command_stack: InfrastructureStack,
+    ) -> None:
+        """
+        Tests listing stacks.
+        """
+
+        class StateOnlyProject(InfrastructureProject):
+            """
+            Test project that exists only in state.
+            """
+
+            name = "TestPulumiOperator.0.test_list_stacks.state.only"
+            state_only = True
+
+            def __init__(
+                self,
+                *args: Any,
+                file_resource_path: Path,
+                **kwargs: Any,
+            ) -> None:
+                super().__init__(*args, **kwargs)
+
+            @classmethod
+            def dependencies(
+                cls, target: DeploymentTarget
+            ) -> list[InfrastructureStack]:
+                return []
+
+            @classmethod
+            def deployment_targets(cls) -> list[DeploymentTarget]:
+                return [
+                    DeploymentTarget(Environment.TEST, None),
+                ]
+
+            def pulumi_program(self) -> None: ...
+
+        class CodeOnlyProject(InfrastructureProject):
+            """
+            Test project that exists only in code.
+            """
+
+            name = "TestPulumiOperator.1.test_list_stacks.code.only"
+
+            def __init__(
+                self,
+                *args: Any,
+                file_resource_path: Path,
+                **kwargs: Any,
+            ) -> None:
+                super().__init__(*args, **kwargs)
+
+            @classmethod
+            def dependencies(
+                cls, target: DeploymentTarget
+            ) -> list[InfrastructureStack]:
+                return []
+
+            @classmethod
+            def deployment_targets(cls) -> list[DeploymentTarget]:
+                return [
+                    DeploymentTarget(Environment.TEST, None),
+                ]
+
+            def pulumi_program(self) -> None: ...
+
+        class CodeAndStateProject(InfrastructureProject):
+            """
+            Test project that exists in code and state.
+            """
+
+            name = "TestPulumiOperator.2.test_list_stacks.code.and.state"
+
+            def __init__(
+                self,
+                *args: Any,
+                file_resource_path: Path,
+                **kwargs: Any,
+            ) -> None:
+                super().__init__(*args, **kwargs)
+
+            @classmethod
+            def dependencies(
+                cls, target: DeploymentTarget
+            ) -> list[InfrastructureStack]:
+                return []
+
+            @classmethod
+            def deployment_targets(cls) -> list[DeploymentTarget]:
+                return [
+                    DeploymentTarget(Environment.TEST, None),
+                ]
+
+            def pulumi_program(self) -> None: ...
+
+        target = DeploymentTarget(Environment.TEST, None)
+        pulumi_operator.stack.up(StateOnlyProject.stack(target))
+        pulumi_operator.stack.up(CodeAndStateProject.stack(target))
+
+        projects = {
+            StateOnlyProject.name: StateOnlyProject,
+            CodeOnlyProject.name: CodeOnlyProject,
+            CodeAndStateProject.name: CodeAndStateProject,
+        }
+        with patch("infralib.deployment.project._all_projects", projects):
+            stack_list = pulumi_operator.stack.list()
+
+        assert stack_list == [
+            PulumiStackDescription(
+                StateOnlyProject.stack(target),
+                code=False,
+                state=True,
+            ),
+            PulumiStackDescription(
+                CodeOnlyProject.stack(target),
+                code=True,
+                state=False,
+            ),
+            PulumiStackDescription(
+                CodeAndStateProject.stack(target),
+                code=True,
+                state=True,
+            ),
+        ]
 
     def test_local_command_project_up(
         self,
@@ -432,3 +560,124 @@ class TestPulumiOperator:
             pulumi_operator.stack.up(depender_stack)
 
         assert "UndeclaredDependencyError" in str(exc_info.value)
+
+
+class TestPulumiStackDescription:
+    """
+    Contains tests for the PulumiStackDescription class.
+    """
+
+    @pytest.mark.parametrize(
+        "f",
+        [
+            lambda: PulumiStackDescription(
+                stack=LocalCommandProject.stack(
+                    DeploymentTarget(Environment.TEST, None)
+                ),
+                code=True,
+                state=False,
+            ),
+            lambda: PulumiStackDescription(
+                stack=LocalCommandProject.stack(
+                    DeploymentTarget(Environment.TEST, None)
+                ),
+                code=False,
+                state=True,
+            ),
+        ],
+    )
+    def test_eq_equivalent_object(
+        self,
+        f: Callable[[], PulumiStackDescription],
+    ) -> None:
+        """
+        Tests that PulumiStackDescription compares equal with equivalent objects.
+        """
+        a = f()
+        b = f()
+
+        assert a == b
+
+    @pytest.mark.parametrize(
+        "a, b",
+        [
+            (  # Test case: project differs
+                PulumiStackDescription(
+                    stack=LocalCommandProject.stack(
+                        DeploymentTarget(Environment.TEST, None),
+                    ),
+                    code=True,
+                    state=False,
+                ),
+                PulumiStackDescription(
+                    stack=DependerProject.stack(
+                        DeploymentTarget(Environment.TEST, None),
+                    ),
+                    code=True,
+                    state=False,
+                ),
+            ),
+            (  # Test case: code differs
+                PulumiStackDescription(
+                    stack=LocalCommandProject.stack(
+                        DeploymentTarget(Environment.TEST, None),
+                    ),
+                    code=True,
+                    state=False,
+                ),
+                PulumiStackDescription(
+                    stack=LocalCommandProject.stack(
+                        DeploymentTarget(Environment.TEST, None),
+                    ),
+                    code=False,
+                    state=False,
+                ),
+            ),
+            (  # Test case: state differs
+                PulumiStackDescription(
+                    stack=LocalCommandProject.stack(
+                        DeploymentTarget(Environment.TEST, None),
+                    ),
+                    code=True,
+                    state=True,
+                ),
+                PulumiStackDescription(
+                    stack=LocalCommandProject.stack(
+                        DeploymentTarget(Environment.TEST, None),
+                    ),
+                    code=True,
+                    state=False,
+                ),
+            ),
+        ],
+    )
+    def test_eq_unequivalent_objects(
+        self,
+        a: PulumiStackDescription,
+        b: PulumiStackDescription,
+    ) -> None:
+        """
+        Tests that PulumiStackDescription compares unequal with unequivalent objects.
+        """
+
+    @pytest.mark.parametrize(
+        "other",
+        [
+            0,
+            False,
+            True,
+            None,
+            "stack",
+        ],
+    )
+    def test_eq_dissimilar_object(self, other: Any) -> None:
+        """
+        Tests that PulumiStackDescription compares unequal with dissimilar objects.
+        """
+        sd = PulumiStackDescription(
+            stack=LocalCommandProject.stack(DeploymentTarget(Environment.TEST, None)),
+            code=True,
+            state=True,
+        )
+
+        assert sd != other

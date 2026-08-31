@@ -113,6 +113,14 @@ class TestCLIStackSubcommand:
     # This text originates from the Pulumi CLI.
     UP_COMPLETE = "Duration:"
 
+    def test_list(self, cli_main: Group, cli_runner: CliRunner) -> None:
+        """
+        Tests listing stacks.
+        """
+        stack_list = cli_runner.invoke(cli_main, ["stack", "list"])
+
+        assert stack_list.exit_code == 0
+
     def test_up_destroy(self, cli_main: Group, cli_runner: CliRunner) -> None:
         """
         Tests upping a stack, then destroying it.

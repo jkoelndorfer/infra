@@ -13,8 +13,11 @@ from typing import Any, Protocol, TypeVar
 from pulumi import automation as auto
 from pulumi.automation._stack import RenameResult  # this is not publicly exported :-(
 
+from ...deployment.project import all_projects
 from ...deployment.stack import InfrastructureStack
 from .tools import PulumiOperatorTools
+
+_builtin_list = list
 
 StackOperationResult = TypeVar(
     "StackOperationResult",
@@ -37,6 +40,43 @@ class _PulumiStackOperation[StackOperationResult](Protocol):
         **kwargs: Any,
     ) -> StackOperationResult:
         raise NotImplementedError("protocol does not implement concrete methods")
+
+
+class PulumiStackDescription:
+    """
+    Description of a Pulumi stack.
+    """
+
+    def __init__(
+        self,
+        stack: InfrastructureStack,
+        code: bool,
+        state: bool,
+    ) -> None:
+        # The InfrastructureStack being described.
+        self.stack = stack
+
+        # True if the InfrastructureStack is defined by a discovered project
+        # where the stack is valid deployment target.
+        self.code = code
+
+        # True if the InfrastructureStack is defined in Pulumi's state backend.
+        self.state = state
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, self.__class__):
+            return False
+
+        return all(
+            [
+                self.stack == other.stack,
+                self.code == other.code,
+                self.state == other.state,
+            ]
+        )
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return f"{self.__class__.__name__}({self.stack}, code={self.code}, state={self.state})"
 
 
 class PulumiStackOperator:
@@ -114,6 +154,57 @@ class PulumiStackOperator:
             color=color,
             do_refresh=do_refresh,
             output_refresh=output_refresh,
+        )
+
+    def list(
+        self,
+    ) -> list[PulumiStackDescription]:
+        """
+        Lists available stacks.
+        """
+        project_stacks: dict[str, dict[str, PulumiStackDescription]] = dict()
+        stack_desc: PulumiStackDescription | None
+
+        for code_project in all_projects(include_state_only=False):
+            project_dict = project_stacks.setdefault(code_project.name, dict())
+            for target in code_project.deployment_targets():
+                stack = InfrastructureStack(code_project, target)
+                stack_desc = PulumiStackDescription(
+                    stack,
+                    code=True,
+                    state=False,
+                )
+                project_dict[stack.name] = stack_desc
+
+        ws = self.tools.pulumi_project_workspace("readonly")
+        state_stacks = ws.list_stacks(include_all=True)
+
+        for s in state_stacks:
+            # Stack names are of the format:
+            #
+            #   organization/${PROJECT_NAME}/${STACK_NAME}
+            _, project_name, stack_name = s.name.split("/")
+            state_project = self.tools.try_state_only_project(project_name)
+            project_dict = project_stacks.setdefault(project_name, dict())
+            stack = InfrastructureStack.parse(state_project, stack_name)
+            stack_desc = project_dict.get(stack.name, None)
+            if stack_desc is None:
+                stack_desc = PulumiStackDescription(
+                    stack,
+                    code=False,
+                    state=True,
+                )
+                project_dict[stack.name] = stack_desc
+            else:
+                stack_desc.state = True
+
+        stack_desc_list: list[PulumiStackDescription] = list()
+        for project_dict in project_stacks.values():
+            for stack_desc in project_dict.values():
+                stack_desc_list.append(stack_desc)
+
+        return sorted(
+            stack_desc_list, key=lambda d: f"{d.stack.project.name}/{d.stack.name}"
         )
 
     def rename(
@@ -203,7 +294,7 @@ class PulumiStackOperator:
         )
 
     def shell(
-        self, stack: InfrastructureStack, command: list[str]
+        self, stack: InfrastructureStack, command: _builtin_list[str]
     ) -> "subprocess.CompletedProcess[bytes]":
         """
         Synthesizes the Pulumi project directory, then launches the given

@@ -20,6 +20,8 @@ from infralib import (
 )
 from infralib.error import InvalidDeploymentTargetError, NoSuchProjectError
 from projects import get_project
+from rich.console import Console
+from rich.table import Table
 
 from . import options
 from .globals import Globals as G
@@ -71,6 +73,41 @@ def stack() -> None:
     """
     Perform operations on stacks.
     """
+
+
+@stack.command("list")
+def list() -> None:
+    """
+    Lists stacks.
+
+    Stacks are discovered from declared InfrastructureProjects and the Pulumi
+    state backend.
+    """
+    c = Console()
+    tbl = Table()
+    tbl.add_column("Project", justify="left", no_wrap=True)
+    tbl.add_column("Environment", justify="left", no_wrap=True)
+    tbl.add_column("Region", justify="left", no_wrap=True)
+    tbl.add_column("Code?", justify="center", no_wrap=True)
+    tbl.add_column("State?", justify="center", no_wrap=True)
+
+    stack_list = G.pulumi_operator.stack.list()
+
+    bool_glyphs = {
+        True: "✅",
+        False: "❌",
+    }
+
+    for sd in stack_list:
+        tbl.add_row(
+            sd.stack.project.name,
+            sd.stack.target.environment,
+            sd.stack.target.region or "(none)",
+            bool_glyphs[sd.code],
+            bool_glyphs[sd.state],
+        )
+
+    c.print(tbl)
 
 
 @stack.command("up")
