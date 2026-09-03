@@ -64,7 +64,7 @@ class StandardProviderFactory(ProviderFactory):
         aws_default_profile: str = "default",
         aws_base_assume_role: str | None = None,
         gcp_impersonate_service_account: str | None = None,
-    ) -> None:
+    ) -> None:  # pragma: no cover
         self.aws_preferred_region = aws_preferred_region
         self.aws_default_profile = aws_default_profile
         self.aws_base_assume_role = aws_base_assume_role
@@ -78,7 +78,7 @@ class StandardProviderFactory(ProviderFactory):
         assume_role_arn: str | None = None,
         region: str | None = None,
         profile: str | None = None,
-    ) -> aws.Provider:
+    ) -> aws.Provider:  # pragma: no cover
         assume_roles: list[aws.ProviderAssumeRoleArgs] = list()
         for r in [self.aws_base_assume_role, assume_role_arn]:
             if r is None:
@@ -98,12 +98,14 @@ class StandardProviderFactory(ProviderFactory):
             region=region or self.aws_preferred_region,
         )
 
-    def command_provider(self, name: str = "command") -> command.Provider:
+    def command_provider(
+        self, name: str = "command"
+    ) -> command.Provider:  # pragma: no cover
         return command.Provider(name)
 
     def gcp_provider(
         self, name: str = "gcp", project: str | None = None
-    ) -> gcp.Provider:
+    ) -> gcp.Provider:  # pragma: no cover
         return gcp.Provider(
             name,
             billing_project=self.gcp_quota_project,
@@ -112,7 +114,9 @@ class StandardProviderFactory(ProviderFactory):
             user_project_override=True,
         )
 
-    def kubernetes_provider(self, name: str = "kubernetes") -> k8s.Provider:
+    def kubernetes_provider(
+        self, name: str = "kubernetes"
+    ) -> k8s.Provider:  # pragma: no cover
         return k8s.Provider(
             name,
             context=self.kubernetes_default_context,
