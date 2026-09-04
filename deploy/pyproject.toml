@@ -13,6 +13,7 @@ dependencies = [
     "pulumi-gcp>=9.33.0",
     "pulumi-kubernetes>=4.33.0",
     "pyyaml>=6.0.3, <7",
+    "rich>=15.0.0, <16",
 ]
 
 [dependency-groups]
