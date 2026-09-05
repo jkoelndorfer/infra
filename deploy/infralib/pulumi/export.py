@@ -7,11 +7,13 @@ This module contains helper code related to stack exports.
 
 from typing import Any
 
-from pulumi import export, Resource
+from pulumi import export, Output, Resource
 
 
 def exportable_resource(
-    resource: Resource, attrs: list[str], addl: dict[str, Any] | None
+    resource: Resource | Output[Any],
+    attrs: list[str],
+    addl: dict[str, Any] | None,
 ) -> dict[str, Any]:
     """
     Converts the resource to an exportable dictionary with a subset of its attributes.
@@ -45,7 +47,10 @@ def exportable_resource(
 
 
 def export_resource(
-    name: str, resource: Resource, attrs: list[str], addl: dict[str, Any] | None = None
+    name: str,
+    resource: Resource | Output[Any],
+    attrs: list[str],
+    addl: dict[str, Any] | None = None,
 ) -> None:
     """
     Exports the resource with a subset of its attributes. See also exportable_resource.
