@@ -19,11 +19,21 @@ class TestDomain:
         "domain, expected_str",
         [
             (
-                Domain("test1", "test1.example.com", "First test case"),
+                Domain(
+                    "test1",
+                    "test1.example.com",
+                    "First test case",
+                    "test1_verification",
+                ),
                 "test1.example.com",
             ),
             (
-                Domain("test2", "test2.example.net", "Second test case"),
+                Domain(
+                    "test2",
+                    "test2.example.net",
+                    "Second test case",
+                    "test2_verification",
+                ),
                 "test2.example.net",
             ),
         ],
@@ -38,11 +48,21 @@ class TestDomain:
         "domain, expected_repr",
         [
             (
-                Domain("test1", "test1.example.com", "First test case"),
+                Domain(
+                    "test1",
+                    "test1.example.com",
+                    "First test case",
+                    "test1_verification",
+                ),
                 "Domain(id=test1, domain=test1.example.com)",
             ),
             (
-                Domain("test2", "test2.example.net", "Second test case"),
+                Domain(
+                    "test2",
+                    "test2.example.net",
+                    "Second test case",
+                    "test2_verification",
+                ),
                 "Domain(id=test2, domain=test2.example.net)",
             ),
         ],

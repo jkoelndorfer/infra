@@ -33,8 +33,13 @@ class TestInfrastructureConfigurationYAMLParser:
         """
         config = yaml_parser.parse(test_infrastructure_yaml_configuration_path)
 
-        assert config.domains["primary"].domain == "test.example.com"
-        assert config.domains["personal"].domain == "personal.test.example.com"
+        primary_domain = config.domains["primary"]
+        assert primary_domain.domain == "test.example.com"
+        assert primary_domain.google_site_verification == "primary_verification"
+
+        personal_domain = config.domains["personal"]
+        assert personal_domain.domain == "personal.test.example.com"
+        assert personal_domain.google_site_verification == "personal_verification"
 
         aws_org = config.aws_organization
         assert aws_org.organization_id == "o-ooooooooid"
