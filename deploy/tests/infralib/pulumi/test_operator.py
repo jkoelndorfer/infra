@@ -8,6 +8,7 @@ This file contains code to test the Pulumi operator.
 from pathlib import Path
 from shlex import join as shjoin
 from tempfile import TemporaryDirectory as RealTemporaryDirectory
+import time
 from typing import Any, Callable, Generator, TYPE_CHECKING
 from unittest.mock import call, Mock, patch
 
@@ -187,6 +188,60 @@ class TestPulumiOperator:
     """
     Contains tests for the PulumiOperator class.
     """
+
+    def test_deployment_ctx_kv_not_persisted_across_runs(
+        self,
+        pulumi_operator: PulumiOperator,
+    ) -> None:
+        """
+        Tests that the key-value store on a DeploymentContext is not persisted
+        between Pulumi executions.
+
+        The key-value store may be used to store Pulumi providers and resources.
+        It is not valid to re-use cached providers and resources between distinct
+        Pulumi preview, up, and similar operations. Pulumi will throw an error if
+        you attempt to.
+        """
+
+        class KVTestProject(InfrastructureProject):
+            name = "test.integration.kv.not.persisted"
+
+            def __init__(
+                self,
+                *args: Any,
+                file_resource_path: Path,
+                **kwargs: Any,
+            ) -> None:
+                super().__init__(*args, **kwargs)
+
+            @classmethod
+            def dependencies(
+                cls, target: DeploymentTarget
+            ) -> list[InfrastructureStack]:
+                return []
+
+            @classmethod
+            def deployment_targets(cls) -> list[DeploymentTarget]:
+                return [
+                    DeploymentTarget(Environment.TEST, None),
+                ]
+
+            def pulumi_program(self) -> None:
+                current_time = self.dctx.kv_get(self.__class__, "time", time.time())
+                self.dctx.kv_set(self.__class__, "time", current_time)
+
+                export("time", current_time)
+
+        test_dt = DeploymentTarget(Environment.TEST, None)
+        test_stack = KVTestProject.stack(test_dt)
+
+        first_up = pulumi_operator.stack.up(test_stack)
+        first_time = first_up.outputs["time"].value
+        time.sleep(0.01)
+        second_up = pulumi_operator.stack.up(test_stack)
+        second_time = second_up.outputs["time"].value
+
+        assert first_time != second_time
 
     def test_list_stacks(
         self,
