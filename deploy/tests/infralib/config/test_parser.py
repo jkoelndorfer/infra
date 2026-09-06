@@ -36,6 +36,15 @@ class TestInfrastructureConfigurationYAMLParser:
         primary_domain = config.domains["primary"]
         assert primary_domain.domain == "test.example.com"
         assert primary_domain.google_site_verification == "primary_verification"
+        assert len(primary_domain.dkim_v1) == 2
+
+        assert primary_domain.dkim_v1[0].selector == "test1"
+        assert primary_domain.dkim_v1[0].key_type == "rsa"
+        assert primary_domain.dkim_v1[0].public_key == "test1_public_key"
+
+        assert primary_domain.dkim_v1[1].selector == "test2"
+        assert primary_domain.dkim_v1[1].key_type == "ed25519"
+        assert primary_domain.dkim_v1[1].public_key == "test2_public_key"
 
         personal_domain = config.domains["personal"]
         assert personal_domain.domain == "personal.test.example.com"

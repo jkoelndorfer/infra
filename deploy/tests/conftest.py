@@ -18,7 +18,7 @@ from infralib import (
     LocalBackendProvider,
 )
 from infralib.config.aws import AWSAccount, AWSOrganization
-from infralib.config.domain import Domain
+from infralib.config.domain import Domain, DKIMv1
 from infralib.config.gcp import GCPOrganization
 from infralib.config.homelab import Homelab
 from infralib.config.notification import (
@@ -67,12 +67,17 @@ def test_infrastructure_configuration() -> InfrastructureConfiguration:
             id="primary",
             domain="test.example.com",
             description="Primary domain",
+            dkim_v1=[
+                DKIMv1("test1", "rsa", "test1_public_key"),
+                DKIMv1("test2", "ed25519", "test2_public_key"),
+            ],
             google_site_verification="primary_verification",
         ),
         "personal": Domain(
             id="personal",
             domain="personal.test.example.com",
             description="Personal domain",
+            dkim_v1=[],
             google_site_verification="personal_verification",
         ),
     }
@@ -138,6 +143,14 @@ def test_infrastructure_yaml_configuration() -> str:
               domain:                   test.example.com
               description:              Primary domain
               google_site_verification: primary_verification
+              dkim_v1:
+                - selector:   test1
+                  key_type:   rsa
+                  public_key: test1_public_key
+
+                - selector:   test2
+                  key_type:   ed25519
+                  public_key: test2_public_key
 
             - id:                       personal
               domain:                   personal.test.example.com
