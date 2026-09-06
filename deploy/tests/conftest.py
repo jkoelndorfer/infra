@@ -63,8 +63,18 @@ def test_infrastructure_configuration() -> InfrastructureConfiguration:
     Returns a test infrastructure configuration containing dummy values.
     """
     domains = {
-        "primary": Domain("primary", "test.example.com", "Primary domain"),
-        "personal": Domain("personal", "personal.test.example.com", "Personal domain"),
+        "primary": Domain(
+            id="primary",
+            domain="test.example.com",
+            description="Primary domain",
+            google_site_verification="primary_verification",
+        ),
+        "personal": Domain(
+            id="personal",
+            domain="personal.test.example.com",
+            description="Personal domain",
+            google_site_verification="personal_verification",
+        ),
     }
     aws_mgmt_account = AWSAccount("000000000777")
     aws_organization = AWSOrganization(
@@ -124,13 +134,15 @@ def test_infrastructure_yaml_configuration() -> str:
         """
         ---
         domains:
-            - id:          primary
-              domain:      test.example.com
-              description: Primary domain
+            - id:                       primary
+              domain:                   test.example.com
+              description:              Primary domain
+              google_site_verification: primary_verification
 
-            - id:          personal
-              domain:      personal.test.example.com
-              description: Personal domain
+            - id:                       personal
+              domain:                   personal.test.example.com
+              description:              Personal domain
+              google_site_verification: personal_verification
 
         aws_organization:
             management_account:

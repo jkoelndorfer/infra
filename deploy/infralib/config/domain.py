@@ -15,10 +15,17 @@ class Domain:
     Configuration representing a DNS domain.
     """
 
-    def __init__(self, id: DomainID, domain: str, description: str) -> None:
+    def __init__(
+        self,
+        id: DomainID,
+        domain: str,
+        description: str,
+        google_site_verification: str | None,
+    ) -> None:
         self.id = id
         self.domain = domain
         self.description = description
+        self.google_site_verification = google_site_verification
 
     @classmethod
     def from_dict(cls, d: dict[str, str]) -> Self:
@@ -26,6 +33,7 @@ class Domain:
             d["id"],
             d["domain"],
             d["description"],
+            d.get("google_site_verification", None),
         )
 
     def __str__(self) -> str:
