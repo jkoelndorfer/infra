@@ -9,7 +9,11 @@ from os import PathLike
 
 import pytest
 
-from infralib import Environment, InfrastructureConfigurationYAMLParser
+from infralib import (
+    DeploymentTarget,
+    Environment,
+    InfrastructureConfigurationYAMLParser,
+)
 from infralib.config.notification import EmailChannel, NotificationCategory
 
 
@@ -32,9 +36,10 @@ class TestInfrastructureConfigurationYAMLParser:
         Tests that InfrastructureConfigurationYAMLParser.parse() produces the expected configuration.
         """
         config = yaml_parser.parse(test_infrastructure_yaml_configuration_path)
+        prod = DeploymentTarget(Environment.PROD, None)
 
         primary_domain = config.domains["primary"]
-        assert primary_domain.domain == "test.example.com"
+        assert primary_domain.domain_for(prod) == "test.example.com"
         assert primary_domain.google_site_verification == "primary_verification"
         assert len(primary_domain.dkim_v1) == 2
 
@@ -47,7 +52,7 @@ class TestInfrastructureConfigurationYAMLParser:
         assert primary_domain.dkim_v1[1].public_key == "test2_public_key"
 
         personal_domain = config.domains["personal"]
-        assert personal_domain.domain == "personal.test.example.com"
+        assert personal_domain.domain_for(prod) == "personal.test.example.com"
         assert personal_domain.google_site_verification == "personal_verification"
 
         aws_org = config.aws_organization

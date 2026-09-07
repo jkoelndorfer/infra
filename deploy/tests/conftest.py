@@ -87,7 +87,7 @@ def test_infrastructure_configuration() -> InfrastructureConfiguration:
         root_ou_id="r-xxou",
         management_account=aws_mgmt_account,
         member_account_email_generator=lambda environment, function: (
-            f"aws.{environment}.{function}@{domains['personal'].domain}"
+            f"aws.{environment}.{function}@{domains['personal']._domain}"
         ),
         organization_account_access_role="MyRole",
         preferred_region="us-west-1",
@@ -95,7 +95,7 @@ def test_infrastructure_configuration() -> InfrastructureConfiguration:
         infrastructure_manager_role="arn:aws:iam::000000000777:role/MyInfraRole",
     )
     gcp_organization = GCPOrganization(
-        domain=domains["primary"].domain,
+        domain=domains["primary"]._domain,
         organization_id="000000000888",
         billing_account_id="000000-000000-100001",
         preferred_region="us-west2",
@@ -111,12 +111,12 @@ def test_infrastructure_configuration() -> InfrastructureConfiguration:
             EmailChannel(
                 name="First Billing Test",
                 category=NotificationCategory.CLOUD_BILLING,
-                email=f"billing@{domains['primary'].domain}",
+                email=f"billing@{domains['primary']._domain}",
             ),
             EmailChannel(
                 name="Second Billing Test",
                 category=NotificationCategory.CLOUD_BILLING,
-                email=f"second.billing@{domains['primary'].domain}",
+                email=f"second.billing@{domains['primary']._domain}",
             ),
         ]
     )

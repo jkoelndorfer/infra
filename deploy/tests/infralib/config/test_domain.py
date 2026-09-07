@@ -7,7 +7,19 @@ This file contains code to test infralib domains.
 
 import pytest
 
+from infralib import DeploymentTarget, Environment
 from infralib.config.domain import DKIMv1, Domain
+
+
+@pytest.fixture
+def example_com_domain() -> Domain:
+    return Domain(
+        id="example",
+        domain="example.com",
+        description="Example Domain",
+        dkim_v1=[],
+        google_site_verification=None,
+    )
 
 
 class TestDomain:
@@ -16,35 +28,68 @@ class TestDomain:
     """
 
     @pytest.mark.parametrize(
-        "domain, expected_str",
+        "target, expected_domain",
         [
             (
-                Domain(
-                    "test1",
-                    "test1.example.com",
-                    "First test case",
-                    [],
-                    "test1_verification",
-                ),
-                "test1.example.com",
+                DeploymentTarget(Environment.PROD, None),
+                "example.com",
             ),
             (
-                Domain(
-                    "test2",
-                    "test2.example.net",
-                    "Second test case",
-                    [],
-                    "test2_verification",
-                ),
-                "test2.example.net",
+                DeploymentTarget(Environment.DEV, None),
+                "dev.example.com",
+            ),
+            (
+                DeploymentTarget(Environment.PROD, "europe-west-2"),
+                "europe-west-2.example.com",
+            ),
+            (
+                DeploymentTarget(Environment.DEV, "europe-west-2"),
+                "europe-west-2.dev.example.com",
             ),
         ],
     )
-    def test_str(self, domain: Domain, expected_str: str) -> None:
+    def test_domain_for(
+        self,
+        example_com_domain: Domain,
+        target: DeploymentTarget,
+        expected_domain: str,
+    ) -> None:
         """
-        Tests that str(Domain) returns the expected value.
+        Tests that domain_for returns the expected domain name.
         """
-        assert str(domain) == expected_str
+        assert example_com_domain.domain_for(target) == expected_domain
+
+    @pytest.mark.parametrize(
+        "target, expected_host",
+        [
+            (
+                DeploymentTarget(Environment.PROD, None),
+                "",
+            ),
+            (
+                DeploymentTarget(Environment.DEV, None),
+                "dev",
+            ),
+            (
+                DeploymentTarget(Environment.PROD, "europe-west-2"),
+                "europe-west-2",
+            ),
+            (
+                DeploymentTarget(Environment.DEV, "europe-west-2"),
+                "europe-west-2.dev",
+            ),
+        ],
+    )
+    def test_host_for(
+        self,
+        example_com_domain: Domain,
+        target: DeploymentTarget,
+        expected_host: str,
+    ) -> None:
+        """
+        Tests that host_for returns the expected hostname.
+        """
+        assert example_com_domain.host_for(target) == expected_host
 
     @pytest.mark.parametrize(
         "domain, expected_repr",

@@ -8,6 +8,8 @@ This file defines data types for domain configuration.
 from dataclasses import dataclass
 from typing import Any, cast, ClassVar, get_args, Literal, Self
 
+from ..deployment.target import DeploymentTarget, Environment
+
 DomainID = str
 DKIMKeyType = Literal["rsa", "ed25519"]
 
@@ -60,10 +62,37 @@ class Domain:
         google_site_verification: str | None,
     ) -> None:
         self.id = id
-        self.domain = domain
+        self._domain = domain
         self.description = description
         self.dkim_v1 = dkim_v1
         self.google_site_verification = google_site_verification
+
+    def domain_for(self, target: DeploymentTarget) -> str:
+        """
+        Given a deployment target, returns the full apex domain for that target.
+
+        If the domain name is "example.com", the returned domain is "example.com"
+        for prod and "dev.example.com" for dev.
+        """
+        host = self.host_for(target)
+        if host:
+            return f"{host}.{self._domain}"
+
+        return self._domain
+
+    @classmethod
+    def host_for(cls, target: DeploymentTarget) -> str:
+        """
+        Given a deployment target, returns the host portion only for that target.
+        """
+        host = ""
+        if target.environment != Environment.PROD:
+            host = f"{target.environment}.{host}"
+
+        if target.region is not None:
+            host = f"{target.region}.{host}"
+
+        return host.rstrip(".")
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> Self:
@@ -75,11 +104,8 @@ class Domain:
             d.get("google_site_verification", None),
         )
 
-    def __str__(self) -> str:
-        return self.domain
-
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(id={self.id}, domain={self.domain})"
+        return f"{self.__class__.__name__}(id={self.id}, domain={self._domain})"
 
 
 Domains = dict[DomainID, Domain]
