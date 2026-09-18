@@ -26,7 +26,10 @@ from infralib import (
     PulumiOperatorTools,
     StackOutputResolver,
 )
-from infralib.pulumi.provider import ProviderFactory
+from infralib.pulumi.provider import (
+    KubernetesClientModule,
+    ProviderFactory,
+)
 
 
 class NoopPulumiRuntimeMock(pulumi.runtime.Mocks):
@@ -70,6 +73,16 @@ class CommandOnlyProviderFactory(ProviderFactory):
         """
         raise NotImplementedError(
             "CommandOnlyProviderFactory cannot create cloud Providers"
+        )
+
+    def kubernetes_client(
+        self,
+    ) -> KubernetesClientModule:
+        """
+        Returns no Kubernetes client.
+        """
+        raise NotImplementedError(
+            "CommandOnlyProviderFactory cannot create Kubernetes clients"
         )
 
     def kubernetes_provider(
