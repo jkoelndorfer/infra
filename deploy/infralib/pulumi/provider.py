@@ -6,11 +6,22 @@ This module contains code to construct standardized Pulumi providers.
 """
 
 from abc import ABC, abstractmethod
+from typing import Protocol
 
+import kubernetes
 import pulumi_aws as aws
 import pulumi_command as command
 import pulumi_gcp as gcp
 import pulumi_kubernetes as k8s
+
+
+class KubernetesClientModule(Protocol):
+    """
+    Protocol describing the Kubernetes client module.
+    """
+
+    AppsV1Api: type[kubernetes.client.AppsV1Api]
+    CoreV1Api: type[kubernetes.client.CoreV1Api]
 
 
 class ProviderFactory(ABC):
@@ -41,6 +52,15 @@ class ProviderFactory(ABC):
     def gcp_provider(self, name: str = "gcp") -> gcp.Provider:
         """
         Returns a GCP provider.
+        """
+
+    @abstractmethod
+    def kubernetes_client(
+        self,
+    ) -> KubernetesClientModule:
+        """
+        Returns a reference to the Kubernetes client module, allowing
+        instantiation of select Kubernetes API clients.
         """
 
     @abstractmethod
@@ -113,6 +133,13 @@ class StandardProviderFactory(ProviderFactory):
             impersonate_service_account=self.gcp_impersonate_service_account,
             user_project_override=True,
         )
+
+    def kubernetes_client(
+        self,
+    ) -> KubernetesClientModule:  # pragma: no cover
+        kubernetes.config.load_kube_config(context=self.kubernetes_default_context)
+
+        return kubernetes.client  # type: ignore
 
     def kubernetes_provider(
         self, name: str = "kubernetes"

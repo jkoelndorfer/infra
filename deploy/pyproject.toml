@@ -39,3 +39,9 @@ exclude_also = [
 omit = [
   "cli/__main__.py",
 ]
+
+[[tool.mypy.overrides]]
+module = [
+  "kubernetes.*",
+]
+ignore_missing_imports = true
