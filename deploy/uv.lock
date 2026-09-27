@@ -319,11 +319,11 @@ requires-dist = [
     { name = "click", specifier = ">=8.4.2,<9" },
     { name = "ipython", specifier = ">=9.16.0,<10" },
     { name = "kubernetes", specifier = ">=36.0.3,<37" },
-    { name = "pulumi", specifier = "==3.255.0" },
-    { name = "pulumi-aws", specifier = ">=7.41.0" },
+    { name = "pulumi", specifier = "==3.265.0" },
+    { name = "pulumi-aws", specifier = ">=7.48.0" },
     { name = "pulumi-command", specifier = ">=1.2.1" },
-    { name = "pulumi-gcp", specifier = ">=9.33.0" },
-    { name = "pulumi-kubernetes", specifier = ">=4.33.0" },
+    { name = "pulumi-gcp", specifier = ">=9.37.0" },
+    { name = "pulumi-kubernetes", specifier = ">=4.34.2" },
     { name = "pyyaml", specifier = ">=6.0.3,<7" },
     { name = "rich", specifier = ">=15.0.0,<16" },
 ]
@@ -1053,7 +1053,7 @@ wheels = [
 
 [[package]]
 name = "pulumi"
-version = "3.255.0"
+version = "3.265.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "debugpy" },
@@ -1067,23 +1067,24 @@ dependencies = [
     { name = "protobuf" },
     { name = "pyyaml" },
     { name = "semver" },
+    { name = "typing-extensions" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7f/1e/9d433d9ec29d268a79cb37e5b052a2d3e34b118f1c3a5b4d7b2ab087b74c/pulumi-3.255.0-py3-none-any.whl", hash = "sha256:46fbdc640a996fa10849ff66d599be4e91d62484e7c5fa32963e9c6d79a171b1", size = 415455, upload-time = "2026-07-28T13:38:19.243Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/e8/7cea3afefe9e8a5830bec2bd2fae3c74207d85ed7c4ff8ed55f932adf860/pulumi-3.265.0-py3-none-any.whl", hash = "sha256:b4e6cf16ef685c64ad74e7ee87ecc3730226841b34375260ac1831d15c498e77", size = 426069, upload-time = "2026-09-25T22:34:57.856Z" },
 ]
 
 [[package]]
 name = "pulumi-aws"
-version = "7.41.0"
+version = "7.48.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "parver" },
+    { name = "packaging" },
     { name = "pulumi" },
     { name = "semver" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e3/cb/b8693bbc1c22574534616e3093bca84dbf7f4b4cf1fdc73ac222b65c4e4c/pulumi_aws-7.41.0.tar.gz", hash = "sha256:e42f6eea3aa0223baf6303ebc1619eaa0a828131fe4a482ef10df311dceb6d40", size = 9348010, upload-time = "2026-08-07T15:11:07.38Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fd/2e/71793b88112c9aba54eedf180849459b3045896a09ab5591f82047d2c164/pulumi_aws-7.48.0.tar.gz", hash = "sha256:00b006d2ac249126366caa1c57ac3eb3adfd2be17d73194ebae6b43d7505b85a", size = 9686154, upload-time = "2026-09-22T14:34:37.79Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/12/fc/55745667dfa73e82106ba8b87e758b49f10a138ec014c7e8261151fc2566/pulumi_aws-7.41.0-py3-none-any.whl", hash = "sha256:3728180f344366c72f7f637cca73627dbf5d1fc0ff0711fcd9f1d9f67d13bcf2", size = 12542216, upload-time = "2026-08-07T15:11:03.207Z" },
+    { url = "https://files.pythonhosted.org/packages/40/d3/5f0b9c6605ebc910617ab786c62a0b15622cee2edbd18e7a44737020d08d/pulumi_aws-7.48.0-py3-none-any.whl", hash = "sha256:e6732f11f2a79f76e0b14ffff61552f9661860847cfe22c9ec99a9e9a08f2242", size = 12896659, upload-time = "2026-09-22T14:34:34.532Z" },
 ]
 
 [[package]]
@@ -1102,21 +1103,21 @@ wheels = [
 
 [[package]]
 name = "pulumi-gcp"
-version = "9.33.0"
+version = "9.37.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "parver" },
+    { name = "packaging" },
     { name = "pulumi" },
     { name = "semver" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ed/05/43b73e437567d7f1fcce0ff1e8a6f0614b1cc599d35423dd78d434290db4/pulumi_gcp-9.33.0.tar.gz", hash = "sha256:3e15d0ca544c19a7233775a6650a51a7c3abc6164accdfcba0177cd3244dbe19", size = 11159271, upload-time = "2026-08-05T12:25:38.162Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f8/8f/8559eb06fe9682360131315495f26385c8f6b48be2ab14c03a58b8c1a654/pulumi_gcp-9.37.0.tar.gz", hash = "sha256:4cd5f23730c18e1d78a9294ef4e3de32c829426497a662b98f7636f5a2a19a90", size = 11359293, upload-time = "2026-09-14T17:30:33.248Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b1/4c/d581f14772846912d24ef36ccc5a58650d55567577c1ffe364e5d5b37721/pulumi_gcp-9.33.0-py3-none-any.whl", hash = "sha256:2b7fdc00be7da594ebff81c8b4bd62766332081e3ebd18267c33d1ada1a6b79a", size = 13674964, upload-time = "2026-08-05T12:25:35.98Z" },
+    { url = "https://files.pythonhosted.org/packages/ee/49/ff97bc60601a0bc9c8154c331a7d18fda56fa1d69b93a536887d414344c1/pulumi_gcp-9.37.0-py3-none-any.whl", hash = "sha256:f08c06cf7c11dd331acfbb40d6d4c33d01ce537748a5ac0741558d4e3a2d7171", size = 13865258, upload-time = "2026-09-14T17:30:30.332Z" },
 ]
 
 [[package]]
 name = "pulumi-kubernetes"
-version = "4.33.0"
+version = "4.34.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "parver" },
@@ -1124,9 +1125,9 @@ dependencies = [
     { name = "requests" },
     { name = "semver" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/77/c1/190d2e386914650a8cac0303ef69605f13dafb64e7bdf52a24e6b3ef0a2e/pulumi_kubernetes-4.33.0.tar.gz", hash = "sha256:84aa1ba77284a96930ee9a090ac031b587b23380b36b2b3921b025be55fec7f4", size = 1977164, upload-time = "2026-07-07T19:12:43.799Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c6/59/ba53f0fb6e10c4d9625d1f6bee6e03f4b58e4fea25ada8b5cd4b80ec084d/pulumi_kubernetes-4.34.2.tar.gz", hash = "sha256:598e4f7cb5d5d1564f365590b50f82b99b831a24b9bb1fd66351287ab1c17908", size = 2197428, upload-time = "2026-09-21T18:11:10.576Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/13/4b/91a97de4aa244a82c72f1ab6e31474a1cf2cdb07a6b9a0ab4ad4ff3cec6e/pulumi_kubernetes-4.33.0-py3-none-any.whl", hash = "sha256:42ca472ca89260bf2f3dae61860909dc2367d8fa61448b47d77237053ef402eb", size = 3098520, upload-time = "2026-07-07T19:12:42.087Z" },
+    { url = "https://files.pythonhosted.org/packages/ca/e2/ce15a82298ada9df70ae39f3156ad4cba3eab32517c839f4b09703a65f6c/pulumi_kubernetes-4.34.2-py3-none-any.whl", hash = "sha256:94c94b6ce3facd2693b7f8e73adb589c38a8157da3289009db8e892b14ee68cb", size = 3385917, upload-time = "2026-09-21T18:11:08.913Z" },
 ]
 
 [[package]]
