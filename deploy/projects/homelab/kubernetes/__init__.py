@@ -5,6 +5,14 @@ projects.homelab.kubernetes
 This module contains helpers for homelab Kubernetes projects.
 """
 
+from .deployment import (
+    HomelabContainerVolumeArgs,
+    HomelabContainerVolumeProvisionedSource,
+    HomelabHTTPSDeploymentIngressArgs,
+    HomelabKubernetesDeploymentArgs,
+    HomelabKubernetesDeployment,
+)
+from .imagepull import ImagePullCredential, ImagePullSecretProvider
 from .resources import helm_release, namespace
 from .secret import decode_secret
 from .service import HomelabService
@@ -19,9 +27,16 @@ __all__ = [
     "decode_secret",
     "helm_release",
     "HomelabBackingVolume",
+    "HomelabContainerVolumeArgs",
+    "HomelabContainerVolumeProvisionedSource",
+    "HomelabHTTPSDeploymentIngressArgs",
+    "HomelabKubernetesDeployment",
+    "HomelabKubernetesDeploymentArgs",
     "HomelabKubernetesPersistentVolume",
     "HomelabKubernetesPersistentVolumeArgs",
     "HomelabService",
+    "ImagePullCredential",
+    "ImagePullSecretProvider",
     "namespace",
     "uid_gid",
 ]
