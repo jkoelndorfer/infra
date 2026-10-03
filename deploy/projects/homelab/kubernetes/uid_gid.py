@@ -23,7 +23,7 @@ _base = {
 # is dependent upon the environment.
 _service_ids = {
     "traefik": 0,
-    "ctr_registry": 1,
+    "registry": 1,
     "syncthing": 2,
     "backup": 3,
     "vaultwarden": 4,

@@ -23,6 +23,7 @@ from infralib import (
     InfrastructureStack,
 )
 
+from ...dns import DNSZonesProject
 from ..kubernetes import (
     helm_release,
     HomelabKubernetesPersistentVolume,
@@ -30,12 +31,18 @@ from ..kubernetes import (
     namespace,
     uid_gid,
 )
-from ...dns import DNSZonesProject
+from .route import (
+    default_route,
+    default_host_match,
+    TraefikRouteSpec,
+    TraefikServiceRef,
+    TraefikMiddlewareRef,
+)
 
 
 class HomelabTraefikProject(InfrastructureProject):
     """
-    Project that installs Traefik on my homelab Kubernetes cluster.
+    Project that installs Traefik on the homelab Kubernetes cluster.
     """
 
     name = "homelab.traefik"
@@ -322,3 +329,13 @@ class HomelabTraefikProject(InfrastructureProject):
                 },
             },
         }
+
+
+__all__ = [
+    "default_route",
+    "default_host_match",
+    "HomelabTraefikProject",
+    "TraefikMiddlewareRef",
+    "TraefikRouteSpec",
+    "TraefikServiceRef",
+]

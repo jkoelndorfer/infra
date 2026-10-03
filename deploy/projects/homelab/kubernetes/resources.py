@@ -26,7 +26,7 @@ VolumeReclaimPolicy = Literal["Retain", "Recycle", "Delete"]
 def namespace(
     resource_name: str,
     env: Environment,
-    name: Input[str],
+    name: str,
     opts: ResourceOptions,
 ) -> Tuple[Output[str], k8s.core.v1.Namespace]:
     """
