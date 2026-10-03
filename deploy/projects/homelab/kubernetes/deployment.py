@@ -8,7 +8,7 @@ service deployment.
 
 from dataclasses import dataclass, field
 import json
-from typing import Any, Callable, Literal, Sequence
+from typing import Literal, Sequence
 
 from pulumi import Input, Output
 import pulumi_kubernetes as k8s
@@ -18,54 +18,38 @@ from infralib import (
     Environment,
     InfrastructureComponent,
 )
-from ..traefik import HomelabTraefikProject
+from ..traefik import (
+    default_route_transformer,
+    TraefikIngressRoute,
+    TraefikIngressRouteArgs,
+    TraefikIngressRouteTLSDomain,
+    TraefikRouteBuilder,
+    TraefikRouteTransformer,
+)
+from .service import HomelabService
+from .uid_gid import uid_gid
 from .volume import (
+    AccessMode,
+    HomelabBackingVolume,
     HomelabKubernetesPersistentVolume,
     HomelabKubernetesPersistentVolumeArgs,
     HomelabPersistentVolume,
     HomelabPersistentVolumeClaim,
+    VolumeReclaimPolicy,
 )
 
 
-TraefikRoute = dict[str, Any]
-
-
 @dataclass
-class TraefikRouteTranformInput:
+class HomelabContainerVolumeProvisionedSource:
     """
-    Data provided to a Traefik route transformation function.
-    """
-
-    default_route: TraefikRoute
-    """
-    The default route that is configured to serve traffic.
+    Class that describes a persistent volume to provision for the deployment.
     """
 
-    container_port: int
-    """
-    The port that the container receives HTTP traffic on.
-    """
-
-    hostname: str
-    """
-    The service's default hostname. This is the first part of the fully-qualified
-    domain name. It excludes the domain.
-    """
-
-    domain: str
-    """
-    The second part of the fully-qualified domain name. It excludes the hostname.
-    """
-
-    fqdn: str
-    """
-    The fully-qualified domain name of the service. Effectively: f"{hostname}.{domain}".
-
-    This is the value matched against the Host in the default route.
-    """
-
-
-TraefikRouteTransformer = Callable[[TraefikRouteTranformInput], list[TraefikRoute]]
+    backing_volume: HomelabBackingVolume
+    storage: Input[str]
+    access_modes: Input[Sequence[Input[AccessMode]]]
+    mode: Input[str]
+    volume_reclaim_policy: Input[VolumeReclaimPolicy] = "Retain"
 
 
 @dataclass
@@ -76,12 +60,12 @@ class HomelabContainerVolumeArgs:
 
     name: str
     mount_path: str
-    source: HomelabKubernetesPersistentVolumeArgs
+    source: HomelabContainerVolumeProvisionedSource
     read_only: bool
 
 
 @dataclass
-class HomelabHTTPSIngressServiceArgs:
+class HomelabHTTPSDeploymentIngressArgs:
     """
     Class that provides arguments to a deployment for establishing a standard
     HTTPS ingress and associated service.
@@ -90,7 +74,7 @@ class HomelabHTTPSIngressServiceArgs:
     container_port: int
     hostname: str | None = None
     san_hostnames: list[str] = field(default_factory=list)
-    route_transform: TraefikRouteTransformer = lambda i: [i.default_route]
+    traefik_route_transform: TraefikRouteTransformer = default_route_transformer
 
 
 @dataclass
@@ -114,16 +98,16 @@ class HomelabKubernetesDeploymentArgs:
     Class that provides arguments to a standard homelab Kubernetes deployment.
     """
 
-    namespace: str
+    namespace: Input[str]
     name: str
 
-    https_ingress: HomelabHTTPSIngressServiceArgs
+    https_ingress: HomelabHTTPSDeploymentIngressArgs
     image: str
-    image_pull_policy: Input[str]
     volumes: list[HomelabContainerVolumeArgs]
     command: Input[Sequence[Input[str]]] | None = None
     env: list[k8s.core.v1.EnvVarArgs] = field(default_factory=list)
     ports: list[k8s.core.v1.ContainerPortArgs] = field(default_factory=list)
+    image_pull_policy: Literal["Always", "IfNotPresent", "Never"] = "IfNotPresent"
     privilege_drop_mode: Literal["pod-exec", "s6-entrypoint", None] = "pod-exec"
 
 
@@ -141,6 +125,7 @@ class HomelabKubernetesDeployment(
         self.label_selector = k8s.meta.v1.LabelSelectorArgs(
             match_labels=self.service_label
         )
+        self.service_user_group = uid_gid(self.dctx.target.environment, self.args.name)
         self.output("service_label", self.service_label)
 
         volumes = self._provision_volumes()
@@ -150,19 +135,43 @@ class HomelabKubernetesDeployment(
         """
         Provisions the deployment.
         """
+        if self.args.privilege_drop_mode == "s6-entrypoint":
+            addl_env = [
+                k8s.core.v1.EnvVarArgs(
+                    name="PUID",
+                    value=str(self.service_user_group),
+                ),
+                k8s.core.v1.EnvVarArgs(
+                    name="PGID",
+                    value=str(self.service_user_group),
+                ),
+            ]
+        else:
+            addl_env = []
+
         container_args = k8s.core.v1.ContainerArgs(
             name=self.args.name,
             command=self.args.command,
             image=self.args.image,
             image_pull_policy=self.args.image_pull_policy,
-            env=self.args.env,
+            env=[*self.args.env, *addl_env],
             ports=self.args.ports,
             volume_mounts=[v.volume_mount_args for v in volumes],
         )
 
+        # TODO: Image pull secrets
+        if self.args.privilege_drop_mode == "pod-exec":
+            pod_security_context = k8s.core.v1.PodSecurityContextArgs(
+                run_as_user=self.service_user_group,
+                run_as_group=self.service_user_group,
+                run_as_non_root=True,
+            )
+        else:
+            pod_security_context = None
+
         pod_spec = k8s.core.v1.PodSpecArgs(
             containers=[container_args],
-            image_pull_secrets=self._image_pull_secrets(),
+            security_context=pod_security_context,
             volumes=[v.volume_args for v in volumes],
         )
 
@@ -209,13 +218,13 @@ class HomelabKubernetesDeployment(
             self.dctx.target
         )
         hostname = self.args.https_ingress.hostname or self.args.name
-        fqdn = f"{hostname}.{homelab_domain}"
+        service_name = f"{self.args.name}-http"
 
         k8s.core.v1.Service(
             f"{self.name}_service",
             metadata=k8s.meta.v1.ObjectMetaArgs(
                 namespace=self.args.namespace,
-                name=Output.from_input(self.args.name).apply(lambda n: f"{n}-http"),
+                name=service_name,
             ),
             spec=k8s.core.v1.ServiceSpecArgs(
                 type=k8s.core.v1.ServiceSpecType.CLUSTER_IP,
@@ -230,45 +239,29 @@ class HomelabKubernetesDeployment(
             opts=self.default_ropts,
         )
 
-        default_route = {
-            "match": f"Host(`{fqdn}`)",
-            "port": self.args.https_ingress.container_port,
-            "kind": "Service",
-        }
-        route_transform_input = TraefikRouteTranformInput(
-            default_route,
+        homelab_service = HomelabService(
+            service_name,
             self.args.https_ingress.container_port,
             hostname,
             homelab_domain,
-            fqdn,
         )
-        k8s.apiextensions.CustomResource(
-            f"{self.name}_traefik_ingress",
-            api_version="traefik.io/v1alpha1",
-            kind="IngressRoute",
-            metadata=k8s.meta.v1.ObjectMetaArgs(
+        route_builder = TraefikRouteBuilder(homelab_service)
+        self.ingress_route = TraefikIngressRoute(
+            self.name,
+            TraefikIngressRouteArgs(
                 namespace=self.args.namespace,
-                name=Output.from_input(self.args.name).apply(
-                    lambda n: f"{n}-https-route"
+                name=f"{self.args.name}-https-ingress",
+                routes=self.args.https_ingress.traefik_route_transform(
+                    route_builder, [route_builder.route()]
                 ),
+                tls_domains=[
+                    TraefikIngressRouteTLSDomain(
+                        main=self.args.https_ingress.hostname or self.args.name,
+                        sans=self.args.https_ingress.san_hostnames,
+                    ),
+                ],
             ),
-            spec={
-                "routes": self.args.https_ingress.route_transform(
-                    route_transform_input
-                ),
-                "tls": {
-                    "certResolver": HomelabTraefikProject.cert_resolver,
-                    "domains": [
-                        {
-                            "main": fqdn,
-                            "sans": [
-                                f"{h}.{homelab_domain}"
-                                for h in self.args.https_ingress.san_hostnames
-                            ],
-                        },
-                    ],
-                },
-            },
+            self.dctx,
             opts=self.default_ropts,
         )
 
@@ -279,9 +272,20 @@ class HomelabKubernetesDeployment(
         """
         vols: list[HomelabProvisionedContainerVolume] = list()
         for v in self.args.volumes:
+            volume_args = HomelabKubernetesPersistentVolumeArgs(
+                name=v.name,
+                namespace=self.args.namespace,
+                backing_volume=v.source.backing_volume,
+                storage=v.source.storage,
+                access_modes=v.source.access_modes,
+                user=self.service_user_group,
+                group=self.service_user_group,
+                mode=v.source.mode,
+                volume_reclaim_policy=v.source.volume_reclaim_policy,
+            )
             allocated_volume = HomelabKubernetesPersistentVolume(
                 f"{self.name}_{v.name}",
-                v.source,
+                volume_args,
                 self.dctx,
                 self.default_ropts,
             )
