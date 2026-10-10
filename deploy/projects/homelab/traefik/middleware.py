@@ -15,6 +15,29 @@ from infralib import InfrastructureComponent
 
 
 @dataclass
+class TraefikMiddlewareRef:
+    """
+    A reference to a Traefik Middleware.
+    """
+
+    namespace: Input[str]
+    """
+    The namespace that the Middleware resource is provisioned in.
+    """
+
+    name: Input[str]
+    """
+    The name of the Middleware resource.
+    """
+
+    def to_spec(self) -> dict[str, Input[str]]:
+        return {
+            "namespace": self.namespace,
+            "name": self.name,
+        }
+
+
+@dataclass
 class TraefikHTTPBasicAuthSecretArgs:
     """
     Arguments to create a kubernetes.io/basic-auth secret with a username
@@ -83,9 +106,13 @@ class TraefikHTTPBasicAuthMiddleware(
         else:
             raise ValueError("secret is unsupported type")
 
-        k8s.apiextensions.CustomResource(
+        self.middleware = k8s.apiextensions.CustomResource(
             f"{self.name}_middleware",
             api_version="traefik.io/v1alpha1",
+            metadata=k8s.meta.v1.ObjectMetaArgs(
+                namespace=self.args.namespace,
+                name=self.args.name,
+            ),
             kind="Middleware",
             spec={
                 "basicAuth": {
@@ -125,3 +152,12 @@ class TraefikHTTPBasicAuthMiddleware(
             opts=self.k8s_ropts,
         )
         return self.secret.metadata.name
+
+    def ref(self) -> TraefikMiddlewareRef:
+        """
+        Returns a TraefikMiddlewareRef that references this middleware.
+        """
+        return TraefikMiddlewareRef(
+            namespace=self.middleware.metadata.namespace,  # type: ignore
+            name=self.middleware.metadata.name,  # type: ignore
+        )

@@ -32,18 +32,6 @@ class TraefikServiceRef:
 
 
 @dataclass
-class TraefikMiddlewareRef:
-    namespace: Input[str]
-    name: Input[str]
-
-    def to_spec(self) -> dict[str, Input[str]]:
-        return {
-            "namespace": self.namespace,
-            "name": self.name,
-        }
-
-
-@dataclass
 class TraefikIngressRouteSpecRoute:
     match: Input[str]
     services: Sequence[TraefikServiceRef]

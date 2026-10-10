@@ -8,6 +8,7 @@ This module contains the homelab container registry project.
 from typing import Sequence
 
 from pulumi import ResourceOptions
+import pulumi_random as random
 
 from infralib import (
     DeploymentTarget,
@@ -27,6 +28,9 @@ from ..kubernetes import (
 )
 from ..traefik import (
     HomelabTraefikProject,
+    TraefikHTTPBasicAuthMiddleware,
+    TraefikHTTPBasicAuthMiddlewareArgs,
+    TraefikHTTPBasicAuthSecretArgs,
     TraefikIngressRouteSpecRoute,
     TraefikMiddlewareRef,
     TraefikRouteBuilder,
@@ -74,6 +78,7 @@ class HomelabContainerRegistryProject(InfrastructureProject):
             opts=self.default_ropts,
         )
 
+        self._provision_traefik_middlewares()
         HomelabKubernetesDeployment(
             name="deployment",
             args=HomelabKubernetesDeploymentArgs(
@@ -105,36 +110,68 @@ class HomelabContainerRegistryProject(InfrastructureProject):
             opts=self.default_ropts,
         )
 
+    def _provision_traefik_middlewares(self) -> None:
+        """
+        Provisions container registry Traefik middleware providing authentication.
+        """
+        password_args = random.RandomPasswordArgs(
+            length=32,
+            lower=True,
+            upper=True,
+            numeric=True,
+            special=False,
+        )
+        self.rw_middleware = TraefikHTTPBasicAuthMiddleware(
+            "rw",
+            TraefikHTTPBasicAuthMiddlewareArgs(
+                namespace=self.ns_name,
+                name="registry-rw",
+                secret=TraefikHTTPBasicAuthSecretArgs(
+                    username="registry-rw",
+                    password_args=password_args,
+                ),
+            ),
+            self.dctx,
+        )
+
+        self.ro_middleware = TraefikHTTPBasicAuthMiddleware(
+            "ro",
+            TraefikHTTPBasicAuthMiddlewareArgs(
+                namespace=self.ns_name,
+                name="registry-ro",
+                secret=TraefikHTTPBasicAuthSecretArgs(
+                    username="registry-ro",
+                    password_args=password_args,
+                ),
+            ),
+            self.dctx,
+        )
+
+        self.deny_middleware = TraefikHTTPBasicAuthMiddleware(
+            "deny",
+            TraefikHTTPBasicAuthMiddlewareArgs(
+                namespace=self.ns_name,
+                name="deny",
+                secret=TraefikHTTPBasicAuthSecretArgs(
+                    username="deny",
+                    password_args=password_args,
+                ),
+            ),
+            self.dctx,
+        )
+
     def _traefik_route_transform(
         self,
         builder: TraefikRouteBuilder,
         default_routes: Sequence[TraefikIngressRouteSpecRoute],
     ) -> list[TraefikIngressRouteSpecRoute]:
-        # TODO: Create rw-middleware.
-        rw_middlewares = [
-            TraefikMiddlewareRef(
-                namespace=self.ns_name,
-                name="TODO",
-            ),
-        ]
+        rw_middlewares = [self.rw_middleware.ref()]
         rw_fqdn = f"{self.rw_hostname}.{builder.homelab_service.domain}"
 
-        # TODO: Create ro-middleware.
-        ro_middlewares = [
-            TraefikMiddlewareRef(
-                namespace=self.ns_name,
-                name="TODO",
-            ),
-        ]
+        ro_middlewares = [self.ro_middleware.ref()]
         ro_fqdn = f"{self.ro_hostname}.{builder.homelab_service.domain}"
 
-        # TODO: Configure deny middleware
-        deny_middlewares = [
-            TraefikMiddlewareRef(
-                namespace=self.ns_name,
-                name="TODO",
-            ),
-        ]
+        deny_middlewares = [self.deny_middleware.ref()]
 
         return [
             builder.route(

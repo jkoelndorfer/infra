@@ -24,12 +24,14 @@ from infralib import (
 )
 
 from ...dns import DNSZonesProject
-from ..kubernetes import (
+from ..kubernetes.resources import (
     helm_release,
+    namespace,
+)
+from ..kubernetes.uid_gid import uid_gid
+from ..kubernetes.volume import (
     HomelabKubernetesPersistentVolume,
     HomelabKubernetesPersistentVolumeArgs,
-    namespace,
-    uid_gid,
 )
 from .config import TraefikConfiguration as traefik_config
 
