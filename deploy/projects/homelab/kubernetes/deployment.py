@@ -256,7 +256,7 @@ class HomelabKubernetesDeployment(
                 ),
                 tls_domains=[
                     TraefikIngressRouteTLSDomain(
-                        main=self.args.https_ingress.hostname or self.args.name,
+                        main=hostname,
                         sans=self.args.https_ingress.san_hostnames,
                     ),
                 ],

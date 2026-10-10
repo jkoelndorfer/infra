@@ -8,7 +8,7 @@ This module contains helper functions for Traefik ingress routes.
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol, Sequence
 
-from pulumi import Input, Output
+from pulumi import Input
 import pulumi_kubernetes as k8s
 
 from infralib import InfrastructureComponent
@@ -23,22 +23,42 @@ class TraefikServiceRef:
     port: Input[int]
     kind: Input[Literal["Service"]] = "Service"
 
+    def to_spec(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "port": self.port,
+            "kind": self.kind,
+        }
+
 
 @dataclass
 class TraefikMiddlewareRef:
     namespace: Input[str]
     name: Input[str]
 
+    def to_spec(self) -> dict[str, Input[str]]:
+        return {
+            "namespace": self.namespace,
+            "name": self.name,
+        }
+
 
 @dataclass
 class TraefikIngressRouteSpecRoute:
     match: Input[str]
-    services: Input[Sequence[Input[TraefikServiceRef]]]
-    middlewares: Input[Sequence[Input[TraefikMiddlewareRef]]] = field(
-        default_factory=list
-    )
+    services: Sequence[TraefikServiceRef]
+    middlewares: Sequence[TraefikMiddlewareRef] = field(default_factory=list)
     priority: Input[int] = 0
     kind: Input[Literal["Rule"]] = "Rule"
+
+    def to_spec(self) -> dict[str, Any]:
+        return {
+            "match": self.match,
+            "services": [s.to_spec() for s in self.services],
+            "middlewares": [m.to_spec() for m in self.middlewares],
+            "priority": self.priority,
+            "kind": self.kind,
+        }
 
 
 @dataclass
@@ -85,6 +105,7 @@ class TraefikRouteBuilder:
         match: str | None = None,
         priority: int = 0,
         services: list[TraefikServiceRef] | None = None,
+        middlewares: list[TraefikMiddlewareRef] | None = None,
     ) -> TraefikIngressRouteSpecRoute:
         """
         Returns a new route.
@@ -94,6 +115,7 @@ class TraefikRouteBuilder:
         return TraefikIngressRouteSpecRoute(
             match=match or self.default_host_match,
             priority=priority,
+            middlewares=middlewares or [],
             services=services
             or [
                 TraefikServiceRef(
@@ -140,7 +162,7 @@ class TraefikIngressRoute(InfrastructureComponent[TraefikIngressRouteArgs]):
                 name=self.args.name,
             ),
             spec={
-                "routes": self.args.routes,
+                "routes": [r.to_spec() for r in self.args.routes],
                 "tls": {
                     "certResolver": self.args.tls_cert_resolver,
                     "domains": [d.to_spec() for d in self.args.tls_domains],

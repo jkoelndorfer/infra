@@ -23,14 +23,13 @@ from ..kubernetes import (
     HomelabContainerVolumeProvisionedSource,
     HomelabKubernetesDeployment,
     HomelabKubernetesDeploymentArgs,
-    HomelabService,
     namespace,
 )
 from ..traefik import (
-    default_route,
-    default_host_match,
     HomelabTraefikProject,
     TraefikIngressRouteSpecRoute,
+    TraefikMiddlewareRef,
+    TraefikRouteBuilder,
 )
 
 
@@ -45,6 +44,12 @@ class HomelabContainerRegistryProject(InfrastructureProject):
     backing_volume: HomelabBackingVolume = "data0"
     image = "docker.io/registry:3.0.0"
     container_port = 5000
+
+    # Hostname permitting read-write access to the container registry.
+    rw_hostname = "ctr-registry-rw"
+
+    # Hostname permitting read-only access to the container registry.
+    ro_hostname = "ctr-registry-ro"
 
     @classmethod
     def dependencies(cls, target: DeploymentTarget) -> list[InfrastructureStack]:
@@ -76,8 +81,8 @@ class HomelabContainerRegistryProject(InfrastructureProject):
                 name=self.service_name,
                 https_ingress=HomelabHTTPSDeploymentIngressArgs(
                     container_port=self.container_port,
-                    hostname="ctr-registry-rw",
-                    san_hostnames=["ctr-registry-ro"],
+                    hostname=self.rw_hostname,
+                    san_hostnames=[self.ro_hostname],
                     traefik_route_transform=self._traefik_route_transform,
                 ),
                 image=self.image,
@@ -100,10 +105,51 @@ class HomelabContainerRegistryProject(InfrastructureProject):
             opts=self.default_ropts,
         )
 
-    @classmethod
     def _traefik_route_transform(
-        cls,
-        service: HomelabService,
-        default_routes: Sequence[TraefikRouteSpec],
-    ) -> list[TraefikRouteSpec]:
-        pass
+        self,
+        builder: TraefikRouteBuilder,
+        default_routes: Sequence[TraefikIngressRouteSpecRoute],
+    ) -> list[TraefikIngressRouteSpecRoute]:
+        # TODO: Create rw-middleware.
+        rw_middlewares = [
+            TraefikMiddlewareRef(
+                namespace=self.ns_name,
+                name="TODO",
+            ),
+        ]
+        rw_fqdn = f"{self.rw_hostname}.{builder.homelab_service.domain}"
+
+        # TODO: Create ro-middleware.
+        ro_middlewares = [
+            TraefikMiddlewareRef(
+                namespace=self.ns_name,
+                name="TODO",
+            ),
+        ]
+        ro_fqdn = f"{self.ro_hostname}.{builder.homelab_service.domain}"
+
+        # TODO: Configure deny middleware
+        deny_middlewares = [
+            TraefikMiddlewareRef(
+                namespace=self.ns_name,
+                name="TODO",
+            ),
+        ]
+
+        return [
+            builder.route(
+                match=f"Host(`{rw_fqdn}`)",
+                middlewares=rw_middlewares,
+                priority=110,
+            ),
+            builder.route(
+                match=f"Host(`{ro_fqdn}`) && ( METHOD(`GET`) || METHOD(`HEAD`) || METHOD(`TRACE`) )",
+                priority=101,
+                middlewares=ro_middlewares,
+            ),
+            builder.route(
+                match=f"Host(`{ro_fqdn}`)",
+                priority=100,
+                middlewares=deny_middlewares,
+            ),
+        ]
