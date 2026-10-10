@@ -13,6 +13,7 @@ import pulumi_aws as aws
 import pulumi_command as command
 import pulumi_gcp as gcp
 import pulumi_kubernetes as k8s
+import pulumi_random as random
 
 if TYPE_CHECKING:
     from ..deployment.context import DeploymentContext
@@ -73,6 +74,12 @@ class ProviderFactory(ABC):
     def kubernetes_provider(self, name: str = "kubernetes") -> k8s.Provider:
         """
         Returns a Kubernetes provider.
+        """
+
+    @abstractmethod
+    def random_provider(self, name: str = "random") -> random.Provider:
+        """
+        Returns a Random provider.
         """
 
 
@@ -185,6 +192,14 @@ class StandardProviderFactory(ProviderFactory):
         return self._try_cached_provider(
             f"k8s:{name}",
             make_k8s_provider,
+        )
+
+    def random_provider(
+        self,
+        name: str = "random",
+    ) -> random.Provider:  # pragma: no cover
+        return self._try_cached_provider(
+            f"random:{name}", lambda: random.Provider(name)
         )
 
     def _try_cached_provider(

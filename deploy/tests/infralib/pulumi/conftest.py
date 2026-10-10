@@ -13,6 +13,7 @@ import pulumi_aws as aws
 import pulumi_command as command
 import pulumi_gcp as gcp
 import pulumi_kubernetes as k8s
+import pulumi_random as random
 import pytest
 
 from infralib import (
@@ -95,6 +96,14 @@ class CommandOnlyProviderFactory(ProviderFactory):
         """
         raise NotImplementedError(
             "CommandOnlyProviderFactory cannot create cloud Providers"
+        )
+
+    def random_provider(self, name: str = "random") -> random.Provider:
+        """
+        Returns no provider.
+        """
+        raise NotImplementedError(
+            "CommandOnlyProviderFactory cannot create random Providers"
         )
 
 
