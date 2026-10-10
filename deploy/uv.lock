@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.14"
 resolution-markers = [
     "python_full_version >= '3.15'",
@@ -301,6 +301,7 @@ dependencies = [
     { name = "pulumi-command" },
     { name = "pulumi-gcp" },
     { name = "pulumi-kubernetes" },
+    { name = "pulumi-random" },
     { name = "pyyaml" },
     { name = "rich" },
 ]
@@ -324,6 +325,7 @@ requires-dist = [
     { name = "pulumi-command", specifier = ">=1.2.1" },
     { name = "pulumi-gcp", specifier = ">=9.37.0" },
     { name = "pulumi-kubernetes", specifier = ">=4.34.2" },
+    { name = "pulumi-random", specifier = ">=4.21.2,<5" },
     { name = "pyyaml", specifier = ">=6.0.3,<7" },
     { name = "rich", specifier = ">=15.0.0,<16" },
 ]
@@ -1128,6 +1130,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c6/59/ba53f0fb6e10c4d9625d1f6bee6e03f4b58e4fea25ada8b5cd4b80ec084d/pulumi_kubernetes-4.34.2.tar.gz", hash = "sha256:598e4f7cb5d5d1564f365590b50f82b99b831a24b9bb1fd66351287ab1c17908", size = 2197428, upload-time = "2026-09-21T18:11:10.576Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ca/e2/ce15a82298ada9df70ae39f3156ad4cba3eab32517c839f4b09703a65f6c/pulumi_kubernetes-4.34.2-py3-none-any.whl", hash = "sha256:94c94b6ce3facd2693b7f8e73adb589c38a8157da3289009db8e892b14ee68cb", size = 3385917, upload-time = "2026-09-21T18:11:08.913Z" },
+]
+
+[[package]]
+name = "pulumi-random"
+version = "4.21.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "parver" },
+    { name = "pulumi" },
+    { name = "semver" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/80/69/8788f884a4fcffa72ee29376db688890c6a5040f8d04d57109d4b5d32c60/pulumi_random-4.21.2.tar.gz", hash = "sha256:90ebcab17de5401b8c5dabfef6349d0d9ed0e32be4598dd147b627fe4722f01d", size = 22763, upload-time = "2026-09-17T11:21:56.149Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/df/89/71b35c6fecb31e5ec4bb71bfe40df0525dd8e7ae5ca43289bb15517fa7ee/pulumi_random-4.21.2-py3-none-any.whl", hash = "sha256:d070453fc962217866a6bbfc8f19d59ec127b24dede3376beaab6eae5cbc1294", size = 36074, upload-time = "2026-09-17T11:21:54.808Z" },
 ]
 
 [[package]]
