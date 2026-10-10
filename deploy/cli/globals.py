@@ -12,6 +12,7 @@ import click
 
 from infralib import (
     BackendProvider,
+    DeploymentContext,
     InfrastructureConfiguration,
     InfrastructureConfigurationYAMLParser,
     LocalBackendProvider,
@@ -76,18 +77,22 @@ class _Globals:
 
         self._config = config
 
-        provider_factory = StandardProviderFactory(
-            aws_preferred_region=self._config.aws_organization.preferred_region,
-            aws_base_assume_role=self._config.aws_organization.infrastructure_manager_role,
-            gcp_impersonate_service_account=self._config.gcp_organization.infrastructure_manager_service_account,
-            gcp_quota_project=self._config.gcp_organization.quota_project,
-            kubernetes_default_context=self._config.homelab.kubernetes_context,
-        )
+        def provider_factory_factory(
+            dctx: DeploymentContext,
+        ) -> StandardProviderFactory:
+            return StandardProviderFactory(
+                dctx=dctx,
+                aws_preferred_region=config.aws_organization.preferred_region,
+                aws_base_assume_role=config.aws_organization.infrastructure_manager_role,
+                gcp_impersonate_service_account=config.gcp_organization.infrastructure_manager_service_account,
+                gcp_quota_project=config.gcp_organization.quota_project,
+                kubernetes_default_context=config.homelab.kubernetes_context,
+            )
 
         op_tools = PulumiOperatorTools(
             config=config,
             backend_provider=backend_provider,
-            provider_factory=provider_factory,
+            provider_factory_factory=provider_factory_factory,
         )
         self._pulumi_operator = PulumiOperator.new(op_tools)
         self._pulumi_output_handler = PulumiOutputHandler()

@@ -194,7 +194,7 @@ def test_deployment_context(
     return DeploymentContext(
         test_deployment_target,
         test_infrastructure_configuration,
-        command_only_provider_factory,
+        lambda dctx: command_only_provider_factory,
         noop_stack_output_resolver,
     )
 
@@ -242,7 +242,7 @@ def pulumi_operator_tools(
     tools = PulumiOperatorTools(
         config=test_infrastructure_configuration,
         backend_provider=local_backend_provider,
-        provider_factory=command_only_provider_factory,
+        provider_factory_factory=lambda dctx: command_only_provider_factory,
         project_kwargs=project_kwargs,
     )
 

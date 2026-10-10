@@ -136,7 +136,7 @@ class TestPulumiOperatorTools:
         dctx = DeploymentContext(
             state_only_stack.target,
             test_infrastructure_configuration,
-            command_only_provider_factory,
+            lambda dctx: command_only_provider_factory,
             lambda _: {},
         )
         project = state_only_project(dctx)
