@@ -24,7 +24,7 @@ from ...deployment.stack import InfrastructureStack
 from ...deployment.target import DeploymentTarget
 from ...error import NoSuchProjectError, StateOnlyError, UndeclaredDependencyError
 from ..backend import BackendProvider
-from ..provider import ProviderFactory
+from ..provider import ProviderFactoryFactory
 from ..types import StackOutputResolver
 
 if TYPE_CHECKING:
@@ -42,12 +42,12 @@ class PulumiOperatorTools:
         self,
         config: InfrastructureConfiguration,
         backend_provider: BackendProvider,
-        provider_factory: ProviderFactory,
+        provider_factory_factory: ProviderFactoryFactory,
         project_kwargs: dict[str, Any] | None = None,
     ) -> None:
         self.config = config
         self.backend_provider = backend_provider
-        self.provider_factory = provider_factory
+        self.provider_factory_factory = provider_factory_factory
         self.project_kwargs = project_kwargs or dict()
 
         # A list of created work directories. These are temporary, and are
@@ -268,7 +268,7 @@ class PulumiOperatorTools:
             dctx = DeploymentContext(
                 stack.target,
                 self.config,
-                self.provider_factory,
+                self.provider_factory_factory,
                 self.stack_output_resolver(stack),
             )
             project = stack.project(

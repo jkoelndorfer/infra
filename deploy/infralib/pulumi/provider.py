@@ -6,13 +6,19 @@ This module contains code to construct standardized Pulumi providers.
 """
 
 from abc import ABC, abstractmethod
-from typing import Protocol
+from typing import Protocol, TypeVar, TYPE_CHECKING
 
 import kubernetes
 import pulumi_aws as aws
 import pulumi_command as command
 import pulumi_gcp as gcp
 import pulumi_kubernetes as k8s
+
+if TYPE_CHECKING:
+    from ..deployment.context import DeploymentContext
+
+
+T = TypeVar("T")
 
 
 class KubernetesClientModule(Protocol):
@@ -70,6 +76,15 @@ class ProviderFactory(ABC):
         """
 
 
+class ProviderFactoryFactory(Protocol):
+    """
+    Protocol describing a function that creates a ProviderFactory.
+    """
+
+    def __call__(self, dctx: DeploymentContext) -> ProviderFactory:
+        raise NotImplementedError("protocol does not provide a concrete implementation")
+
+
 class StandardProviderFactory(ProviderFactory):
     """
     Standard factory for Pulumi providers. Providers are constructed with
@@ -78,6 +93,7 @@ class StandardProviderFactory(ProviderFactory):
 
     def __init__(
         self,
+        dctx: DeploymentContext,
         aws_preferred_region: str,
         gcp_quota_project: str,
         kubernetes_default_context: str,
@@ -85,6 +101,7 @@ class StandardProviderFactory(ProviderFactory):
         aws_base_assume_role: str | None = None,
         gcp_impersonate_service_account: str | None = None,
     ) -> None:  # pragma: no cover
+        self.dctx = dctx
         self.aws_preferred_region = aws_preferred_region
         self.aws_default_profile = aws_default_profile
         self.aws_base_assume_role = aws_base_assume_role

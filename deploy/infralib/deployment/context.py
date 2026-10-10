@@ -11,7 +11,7 @@ provides access to global configuration and helpers.
 from typing import Any
 
 from ..config import InfrastructureConfiguration
-from ..pulumi.provider import ProviderFactory
+from ..pulumi.provider import ProviderFactoryFactory
 from ..pulumi.types import StackOutputResolver
 from .target import DeploymentTarget
 
@@ -25,12 +25,12 @@ class DeploymentContext:
         self,
         target: DeploymentTarget,
         config: InfrastructureConfiguration,
-        provider_factory: ProviderFactory,
+        provider_factory_factory: ProviderFactoryFactory,
         outputs: StackOutputResolver,
     ) -> None:
         self.target = target
         self.config = config
-        self.provider_factory = provider_factory
+        self.provider_factory = provider_factory_factory(self)
         self.outputs = outputs
 
         self._kv: dict[str, Any] = dict()
