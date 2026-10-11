@@ -15,6 +15,7 @@ from infralib import InfrastructureComponent
 
 from ..kubernetes.service import HomelabService
 from .config import TraefikConfiguration as config
+from .middleware import TraefikMiddlewareRef
 
 
 @dataclass

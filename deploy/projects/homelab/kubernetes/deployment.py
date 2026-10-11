@@ -130,6 +130,7 @@ class HomelabKubernetesDeployment(
 
         volumes = self._provision_volumes()
         self._provision_deployment(volumes)
+        self._provision_https_ingress_service()
 
     def _provision_deployment(self, volumes: list[HomelabProvisionedContainerVolume]):
         """

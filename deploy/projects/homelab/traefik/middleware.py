@@ -6,6 +6,7 @@ This module contains helper functions for Traefik middlewares.
 """
 
 from dataclasses import dataclass
+from typing import Any, cast
 
 from pulumi import Input, Output, ResourceOptions
 import pulumi_kubernetes as k8s
@@ -157,7 +158,8 @@ class TraefikHTTPBasicAuthMiddleware(
         """
         Returns a TraefikMiddlewareRef that references this middleware.
         """
+        metadata = cast(Output[dict[str, Any]], getattr(self.middleware, "metadata"))
         return TraefikMiddlewareRef(
-            namespace=self.middleware.metadata.namespace,  # type: ignore
-            name=self.middleware.metadata.name,  # type: ignore
+            namespace=metadata["namespace"],
+            name=metadata["name"],
         )

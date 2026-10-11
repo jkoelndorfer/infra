@@ -32,7 +32,6 @@ from ..traefik import (
     TraefikHTTPBasicAuthMiddlewareArgs,
     TraefikHTTPBasicAuthSecretArgs,
     TraefikIngressRouteSpecRoute,
-    TraefikMiddlewareRef,
     TraefikRouteBuilder,
 )
 
