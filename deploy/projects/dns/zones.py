@@ -173,14 +173,10 @@ class DNSZonesProject(InfrastructureProject):
         # record for "my.test.example.com" should be provisioned in the
         # "test.example.com" zone, not the "example.com" zone.
         zone = max(candidate_zones, key=lambda z: len(z.name))
-        provider_key = f"projects.{cls.__name__}.dns_provider.{zone.aws_account.id}"
-        provider = dctx.kv_get(provider_key, None)
-        if provider is None:
-            provider = dctx.provider_factory.aws_provider(
-                name=f"dns.{zone.aws_account.id}",
-                assume_role_arn=zone.aws_account.role_arn,
-            )
-            dctx.kv_set(provider_key, provider)
+        provider = AWSAccountsProject.account_provider(
+            dctx,
+            zone.aws_account,
+        )
 
         return (zone, provider)
 
