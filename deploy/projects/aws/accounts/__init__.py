@@ -5,18 +5,18 @@ projects.aws.accounts
 This module contains a project to set up AWS accounts.
 """
 
-from typing import Self
+from typing import Self, Tuple
 
 from pulumi import export, ResourceOptions
 import pulumi_aws as aws
 
 from infralib import (
+    DeploymentContext,
     DeploymentTarget,
     Environment,
     exportable_resource,
     InfrastructureProject,
     InfrastructureStack,
-    StackOutputResolver,
 )
 
 from ..bootstrap import AWSBootstrapProject
@@ -114,24 +114,45 @@ class AWSAccountsProject(InfrastructureProject):
     @classmethod
     def lookup_account(
         cls,
+        dctx: DeploymentContext,
         function: str,
         environment: Environment,
-        outputs: StackOutputResolver,
-    ) -> AWSAccount:
+    ) -> Tuple[AWSAccount, aws.Provider]:
         """
         Look up the account created with the given function and environment.
         """
         stack = cls.stack(DeploymentTarget(environment, None))
-        account = outputs(stack)["accounts"].value[function]
-
-        return AWSAccount(
-            function=account["function"],
-            environment=account["environment"],
-            arn=account["arn"],
-            id=account["id"],
-            email=account["email"],
-            role_name=account["role_name"],
+        ao = dctx.outputs(stack)["accounts"].value[function]
+        account = AWSAccount(
+            function=ao["function"],
+            environment=ao["environment"],
+            arn=ao["arn"],
+            id=ao["id"],
+            email=ao["email"],
+            role_name=ao["role_name"],
         )
+        provider = cls.account_provider(dctx, account)
+        return (account, provider)
+
+    @classmethod
+    def account_provider(
+        cls,
+        dctx: DeploymentContext,
+        account: AWSAccount,
+    ) -> aws.Provider:
+        """
+        Given an AWSAccount, returns a provider suitable for accessing the account.
+        """
+        provider_key = f"projects.{cls.__name__}.aws_provider.{account.environment}.{account.function}"
+        provider: aws.Provider = dctx.kv_get(provider_key, None)
+        if provider is None:
+            provider = dctx.provider_factory.aws_provider(
+                f"aws.{account.environment}.{account.function}",
+                assume_role_arn=account.role_arn,
+            )
+            dctx.kv_set(provider_key, provider)
+
+        return provider
 
     def _account(self, function: str) -> aws.organizations.Account:
         opts = ResourceOptions(ignore_changes=["role_name"], provider=self.provider)

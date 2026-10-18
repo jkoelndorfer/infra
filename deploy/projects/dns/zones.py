@@ -115,12 +115,8 @@ class DNSZonesProject(InfrastructureProject):
         ]
 
     def pulumi_program(self) -> None:
-        self.dns_account = AWSAccountsProject.lookup_account(
-            "dns", self.dctx.target.environment, self.dctx.outputs
-        )
-        self.aws_provider = self.dctx.provider_factory.aws_provider(
-            "aws",
-            assume_role_arn=self.dns_account.role_arn,
+        self.dns_account, self.aws_provider = AWSAccountsProject.lookup_account(
+            self.dctx, "dns", self.dctx.target.environment
         )
         self.domains = self.dctx.config.domains
         self.default_iopts = InvokeOptions(provider=self.aws_provider)
