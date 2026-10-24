@@ -28,6 +28,7 @@ def namespace(
     env: Environment,
     name: str,
     opts: ResourceOptions,
+    import_: bool = False,
 ) -> Tuple[Output[str], k8s.core.v1.Namespace]:
     """
     Creates a Kubernetes namespace with the given environment and name.
@@ -42,6 +43,10 @@ def namespace(
             ],
         )
     )
+
+    if import_:
+        opts = opts.merge(ResourceOptions(import_=f"{env}-{name}"))
+
     ns = k8s.core.v1.Namespace(
         resource_name,
         metadata=k8s.meta.v1.ObjectMetaArgs(
