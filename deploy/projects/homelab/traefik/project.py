@@ -30,6 +30,8 @@ from ..kubernetes.resources import (
 )
 from ..kubernetes.uid_gid import uid_gid
 from ..kubernetes.volume import (
+    HomelabBackingVolumeID,
+    HomelabBackingVolumeAllocationArgs,
     HomelabKubernetesPersistentVolume,
     HomelabKubernetesPersistentVolumeArgs,
 )
@@ -43,6 +45,8 @@ class HomelabTraefikProject(InfrastructureProject):
 
     name = "homelab.traefik"
     service_name = "traefik"
+
+    backing_volume_id: HomelabBackingVolumeID = "data0"
 
     chart_oci_uri = "oci://ghcr.io/traefik/helm/traefik"
     chart_version = "41.0.0"
@@ -190,14 +194,16 @@ class HomelabTraefikProject(InfrastructureProject):
         self.data_volume = HomelabKubernetesPersistentVolume(
             "volume",
             args=HomelabKubernetesPersistentVolumeArgs(
-                name="data",
+                basename="data",
                 namespace=self.ns_name,
-                backing_volume="data0",
-                storage="128Mi",
+                backing_volume=HomelabBackingVolumeAllocationArgs(
+                    backing_volume_id="data0",
+                    storage="128Mi",
+                    user=uid_gid(self.dctx.target.environment, "traefik"),
+                    group=uid_gid(self.dctx.target.environment, "traefik"),
+                    mode="0700",
+                ),
                 access_modes=["ReadWriteOnce"],
-                user=uid_gid(self.dctx.target.environment, "traefik"),
-                group=uid_gid(self.dctx.target.environment, "traefik"),
-                mode="0700",
             ),
             dctx=self.dctx,
             opts=self.default_ropts,

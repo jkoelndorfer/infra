@@ -25,11 +25,16 @@ from ..traefik import (
     TraefikRouteTransformer,
 )
 from .imagepull import ImagePullSecretProvider
+from .refvolume import (
+    HomelabKubernetesReferencePersistentVolume,
+    HomelabKubernetesReferencePersistentVolumeArgs,
+)
 from .service import HomelabService, service_domain
 from .uid_gid import uid_gid
 from .volume import (
     AccessMode,
-    HomelabBackingVolume,
+    HomelabBackingVolumeID,
+    HomelabBackingVolumeAllocationArgs,
     HomelabKubernetesPersistentVolume,
     HomelabKubernetesPersistentVolumeArgs,
     HomelabPersistentVolume,
@@ -44,11 +49,29 @@ class HomelabContainerVolumeProvisionedSource:
     Class that describes a persistent volume to provision for the deployment.
     """
 
-    backing_volume: HomelabBackingVolume
+    backing_volume: HomelabBackingVolumeID
     storage: Input[str]
     access_modes: Input[Sequence[Input[AccessMode]]]
     mode: Input[str]
     volume_reclaim_policy: Input[VolumeReclaimPolicy] = "Retain"
+
+
+@dataclass
+class HomelabContainerVolumeReferenceSource:
+    """
+    Class that describes a reference to an already provisioned volume for
+    the deployment.
+    """
+
+    name: str
+    """
+    The name of the referenced persistent volume.
+    """
+
+    access_modes: Input[Sequence[Input[AccessMode]]]
+    """
+    The permitted access modes for the created volume.
+    """
 
 
 @dataclass
@@ -59,7 +82,9 @@ class HomelabContainerVolumeArgs:
 
     name: str
     mount_path: str
-    source: HomelabContainerVolumeProvisionedSource
+    source: (
+        HomelabContainerVolumeProvisionedSource | HomelabContainerVolumeReferenceSource
+    )
     read_only: bool
 
 
@@ -317,23 +342,47 @@ class HomelabKubernetesDeployment(
         can be used to mount them.
         """
         for v in self.args.volumes:
-            volume_args = HomelabKubernetesPersistentVolumeArgs(
-                name=v.name,
-                namespace=self.args.namespace,
-                backing_volume=v.source.backing_volume,
-                storage=v.source.storage,
-                access_modes=v.source.access_modes,
-                user=self.service_user_group,
-                group=self.service_user_group,
-                mode=v.source.mode,
-                volume_reclaim_policy=v.source.volume_reclaim_policy,
+            source = v.source
+            resource_name = f"{self.name}_{v.name}"
+            allocated_volume: (
+                HomelabKubernetesPersistentVolume
+                | HomelabKubernetesReferencePersistentVolume
             )
-            allocated_volume = HomelabKubernetesPersistentVolume(
-                f"{self.name}_{v.name}",
-                volume_args,
-                self.dctx,
-                self.default_ropts,
-            )
+            if isinstance(source, HomelabContainerVolumeProvisionedSource):
+                pv_args = HomelabKubernetesPersistentVolumeArgs(
+                    basename=v.name,
+                    namespace=self.args.namespace,
+                    backing_volume=HomelabBackingVolumeAllocationArgs(
+                        backing_volume_id=source.backing_volume,
+                        storage=source.storage,
+                        user=self.service_user_group,
+                        group=self.service_user_group,
+                        mode=source.mode,
+                        volume_reclaim_policy=source.volume_reclaim_policy,
+                    ),
+                    access_modes=source.access_modes,
+                )
+                allocated_volume = HomelabKubernetesPersistentVolume(
+                    resource_name,
+                    pv_args,
+                    self.dctx,
+                    self.default_ropts,
+                )
+            elif isinstance(source, HomelabContainerVolumeReferenceSource):
+                ref_vol_args = HomelabKubernetesReferencePersistentVolumeArgs(
+                    ref_name=source.name,
+                    namespace=self.args.namespace,
+                    access_modes=source.access_modes,
+                )
+                allocated_volume = HomelabKubernetesReferencePersistentVolume(
+                    resource_name,
+                    ref_vol_args,
+                    self.dctx,
+                    self.default_ropts,
+                )
+            else:
+                raise ValueError("unrecognized container volume source type")
+
             vol = HomelabProvisionedContainerVolume(
                 name=v.name,
                 mount_path=v.mount_path,

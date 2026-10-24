@@ -21,7 +21,7 @@ from infralib import (
 from ..kubernetes import (
     decode_secret,
     HomelabHTTPSDeploymentIngressArgs,
-    HomelabBackingVolume,
+    HomelabBackingVolumeID,
     HomelabContainerVolumeArgs,
     HomelabContainerVolumeProvisionedSource,
     HomelabKubernetesDeployment,
@@ -49,7 +49,7 @@ class HomelabContainerRegistryProject(InfrastructureProject):
     name = "homelab.ctr_registry"
     service_name = "registry"
 
-    backing_volume: HomelabBackingVolume = "data0"
+    backing_volume: HomelabBackingVolumeID = "data0"
     image = "docker.io/registry:3.0.0"
     container_port = 5000
 

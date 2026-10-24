@@ -24,7 +24,7 @@ from pulumi_kubernetes.core.v1 import (
 )
 
 from ..kubernetes import (
-    HomelabBackingVolume,
+    HomelabBackingVolumeID,
     HomelabContainerVolumeArgs,
     HomelabContainerVolumeProvisionedSource,
     HomelabHTTPSDeploymentIngressArgs,
@@ -39,7 +39,7 @@ from ..traefik import HomelabTraefikProject
 
 class HomelabVaultwardenProject(InfrastructureProject):
     name = "homelab.vaultwarden"
-    backing_volume: HomelabBackingVolume = "data0"
+    backing_volume: HomelabBackingVolumeID = "data0"
     container_port = 8080
     image = "vaultwarden/server:1.37.1"
     data_directory = Path("/data")

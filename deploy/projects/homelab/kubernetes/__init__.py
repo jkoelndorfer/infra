@@ -19,7 +19,7 @@ from .service import HomelabService, service_domain, service_fqdn
 from .uid_gid import uid_gid
 from .volume import (
     AccessMode,
-    HomelabBackingVolume,
+    HomelabBackingVolumeID,
     HomelabKubernetesPersistentVolume,
     HomelabKubernetesPersistentVolumeArgs,
     HomelabPersistentVolume,
@@ -30,7 +30,7 @@ __all__ = [
     "AccessMode",
     "decode_secret",
     "helm_release",
-    "HomelabBackingVolume",
+    "HomelabBackingVolumeID",
     "HomelabContainerVolumeArgs",
     "HomelabContainerVolumeProvisionedSource",
     "HomelabHTTPSDeploymentIngressArgs",
