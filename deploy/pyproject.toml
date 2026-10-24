@@ -27,6 +27,11 @@ dev = [
 		"types-pyyaml",
 ]
 
+[tool.pytest.ini_options]
+filterwarnings = [
+  "ignore::DeprecationWarning:pulumi_aws.*",
+]
+
 [tool.coverage.report]
 # This list is adapted from
 # https://coverage.readthedocs.io/en/latest/excluding.html#advanced-exclusion
