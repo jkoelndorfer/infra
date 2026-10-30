@@ -27,5 +27,5 @@ class TestNotificationChannel:
             "type": "AnInvalidChannelType",
         }
 
-        with pytest.raises(InvalidConfigurationError):
+        with pytest.raises(InvalidConfigurationError, match="AnInvalidChannelType"):
             NotificationChannel.from_dict(invalid_channel_dict)

@@ -106,12 +106,6 @@ class HomelabKubernetesPersistentVolumeArgs:
     A list of permitted persistent volume access modes for this volume.
     """
 
-    import_name: str | None = None
-    """
-    The name of a persistent volume to import. Importing will only be attempted
-    if import_name is specified.
-    """
-
 
 class HomelabKubernetesPersistentVolume(
     InfrastructureComponent[HomelabKubernetesPersistentVolumeArgs]
@@ -124,18 +118,6 @@ class HomelabKubernetesPersistentVolume(
 
     pv: Output[HomelabPersistentVolume]
     pvc: Output[HomelabPersistentVolumeClaim]
-
-    @classmethod
-    def pv_full_name(
-        cls,
-        namespace: str,
-        basename: str,
-    ) -> str:
-        """
-        Given an associated namespace and a volume name, returns the full name of
-        the PersistentVolume.
-        """
-        return f"{namespace}-{basename}"
 
     @classmethod
     def pv_full_name_input(
@@ -151,16 +133,12 @@ class HomelabKubernetesPersistentVolume(
         return Output.all(
             namespace=namespace,
             basename=basename,
-        ).apply(lambda d: cls.pv_full_name(d["namespace"], d["basename"]))
+        ).apply(
+            lambda d: HomelabPersistentVolume.name_for(d["namespace"], d["basename"])
+        )
 
     def provision(self) -> None:
         self._pvsetup_cmd: command.local.Command | None = None
-
-        self._volume_ropts = self.default_ropts
-        if self.args.import_name is not None:
-            self._volume_ropts = self.default_ropts.merge(
-                ResourceOptions(import_=self.args.import_name)
-            )
 
         if isinstance(self.args.backing_volume, HomelabPersistentVolume):
             self._bv = HomelabBackingVolume.lookup(
@@ -223,7 +201,7 @@ class HomelabKubernetesPersistentVolume(
         """
         Provisions the Kubernetes PersistentVolume resource.
         """
-        pv_ropts = self._volume_ropts
+        pv_ropts = self.default_ropts
         if self._pvsetup_cmd is not None:
             pv_ropts = pv_ropts.merge(ResourceOptions(depends_on=[self._pvsetup_cmd]))
 
@@ -316,7 +294,7 @@ class HomelabKubernetesPersistentVolume(
                     },
                 ),
             ),
-            opts=self._volume_ropts,
+            opts=self.default_ropts,
         )
         pvc_dict = {
             "name": self._pvc_r.metadata.name,

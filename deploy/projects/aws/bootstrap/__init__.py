@@ -62,7 +62,9 @@ class AWSBootstrapProject(InfrastructureProject):
                     principals=[
                         aws.iam.GetPolicyDocumentStatementPrincipalArgs(
                             type="AWS",
-                            identifiers=self.dctx.config.aws_organization.management_account.root_user_arn,
+                            identifiers=[
+                                self.dctx.config.aws_organization.management_account.root_user_arn,
+                            ],
                         ),
                     ],
                 ),

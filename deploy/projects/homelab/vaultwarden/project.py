@@ -137,8 +137,8 @@ class HomelabVaultwardenProject(InfrastructureProject):
             "SMTP_FROM": f"vaultwarden@{self.service_fqdn}",
             "SMTP_HOST": "mail.smtp2go.com",
             "SMTP_PORT": "2525",
-            "STMP_AUTH_MECHANISM": "Login",
-            "STMP_SECURITY": "starttls",
+            "SMTP_AUTH_MECHANISM": "Login",
+            "SMTP_SECURITY": "starttls",
             "WEBSOCKET_ENABLED": "true",
         }
 

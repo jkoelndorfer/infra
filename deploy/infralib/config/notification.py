@@ -48,7 +48,7 @@ class NotificationChannel(ABC):
                 return EmailChannel.from_dict(d)
             case _:
                 raise InvalidConfigurationError(
-                    "unknown notification channel type '{chan_type}'"
+                    f"unknown notification channel type '{chan_type}'"
                 )
 
 

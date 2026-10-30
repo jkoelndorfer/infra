@@ -125,9 +125,9 @@ class HomelabKubernetesDeploymentArgs:
     namespace: Input[str]
     name: str
 
-    https_ingress: HomelabHTTPSDeploymentIngressArgs
     image: str
     volumes: list[HomelabContainerVolumeArgs]
+    https_ingress: HomelabHTTPSDeploymentIngressArgs | None = None
     command: Input[Sequence[Input[str]]] | None = None
     env: list[k8s.core.v1.EnvVarArgs] = field(default_factory=list)
     ports: list[k8s.core.v1.ContainerPortArgs] = field(default_factory=list)
