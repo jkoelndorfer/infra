@@ -71,6 +71,7 @@ def helm_release(
     namespace: Input[str],
     values: Input[Mapping[str, Any]],
     opts: ResourceOptions,
+    release_name: Input[str] | None = None,
 ) -> k8s.helm.v3.Release:
     # NOTE: sha256 is calculated from the chart's manifest, not the tarball
     # that is pulled down.
@@ -82,6 +83,7 @@ def helm_release(
     # Helm will print the digest.
     return k8s.helm.v3.Release(
         resource_name,
+        name=release_name,
         chart=f"{oci_uri}:{version}@sha256:{sha256}",
         namespace=namespace,
         values=values,

@@ -70,6 +70,7 @@ class HomelabArgoWorkflowsProject(InfrastructureProject):
             namespace=self.ns_name,
             values=self._chart_values(),
             opts=self.default_ropts,
+            release_name=self.service_name,
         )
         self._provision_traefik_ingress()
 
