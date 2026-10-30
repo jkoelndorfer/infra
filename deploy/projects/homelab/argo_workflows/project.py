@@ -16,21 +16,8 @@ from infralib import (
 
 from pulumi import ResourceOptions
 import pulumi_kubernetes as k8s
-from pulumi_random import RandomPasswordArgs
 
-from ..kubernetes import HomelabService, helm_release, namespace, service_domain
-from ..traefik import (
-    HomelabTraefikProject,
-    TraefikHTTPBasicAuthMiddleware,
-    TraefikHTTPBasicAuthMiddlewareArgs,
-    TraefikHTTPBasicAuthSecretArgs,
-    TraefikIngressRoute,
-    TraefikIngressRouteArgs,
-    TraefikIngressRouteTLSDomain,
-    TraefikOnlyIngressPolicy,
-    TraefikOnlyIngressPolicyArgs,
-    TraefikRouteBuilder,
-)
+from ..kubernetes import helm_release, namespace
 
 
 class HomelabArgoWorkflowsProject(InfrastructureProject):
@@ -38,16 +25,12 @@ class HomelabArgoWorkflowsProject(InfrastructureProject):
     service_name = "argo-workflows"
 
     chart_oci_uri = "oci://ghcr.io/argoproj/argo-helm/argo-workflows"
-    chart_version = "0.45.26"
-    chart_sha256 = "878fcbe964b92cf603b70de6d4eceff333ec1b1a288875ee959645262f8e6e7d"
-
-    server_service_port = 2746
-    server_service_port_name = "argo-workflows-server"
-    server_container_port_name = "web"
+    chart_version = "2.0.14"
+    chart_sha256 = "31b3f94d0ca3b6d3bd8d2b795d6f54c2edb3622867b10a52b0039f62a3ac4cd1"
 
     @classmethod
     def dependencies(cls, target: DeploymentTarget) -> list[InfrastructureStack]:
-        return [HomelabTraefikProject.stack(DeploymentTarget(Environment.PROD, None))]
+        return []
 
     @classmethod
     def deployment_targets(cls) -> list[DeploymentTarget]:
@@ -72,16 +55,15 @@ class HomelabArgoWorkflowsProject(InfrastructureProject):
             opts=self.default_ropts,
             release_name=self.service_name,
         )
-        self._provision_traefik_ingress()
+        self._provision_deny_ingress_policy()
 
     def _chart_values(self) -> dict[str, Any]:
         # See:
-        #   * https://github.com/argoproj/argo-helm/blob/7bf2ed4315b88cdd9438695b443de504f4ee9a66/charts/argo-workflows/README.md
-        #   * https://github.com/argoproj/argo-helm/blob/7bf2ed4315b88cdd9438695b443de504f4ee9a66/charts/argo-workflows/values.yaml
+        #   * https://github.com/argoproj/argo-helm/blob/argo-workflows-2.0.14/charts/argo-workflows/README.md
+        #   * https://github.com/argoproj/argo-helm/blob/argo-workflows-2.0.14/charts/argo-workflows/values.yaml
         return {
             "namespaceOverride": self.ns_name,
-            # The server's Service is named after this value, and the ingress
-            # route needs to refer to it regardless of the Helm release name.
+            # Keeps resource names independent of the Helm release name.
             "fullnameOverride": self.service_name,
             "controller": {
                 "workflowWorkers": 2,
@@ -89,69 +71,33 @@ class HomelabArgoWorkflowsProject(InfrastructureProject):
                 "podCleanupWorkers": 1,
                 "cronWorkflowWorkers": 2,
             },
+            # The controller runs CronWorkflows without the server. The server's
+            # service account can read secrets and create workflows in every
+            # namespace, so it isn't deployed. To use the UI, run the following
+            # on a workstation, which uses the workstation's kubeconfig:
+            #
+            #     $ argo server --auth-mode=server
             "server": {
-                "authModes": [
-                    "server",
-                ],
-                "servicePortName": self.server_service_port_name,
+                "enabled": False,
             },
         }
 
-    def _provision_traefik_ingress(self) -> None:
-        self.traefik_middleware = TraefikHTTPBasicAuthMiddleware(
-            "auth",
-            TraefikHTTPBasicAuthMiddlewareArgs(
+    def _provision_deny_ingress_policy(self) -> None:
+        """
+        Provisions a policy that denies all ingress to pods in this namespace.
+
+        Nothing in this namespace needs to receive traffic now that the server
+        isn't deployed.
+        """
+        k8s.networking.v1.NetworkPolicy(
+            "deny_all_ingress",
+            metadata=k8s.meta.v1.ObjectMetaArgs(
                 namespace=self.ns_name,
-                name="auth",
-                secret=TraefikHTTPBasicAuthSecretArgs(
-                    username="argo-workflows",
-                    password_args=RandomPasswordArgs(
-                        length=32,
-                        lower=True,
-                        upper=True,
-                        numeric=True,
-                        special=False,
-                    ),
-                ),
+                name="deny-all-ingress",
             ),
-            self.dctx,
-            opts=self.default_ropts,
-        )
-        # The policy applies to all pods in the namespace. Only the server
-        # needs to receive traffic, and only from Traefik.
-        self.traefik_only_policy = TraefikOnlyIngressPolicy(
-            "traefik_only_ingress",
-            TraefikOnlyIngressPolicyArgs(
-                namespace=self.ns_name,
-                name=self.service_name,
-                port=self.server_container_port_name,
-                pod_label_selector=k8s.meta.v1.LabelSelectorArgs(),
+            spec=k8s.networking.v1.NetworkPolicySpecArgs(
+                pod_selector=k8s.meta.v1.LabelSelectorArgs(),
+                policy_types=["Ingress"],
             ),
-            self.dctx,
-            opts=self.default_ropts,
-        )
-        homelab_service = HomelabService(
-            service_name=f"{self.service_name}-server",
-            container_port=self.server_service_port,
-            hostname=self.service_name,
-            domain=service_domain(self.dctx),
-        )
-        route_builder = TraefikRouteBuilder(homelab_service)
-        self.ingress_route = TraefikIngressRoute(
-            "ingress_route",
-            TraefikIngressRouteArgs(
-                namespace=self.ns_name,
-                name=self.service_name,
-                routes=[
-                    route_builder.route(middlewares=[self.traefik_middleware.ref()]),
-                ],
-                tls_domains=[
-                    TraefikIngressRouteTLSDomain(
-                        main=homelab_service.fqdn,
-                        sans=[],
-                    ),
-                ],
-            ),
-            self.dctx,
             opts=self.default_ropts,
         )
