@@ -61,14 +61,14 @@ class HomelabBackingVolume:
             volume_path=annotations[f"path.{backing_volume_id}.volume"],
         )
 
-        def __repr__(self) -> str:
-            return (
-                self.__class__.__name__
-                + f"({self.backing_volume}, "
-                + f"node_name={self.node_name}, "
-                + f"node_ip={self.node_ip}, "
-                + f"volume_path={self.volume_path})"
-            )
+    def __repr__(self) -> str:
+        return (
+            self.__class__.__name__
+            + f"({self.backing_volume}, "
+            + f"node_name={self.node_name}, "
+            + f"node_ip={self.node_ip}, "
+            + f"volume_path={self.volume_path})"
+        )
 
 
 @dataclass
@@ -175,7 +175,7 @@ class HomelabPersistentVolume:
         storage_class_name = pv.spec.storage_class_name  # pyright: ignore
         volume_reclaim_policy = pv.spec.persistent_volume_reclaim_policy  # pyright: ignore
 
-        basename = name.replace(f"{namespace}-", "")
+        basename = name.removeprefix(f"{namespace}-")
 
         return cls(
             basename=basename,

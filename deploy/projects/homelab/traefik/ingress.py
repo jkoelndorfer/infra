@@ -72,7 +72,7 @@ class TraefikOnlyIngressPolicy(InfrastructureComponent[TraefikOnlyIngressPolicyA
                 ),
             ),
             spec=k8s.networking.v1.NetworkPolicySpecArgs(
-                pod_selector=k8s.meta.v1.LabelSelectorArgs(),
+                pod_selector=self.args.pod_label_selector,
                 policy_types=["Ingress"],
                 ingress=[traefik_ingress_rule],
             ),

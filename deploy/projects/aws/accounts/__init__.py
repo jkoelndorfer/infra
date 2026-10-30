@@ -96,6 +96,12 @@ class AWSAccountsProject(InfrastructureProject):
 
     def pulumi_program(self) -> None:
         self.provider = self.dctx.provider_factory.aws_provider("mgmt")
+        self.organizational_unit = aws.organizations.OrganizationalUnit(
+            "organizational_unit",
+            name=self.dctx.target.environment,
+            parent_id=self.dctx.config.aws_organization.root_ou_id,
+            opts=ResourceOptions(provider=self.provider),
+        )
 
         accounts = {a: self._account(a) for a in self.env_account_fns}
 
@@ -163,6 +169,7 @@ class AWSAccountsProject(InfrastructureProject):
                 self.dctx.target.environment, function
             ),
             close_on_deletion=True,
+            parent_id=self.organizational_unit.id,
             opts=opts,
             role_name=self.dctx.config.aws_organization.organization_account_access_role,
             tags={"env": self.dctx.target.environment, "function": function},
