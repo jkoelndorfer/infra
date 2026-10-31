@@ -28,6 +28,16 @@ from infralib.config.notification import (
 )
 
 
+@pytest.fixture(autouse=True)
+def pulumi_config_passphrase(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Sets the Pulumi passphrase to a dummy value, so that tests behave the same
+    regardless of the passphrase configured in the developer's environment.
+    """
+    monkeypatch.setenv("PULUMI_CONFIG_PASSPHRASE", "test")
+    monkeypatch.delenv("PULUMI_CONFIG_PASSPHRASE_FILE", raising=False)
+
+
 @pytest.fixture
 def local_backend_dir() -> Generator[Path]:
     """
