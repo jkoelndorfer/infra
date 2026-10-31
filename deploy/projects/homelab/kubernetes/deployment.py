@@ -89,6 +89,17 @@ class HomelabContainerVolumeArgs:
 
 
 @dataclass
+class HomelabContainerConfigMapVolumeArgs:
+    """
+    Class that defines a read-only volume backed by an existing ConfigMap.
+    """
+
+    name: str
+    mount_path: str
+    config_map: k8s.core.v1.ConfigMapVolumeSourceArgs
+
+
+@dataclass
 class HomelabHTTPSDeploymentIngressArgs:
     """
     Class that provides arguments to a deployment for establishing a standard
@@ -127,6 +138,9 @@ class HomelabKubernetesDeploymentArgs:
 
     image: str
     volumes: list[HomelabContainerVolumeArgs]
+    config_map_volumes: list[HomelabContainerConfigMapVolumeArgs] = field(
+        default_factory=list
+    )
     https_ingress: HomelabHTTPSDeploymentIngressArgs | None = None
     command: Input[Sequence[Input[str]]] | None = None
     env: list[k8s.core.v1.EnvVarArgs] = field(default_factory=list)
@@ -201,7 +215,17 @@ class HomelabKubernetesDeployment(
             image_pull_policy=self.args.image_pull_policy,
             env=[*self.args.env, *addl_env],
             ports=[*self.args.ports, *addl_ports],
-            volume_mounts=[v.volume_mount_args for v in self.volumes.values()],
+            volume_mounts=[
+                *[v.volume_mount_args for v in self.volumes.values()],
+                *[
+                    k8s.core.v1.VolumeMountArgs(
+                        name=v.name,
+                        mount_path=v.mount_path,
+                        read_only=True,
+                    )
+                    for v in self.args.config_map_volumes
+                ],
+            ],
         )
 
         if self.args.privilege_drop_mode == "pod-exec":
@@ -231,7 +255,13 @@ class HomelabKubernetesDeployment(
             containers=[container_args],
             image_pull_secrets=image_pull_secrets,
             security_context=pod_security_context,
-            volumes=[v.volume_args for v in self.volumes.values()],
+            volumes=[
+                *[v.volume_args for v in self.volumes.values()],
+                *[
+                    k8s.core.v1.VolumeArgs(name=v.name, config_map=v.config_map)
+                    for v in self.args.config_map_volumes
+                ],
+            ],
         )
 
         deployment_spec = k8s.apps.v1.DeploymentSpecArgs(
