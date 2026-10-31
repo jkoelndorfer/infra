@@ -6,6 +6,7 @@ This module contains helpers for homelab Kubernetes projects.
 """
 
 from .deployment import (
+    HomelabContainerConfigMapVolumeArgs,
     HomelabContainerVolumeArgs,
     HomelabContainerVolumeProvisionedSource,
     HomelabHTTPSDeploymentIngressArgs,
@@ -37,6 +38,7 @@ __all__ = [
     "helm_release",
     "HomelabBackingVolumeAllocationArgs",
     "HomelabBackingVolumeID",
+    "HomelabContainerConfigMapVolumeArgs",
     "HomelabContainerVolumeArgs",
     "HomelabContainerVolumeProvisionedSource",
     "HomelabHTTPSDeploymentIngressArgs",
