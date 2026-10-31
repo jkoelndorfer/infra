@@ -1,9 +1,8 @@
 """
-projects.website.personal.redirect
-==================================
+projects.website.redirect
+=========================
 
-This module contains the CloudFront distribution that redirects a domain to the
-personal website.
+This module contains a CloudFront distribution that redirects hosts to a website.
 """
 
 import json
@@ -20,8 +19,6 @@ from pulumi_aws.cloudfront import (
     DistributionViewerCertificateArgs as ViewerCertificate,
     Function,
 )
-
-from infralib import DeploymentContext
 
 ALLOWED_METHODS = ["GET", "HEAD"]
 ORIGIN_ID = "redirect_target"
@@ -64,23 +61,26 @@ function handler(event) {
 
 
 def provision_redirect_distribution(
-    dctx: DeploymentContext,
-    alias: str,
+    resource_name: str,
+    function_name: str,
+    aliases: list[str],
     target_host: str,
     certificate_arn: Input[str],
     aws_opts: ResourceOptions,
 ) -> Distribution:
     """
     Provisions a CloudFront distribution that answers every request to the given
-    alias with an HTTP 301 to the same path and query string on the target host.
+    aliases with an HTTP 301 to the same path and query string on the target host.
 
     Plain HTTP is allowed so that those requests go straight to the target,
     rather than first being redirected to HTTPS on the alias.
+
+    NOTE: The certificate must cover every alias.
     """
     function = Function(
-        "legacy_redirect",
-        name=f"{dctx.target.environment}-personal-website-legacy-redirect",
-        comment=f"Redirects {alias} to {target_host}.",
+        resource_name,
+        name=function_name,
+        comment=f"Redirects {', '.join(aliases)} to {target_host}.",
         runtime="cloudfront-js-2.0",
         code=REDIRECT_FUNCTION % {"target": json.dumps(f"https://{target_host}")},
         publish=True,
@@ -88,8 +88,8 @@ def provision_redirect_distribution(
     )
 
     return Distribution(
-        "legacy_redirect",
-        aliases=[alias],
+        resource_name,
+        aliases=aliases,
         default_cache_behavior=DefaultCacheBehavior(
             allowed_methods=ALLOWED_METHODS,
             cache_policy_id=CACHING_DISABLED_POLICY_ID,

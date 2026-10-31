@@ -68,13 +68,17 @@ def route53_alias_record(
     type: Input[Union[str, aws.route53.RecordType]],
     alias_name: Input[str],
     alias_zone_id: Input[str],
+    target: DeploymentTarget | None = None,
 ) -> aws.route53.Record:
     """
     Provisions a Route 53 alias record.
 
     The correct zone and provider are retrieved from the dns.zones project.
     """
-    domain = dctx.config.domains[domain_id].domain_for(dctx.target)
+    if target is None:
+        target = dctx.target
+
+    domain = dctx.config.domains[domain_id].domain_for(target)
     fqdn = domain if name.strip(".") == "" else f"{name}.{domain}"
     zone, provider = DNSZonesProject.lookup_zone(dctx, fqdn)
 

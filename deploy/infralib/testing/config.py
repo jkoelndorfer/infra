@@ -61,6 +61,13 @@ def dummy_infrastructure_configuration() -> InfrastructureConfiguration:
             dkim_v1=[],
             google_site_verification="homelab_verification",
         ),
+        "wedding": Domain(
+            id="wedding",
+            domain="wedding.test.example.com",
+            description="Wedding domain",
+            dkim_v1=[],
+            google_site_verification="wedding_verification",
+        ),
     }
     aws_mgmt_account = AWSAccount("000000000777")
     aws_organization = AWSOrganization(

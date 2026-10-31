@@ -18,14 +18,12 @@ from ...aws.accounts import AWSAccountsProject
 from ...dns import DNSZonesProject
 from ...dns.route53 import route53_alias_record
 
-from .cert import provision_certificate
+from ..cert import provision_certificate
+from ..redirect import provision_redirect_distribution
+from ..s3 import provision_site_bucket_policy
+
 from .cloudfront import provision_distribution
-from .redirect import provision_redirect_distribution
-from .s3 import (
-    provision_assets_bucket,
-    provision_site_bucket,
-    provision_site_bucket_policy,
-)
+from .s3 import provision_assets_bucket, provision_site_bucket
 
 
 class WebsitePersonalProject(InfrastructureProject):
@@ -128,8 +126,9 @@ class WebsitePersonalProject(InfrastructureProject):
             self.dctx, "legacy_redirect", {"legacy_apex": legacy_apex}, aws_opts
         )
         distribution = provision_redirect_distribution(
-            self.dctx,
-            alias=legacy_apex,
+            "legacy_redirect",
+            f"{self.dctx.target.environment}-personal-website-legacy-redirect",
+            aliases=[legacy_apex],
             target_host=target_host,
             certificate_arn=certificate_arn,
             aws_opts=aws_opts,

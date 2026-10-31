@@ -1,8 +1,8 @@
 """
-projects.website.personal.cert
-==============================
+projects.website.cert
+=====================
 
-This module contains the TLS certificate for the personal website.
+This module contains TLS certificates for websites.
 """
 
 from pulumi import Output, ResourceOptions
@@ -10,7 +10,7 @@ import pulumi_aws as aws
 
 from infralib import DeploymentContext
 
-from ...dns import DNSZonesProject
+from ..dns import DNSZonesProject
 
 # CloudFront only accepts ACM certificates from this region [1].
 #

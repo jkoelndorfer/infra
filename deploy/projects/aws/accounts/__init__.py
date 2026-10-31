@@ -80,6 +80,7 @@ class AWSAccountsProject(InfrastructureProject):
         "backup",
         "dns",
         "personal-website",
+        "wedding-website",
     ]
 
     @classmethod
