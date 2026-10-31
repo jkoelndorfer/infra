@@ -266,7 +266,7 @@ class DNSZonesProject(InfrastructureProject):
         zones: list[str]
         match target.environment:
             case Environment.PROD:
-                zones = ["primary", "anon", "homelab"]
+                zones = ["primary", "personal_legacy", "anon", "homelab"]
             case Environment.DEV:
                 zones = ["primary"]
             case _:
