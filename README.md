@@ -10,11 +10,12 @@ This repository is broken into a few different top-level directories:
 * `aws`: *legacy*; contains AWS-specific bits, such as Lambda function code
 * `container-images`: contains custom container image builds, most notably the
    backupjob container which runs backups
+* `deploy`: contains a small, opionated, custom [Pulumi Automation API][1] framework
+  for provisioning infrastructure consistently and eliminating boilerplate. This is
+  what infrastructure as code _should be_.
 * `srvtools`: contains tools that are deployed to servers, including pyinfra
 * `terraform`: *legacy*; contains terraform stacks and reusable modules for provisioning
   infrastructure
-* `terragrunt`: contains terragrunt global configuration, stacks, units, and reusable
-  modules for provisioning infrastructure
 
 Overview
 --------
@@ -23,19 +24,20 @@ This repository provides a full infrastructure deployment for a few useful
 services:
 
 * Personal dynamic DNS that is _almost_ compatible with the
-  [dyndns2 protocol][1]. The only reason it isn't is because
+  [dyndns2 protocol][2]. The only reason it isn't is because
   of some limitations with API Gateway at the time of this
   writing.
-* A personal [Syncthing][2] file sync server.
+* A personal [Syncthing][3] file sync server.
 * A nightly backup service that saves all of the Syncthing
-  directories to S3 using [restic][3] and [rclone][4].
+  directories to S3 using [restic][4] and [rclone][5].
 * A statically generated [blog][6].
-* A [Vaultwarden][6] ([Bitwarden][7] clone) installation.
+* A [Vaultwarden][7] ([Bitwarden][8] clone) installation.
 
-[1]: https://sourceforge.net/p/ddclient/wiki/protocols/#dyndns2
-[2]: https://syncthing.net/
-[3]: https://github.com/restic/restic
-[4]: https://rclone.org/
-[5]: https://www.johnk.io
-[6]: https://github.com/dani-garcia/vaultwarden
-[7]: https://bitwarden.com/
+[1]: https://www.pulumi.com/automation/
+[2]: https://sourceforge.net/p/ddclient/wiki/protocols/#dyndns2
+[3]: https://syncthing.net/
+[4]: https://github.com/restic/restic
+[5]: https://rclone.org/
+[6]: https://www.johnk.io
+[7]: https://github.com/dani-garcia/vaultwarden
+[8]: https://bitwarden.com/
