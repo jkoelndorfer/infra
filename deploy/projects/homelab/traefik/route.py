@@ -23,13 +23,20 @@ class TraefikServiceRef:
     name: Input[str]
     port: Input[int]
     kind: Input[Literal["Service"]] = "Service"
+    scheme: Input[Literal["http", "https", "h2c"]] | None = None
+    servers_transport: Input[str] | None = None
 
     def to_spec(self) -> dict[str, Any]:
-        return {
+        spec: dict[str, Any] = {
             "name": self.name,
             "port": self.port,
             "kind": self.kind,
         }
+        if self.scheme is not None:
+            spec["scheme"] = self.scheme
+        if self.servers_transport is not None:
+            spec["serversTransport"] = self.servers_transport
+        return spec
 
 
 @dataclass
