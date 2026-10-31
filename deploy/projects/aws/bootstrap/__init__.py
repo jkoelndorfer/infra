@@ -285,6 +285,12 @@ class AWSBootstrapProject(InfrastructureProject):
                     resources=["*"],
                 ),
                 aws.iam.GetPolicyDocumentStatementArgs(
+                    sid="AllowBudgetManagement",
+                    effect="Allow",
+                    actions=["budgets:*"],
+                    resources=["*"],
+                ),
+                aws.iam.GetPolicyDocumentStatementArgs(
                     sid="AllowIdentityCenterAccountAssignment",
                     effect="Allow",
                     actions=[
