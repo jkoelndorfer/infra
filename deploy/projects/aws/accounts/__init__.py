@@ -96,6 +96,9 @@ class AWSAccountsProject(InfrastructureProject):
 
     def pulumi_program(self) -> None:
         self.provider = self.dctx.provider_factory.aws_provider("mgmt")
+        self.identity_center_access = AWSBootstrapProject.lookup_identity_center_access(
+            self.dctx
+        )
         self.organizational_unit = aws.organizations.OrganizationalUnit(
             "organizational_unit",
             name=self.dctx.target.environment,
@@ -162,7 +165,7 @@ class AWSAccountsProject(InfrastructureProject):
 
     def _account(self, function: str) -> aws.organizations.Account:
         opts = ResourceOptions(ignore_changes=["role_name"], provider=self.provider)
-        return aws.organizations.Account(
+        account = aws.organizations.Account(
             function,
             name=f"{self.dctx.target.environment}-{function}",
             email=self.dctx.config.aws_organization.member_account_email(
@@ -174,3 +177,14 @@ class AWSAccountsProject(InfrastructureProject):
             role_name=self.dctx.config.aws_organization.organization_account_access_role,
             tags={"env": self.dctx.target.environment, "function": function},
         )
+        aws.ssoadmin.AccountAssignment(
+            f"{function}_read_only_member_account_access",
+            instance_arn=self.identity_center_access.instance_arn,
+            permission_set_arn=self.identity_center_access.permission_set_arn,
+            principal_id=self.identity_center_access.user_id,
+            principal_type="USER",
+            target_id=account.id,
+            target_type="AWS_ACCOUNT",
+            opts=ResourceOptions(provider=self.provider),
+        )
+        return account

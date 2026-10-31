@@ -5,16 +5,30 @@ projects.aws.bootstrap
 This module contains a project to bootstrap AWS.
 """
 
-from pulumi import InvokeOptions, ResourceOptions
+from dataclasses import dataclass
+
+from pulumi import export, InvokeOptions, ResourceOptions
 import pulumi_aws as aws
 
 from infralib import (
+    DeploymentContext,
     DeploymentTarget,
     Environment,
     InfrastructureProject,
     InfrastructureStack,
     pcast,
 )
+
+
+@dataclass
+class AWSIdentityCenterAccess:
+    """
+    The values required to grant the Identity Center user access to an account.
+    """
+
+    instance_arn: str
+    permission_set_arn: str
+    user_id: str
 
 
 class AWSBootstrapProject(InfrastructureProject):
@@ -53,6 +67,24 @@ class AWSBootstrapProject(InfrastructureProject):
         self.configure_organization_mgmt_policy()
         self.configure_infrastructure_manager_role()
         self.configure_personal_user()
+        self.configure_identity_center()
+
+    @classmethod
+    def lookup_identity_center_access(
+        cls,
+        dctx: DeploymentContext,
+    ) -> AWSIdentityCenterAccess:
+        """
+        Look up the values required to grant the Identity Center user access to
+        an account.
+        """
+        stack = cls.stack(DeploymentTarget(Environment.PROD, None))
+        access = dctx.outputs(stack)["identity_center_access"].value
+        return AWSIdentityCenterAccess(
+            instance_arn=access["instance_arn"],
+            permission_set_arn=access["permission_set_arn"],
+            user_id=access["user_id"],
+        )
 
     def configure_infrastructure_manager_role(self) -> None:
         assume_role_policy = aws.iam.get_policy_document(
@@ -132,6 +164,82 @@ class AWSBootstrapProject(InfrastructureProject):
             opts=self.default_ropts,
         )
 
+    def configure_identity_center(self) -> None:
+        """
+        Creates the permission set used to sign in with read-only access and
+        assume the organization access role in member accounts.
+
+        This assigns the permission set to the management account. aws.accounts
+        assigns it to each member account.
+
+        NOTE: Identity Center must be enabled by hand in the preferred region,
+        and the user must be created by hand with their email address as their
+        username.
+        """
+        instances = aws.ssoadmin.get_instances(opts=self.default_iopts)
+        instance_arn = instances.arns[0]
+        user = aws.identitystore.get_user(
+            identity_store_id=instances.identity_store_ids[0],
+            alternate_identifier=aws.identitystore.GetUserAlternateIdentifierArgs(
+                unique_attribute=aws.identitystore.GetUserAlternateIdentifierUniqueAttributeArgs(
+                    attribute_path="UserName",
+                    attribute_value=self.dctx.config.aws_organization.sso_user,
+                ),
+            ),
+            opts=self.default_iopts,
+        )
+        permission_set = aws.ssoadmin.PermissionSet(
+            "read_only_member_account_access",
+            name="ReadOnlyMemberAccountAccess",
+            description="Grants read-only access and access to manage organization member accounts.",
+            instance_arn=instance_arn,
+            opts=self.default_ropts,
+        )
+        ro_policy = aws.iam.get_policy_output(
+            name="ReadOnlyAccess",
+            opts=self.default_iopts,
+        )
+        ro_attachment = aws.ssoadmin.ManagedPolicyAttachment(
+            "read_only_member_account_access_ro",
+            instance_arn=instance_arn,
+            managed_policy_arn=ro_policy.arn,
+            permission_set_arn=permission_set.arn,
+            opts=self.default_ropts,
+        )
+        # This is inline because a permission set can only reference a customer
+        # managed policy that exists in every account it is assigned to, and the
+        # OrganizationMemberAccountAccess policy only exists in this account.
+        inline_policy = aws.ssoadmin.PermissionSetInlinePolicy(
+            "read_only_member_account_access_assume",
+            inline_policy=self.org_member_access_policy_doc.json,
+            instance_arn=instance_arn,
+            permission_set_arn=permission_set.arn,
+            opts=self.default_ropts,
+        )
+        # The organization access role only trusts the management account, so it
+        # can only be assumed from a session in that account.
+        aws.ssoadmin.AccountAssignment(
+            "read_only_member_account_access_management",
+            instance_arn=instance_arn,
+            permission_set_arn=permission_set.arn,
+            principal_id=user.user_id,
+            principal_type="USER",
+            target_id=self.dctx.config.aws_organization.management_account.account_id,
+            target_type="AWS_ACCOUNT",
+            opts=ResourceOptions(
+                provider=self.aws_provider,
+                depends_on=[ro_attachment, inline_policy],
+            ),
+        )
+        export(
+            "identity_center_access",
+            {
+                "instance_arn": instance_arn,
+                "permission_set_arn": permission_set.arn,
+                "user_id": user.user_id,
+            },
+        )
+
     def configure_organization_mgmt_policy(self) -> None:
         policy_doc = aws.iam.get_policy_document(
             statements=[
@@ -158,7 +266,19 @@ class AWSBootstrapProject(InfrastructureProject):
                         "organizations:UpdateOrganizationalUnit",
                     ],
                     resources=["*"],
-                )
+                ),
+                aws.iam.GetPolicyDocumentStatementArgs(
+                    sid="AllowIdentityCenterAccountAssignment",
+                    effect="Allow",
+                    actions=[
+                        "sso:CreateAccountAssignment",
+                        "sso:DeleteAccountAssignment",
+                        "sso:DescribeAccountAssignmentCreationStatus",
+                        "sso:DescribeAccountAssignmentDeletionStatus",
+                        "sso:ListAccountAssignments",
+                    ],
+                    resources=["*"],
+                ),
             ],
             opts=self.default_iopts,
         )
@@ -173,7 +293,7 @@ class AWSBootstrapProject(InfrastructureProject):
 
     def configure_member_account_access_policy(self) -> None:
         member_role = self.dctx.config.aws_organization.organization_account_access_role
-        policy_doc = aws.iam.get_policy_document(
+        self.org_member_access_policy_doc = aws.iam.get_policy_document(
             statements=[
                 aws.iam.GetPolicyDocumentStatementArgs(
                     sid="AllowOrganizationAssumeRole",
@@ -189,6 +309,6 @@ class AWSBootstrapProject(InfrastructureProject):
             name="OrganizationMemberAccountAccess",
             path="/",
             description="Grants access to manage organization member accounts.",
-            policy=policy_doc.json,
+            policy=self.org_member_access_policy_doc.json,
             opts=self.default_ropts,
         )
