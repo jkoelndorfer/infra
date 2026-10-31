@@ -50,6 +50,7 @@ class AWSBootstrapProject(InfrastructureProject):
         self.default_ropts = ResourceOptions(provider=self.aws_provider)
         self.org_id = self.dctx.config.aws_organization.management_account.account_id
         self.configure_member_account_access_policy()
+        self.configure_organization_mgmt_policy()
         self.configure_infrastructure_manager_role()
         self.configure_personal_user()
 
