@@ -103,6 +103,7 @@ def test_infrastructure_configuration() -> InfrastructureConfiguration:
         preferred_region="us-west-1",
         personal_iam_user="john.doe",
         infrastructure_manager_role="arn:aws:iam::000000000777:role/MyInfraRole",
+        sso_user="john.doe@personal.test.example.com",
     )
     gcp_organization = GCPOrganization(
         domain=domains["primary"]._domain,
@@ -178,6 +179,7 @@ def test_infrastructure_yaml_configuration() -> str:
             root_ou_id:            r-xxou
             preferred_region:      us-west-1
             personal_iam_user:     john.doe
+            sso_user:              john.doe@personal.test.example.com
             member_email_template: aws.{env}.{fn}@personal.test.example.com
 
         gcp_organization:

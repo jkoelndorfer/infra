@@ -68,6 +68,7 @@ class AWSOrganization:
         preferred_region: str,
         personal_iam_user: str,
         infrastructure_manager_role: str,
+        sso_user: str,
     ) -> None:
         # The ID of the AWS organization, e.g. "o-xxxxxxxxxx".
         self.organization_id = organization_id
@@ -94,6 +95,9 @@ class AWSOrganization:
         # The IAM role that is first assumed to make infrastructure changes.
         self.infrastructure_manager_role = infrastructure_manager_role
 
+        # The email address of the AWS Identity Center user.
+        self.sso_user = sso_user
+
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> Self:
         """
@@ -119,4 +123,5 @@ class AWSOrganization:
             d["preferred_region"],
             d["personal_iam_user"],
             d["infrastructure_manager_role"],
+            d["sso_user"],
         )

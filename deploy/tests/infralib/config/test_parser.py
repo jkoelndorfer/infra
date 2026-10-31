@@ -70,6 +70,7 @@ class TestInfrastructureConfigurationYAMLParser:
         assert aws_org.organization_account_access_role == "MyRole"
         assert aws_org.preferred_region == "us-west-1"
         assert aws_org.personal_iam_user == "john.doe"
+        assert aws_org.sso_user == "john.doe@personal.test.example.com"
         assert aws_org.management_account.arn == "arn:aws:account::000000000777:account"
         assert (
             aws_org.management_account.root_user_arn == "arn:aws:iam::000000000777:root"
