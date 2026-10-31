@@ -28,7 +28,11 @@ from .kserv import provision_kserv_backup
 from .kubernetes import provision_kubernetes_sa
 from .s3 import provision_backup_bucket
 from .iam import provision_iam
-from .volume import provision_local_backup_volume, provision_ref_volumes
+from .volume import (
+    provision_archive_volume,
+    provision_local_backup_volume,
+    provision_ref_volumes,
+)
 from .workflow import provision_backup_workflow
 
 
@@ -99,6 +103,12 @@ class HomelabBackupProject(InfrastructureProject):
             namespace_name=ns_name,
             iam_provisioning_result=iam_provisioning_result,
             aws_opts=self.aws_ropts,
+            k8s_opts=self.k8s_ropts,
+        )
+        provision_archive_volume(
+            dctx=self.dctx,
+            namespace=ns_name,
+            backing_volume=self.backing_volume,
             k8s_opts=self.k8s_ropts,
         )
         local_backup_volume = provision_local_backup_volume(

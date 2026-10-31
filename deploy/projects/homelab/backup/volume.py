@@ -40,6 +40,37 @@ class RefVolumeProvisionResult:
     syncthing_config: HomelabKubernetesReferencePersistentVolume
 
 
+def provision_archive_volume(
+    dctx: DeploymentContext,
+    namespace: Input[str],
+    backing_volume: HomelabBackingVolumeID,
+    k8s_opts: ResourceOptions,
+) -> HomelabKubernetesPersistentVolume:
+    """
+    Provisions the persistent volume that temporarily stores archival data.
+
+    The archive data is backed up to a restic repository hosted on cloud
+    storage on an ad-hoc basis.
+    """
+    return HomelabKubernetesPersistentVolume(
+        "archive",
+        HomelabKubernetesPersistentVolumeArgs(
+            namespace=namespace,
+            basename="archive",
+            backing_volume=HomelabBackingVolumeAllocationArgs(
+                backing_volume_id=backing_volume,
+                storage="100Gi",
+                user=0,
+                group=0,
+                mode="0755",
+            ),
+            access_modes=["ReadWriteOnce"],
+        ),
+        dctx,
+        k8s_opts,
+    )
+
+
 def provision_local_backup_volume(
     dctx: DeploymentContext,
     namespace: Input[str],
