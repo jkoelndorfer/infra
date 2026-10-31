@@ -209,9 +209,26 @@ class AWSBootstrapProject(InfrastructureProject):
         # This is inline because a permission set can only reference a customer
         # managed policy that exists in every account it is assigned to, and the
         # OrganizationMemberAccountAccess policy only exists in this account.
+        #
+        # Pulumi providers assume the infrastructure manager role before assuming
+        # a role in a member account, so this session must be able to assume it.
+        inline_policy_doc = aws.iam.get_policy_document(
+            source_policy_documents=[self.org_member_access_policy_doc.json],
+            statements=[
+                aws.iam.GetPolicyDocumentStatementArgs(
+                    sid="AllowAssumeInfrastructureManagerRole",
+                    effect="Allow",
+                    actions=["sts:AssumeRole"],
+                    resources=[
+                        self.dctx.config.aws_organization.infrastructure_manager_role,
+                    ],
+                ),
+            ],
+            opts=self.default_iopts,
+        )
         inline_policy = aws.ssoadmin.PermissionSetInlinePolicy(
             "read_only_member_account_access_assume",
-            inline_policy=self.org_member_access_policy_doc.json,
+            inline_policy=inline_policy_doc.json,
             instance_arn=instance_arn,
             permission_set_arn=permission_set.arn,
             opts=self.default_ropts,
