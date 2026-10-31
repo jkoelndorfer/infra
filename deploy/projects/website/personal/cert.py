@@ -20,20 +20,24 @@ CERTIFICATE_REGION = "us-east-1"
 
 def provision_certificate(
     dctx: DeploymentContext,
-    apex: str,
-    www: str,
+    resource_name: str,
+    hosts: dict[str, str],
     aws_opts: ResourceOptions,
 ) -> Output[str]:
     """
     Provisions a certificate covering the given hosts, validated through DNS.
 
+    Hosts map a label, which names the host's validation record, to a domain
+    name. The first host is the certificate's primary domain name.
+
     Returns the certificate's ARN, which resolves only once validation has
     completed.
     """
+    domains = list(hosts.values())
     certificate = aws.acm.Certificate(
-        "site",
-        domain_name=apex,
-        subject_alternative_names=[www],
+        resource_name,
+        domain_name=domains[0],
+        subject_alternative_names=domains[1:] or None,
         validation_method="DNS",
         region=CERTIFICATE_REGION,
         opts=aws_opts,
@@ -56,9 +60,9 @@ def provision_certificate(
             opts=ResourceOptions(provider=provider),
         )
 
-    records = [validation_record("apex", apex), validation_record("www", www)]
+    records = [validation_record(host, domain) for host, domain in hosts.items()]
     validation = aws.acm.CertificateValidation(
-        "site",
+        resource_name,
         certificate_arn=certificate.arn,
         validation_record_fqdns=[r.fqdn for r in records],
         region=CERTIFICATE_REGION,
