@@ -121,6 +121,85 @@ def test_infrastructure_yaml_configuration() -> str:
 
         homelab:
             kubernetes_context: k8stest
+            network:
+                upstream_dns:
+                    - 192.0.2.53
+                    - 198.51.100.53
+                networks:
+                    - name: trusted
+                      ipv4_network: 10.0.12.0/23
+                      vlan_id: 12
+                      dhcp:
+                          range:
+                              start: 10.0.12.10
+                              end: 10.0.12.250
+                          assignments:
+                              - name: test-host
+                                mac: "00:00:5E:00:53:01"
+                                ip: 10.0.12.5
+                                dns:
+                                    - test-host.lan
+                    - name: wireguard_trusted
+                      ipv4_network: 10.0.15.0/24
+                    - name: modem
+                      ipv4_network: 10.0.1.0/24
+                    - name: kube_cluster
+                      ipv4_network: 10.0.16.0/22
+                    - name: kube_service
+                      ipv4_network: 10.0.8.0/22
+                    - name: infra
+                      ipv4_network: 10.0.2.0/24
+                      dhcp:
+                          assignments: []
+                    - name: mgmt
+                      ipv4_network: 10.0.4.0/22
+                    - name: mgmt_backup
+                      ipv4_network: 10.0.3.0/24
+                    - name: lockdown
+                      ipv4_network: 10.0.21.0/24
+                      vlan_id: 21
+                    - name: net_infra
+                      ipv4_network: 10.0.20.0/24
+                      vlan_id: 20
+                    - name: untrusted
+                      ipv4_network: 10.0.14.0/24
+                      vlan_id: 14
+                switches:
+                    - name: test-switch
+                      ports:
+                          - port: 0/1
+                            description: router uplink
+                            untagged: trusted
+                            tagged:
+                                - untrusted
+                                - net_infra
+                          - port: 0/2
+                            untagged: untrusted
+                dns_records:
+                    - name: test-record
+                      ip: 10.0.2.10
+                      dns:
+                          - test-record.lan
+                port_forwards:
+                    - description: https
+                      src_port: 443
+                      dest_ip: 10.0.2.10
+                      dest_port: 443
+                      protocol: tcp
+                router:
+                    admin:
+                        username: test-admin
+                        full_name: Test Admin
+                        encrypted_password: "$5$testsalt$aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                        pubkey: ssh-ed25519 AAAAtest
+                    pppoe:
+                        username: test-pppoe
+                        password: test-pppoe-password
+                    dyndns:
+                        hostname: dyndns.test.example.com
+                        url: https://dyndns.test.example.com/
+                        username: test-dyndns
+                        password: test-dyndns-password
 
         notification_channels:
             - name: First Billing Test

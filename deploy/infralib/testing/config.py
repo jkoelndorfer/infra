@@ -6,11 +6,29 @@ This module contains the dummy configuration that renders and tests use. Rendere
 output is committed to the repository, so these values must never be real.
 """
 
+from ipaddress import IPv4Address, IPv4Network
+
 from ..config import InfrastructureConfiguration
 from ..config.aws import AWSAccount, AWSOrganization
 from ..config.domain import Domain, DKIMv1
 from ..config.gcp import GCPOrganization
-from ..config.homelab import Homelab
+from ..config.homelab import (
+    Homelab,
+    HomelabDHCP,
+    HomelabDHCPAssignment,
+    HomelabDHCPRange,
+    HomelabDNSRecord,
+    HomelabDynDNS,
+    HomelabNetwork,
+    HomelabNetworking,
+    HomelabNetworks,
+    HomelabPortForward,
+    HomelabPPPoE,
+    HomelabRouter,
+    HomelabRouterAdmin,
+    HomelabSwitch,
+    HomelabSwitchPort,
+)
 from ..config.notification import (
     EmailChannel,
     NotificationCategory,
@@ -94,6 +112,98 @@ def dummy_infrastructure_configuration() -> InfrastructureConfiguration:
     )
     homelab = Homelab(
         kubernetes_context="k8stest",
+        network=HomelabNetworking(
+            upstream_dns=[IPv4Address("192.0.2.53"), IPv4Address("198.51.100.53")],
+            networks=HomelabNetworks(
+                trusted=HomelabNetwork(
+                    name="trusted",
+                    ipv4_network=IPv4Network("10.0.12.0/23"),
+                    dhcp=HomelabDHCP(
+                        range=HomelabDHCPRange(
+                            start=IPv4Address("10.0.12.10"),
+                            end=IPv4Address("10.0.12.250"),
+                        ),
+                        assignments=[
+                            HomelabDHCPAssignment(
+                                name="test-host",
+                                mac="00:00:5e:00:53:01",
+                                ip=IPv4Address("10.0.12.5"),
+                                dns=["test-host.lan"],
+                            ),
+                        ],
+                    ),
+                ),
+                wireguard_trusted=HomelabNetwork(
+                    "wireguard_trusted", IPv4Network("10.0.15.0/24")
+                ),
+                modem=HomelabNetwork("modem", IPv4Network("10.0.1.0/24")),
+                kube_cluster=HomelabNetwork(
+                    "kube_cluster", IPv4Network("10.0.16.0/22")
+                ),
+                kube_service=HomelabNetwork("kube_service", IPv4Network("10.0.8.0/22")),
+                infra=HomelabNetwork(
+                    "infra", IPv4Network("10.0.2.0/24"), dhcp=HomelabDHCP()
+                ),
+                mgmt=HomelabNetwork("mgmt", IPv4Network("10.0.4.0/22")),
+                mgmt_backup=HomelabNetwork("mgmt_backup", IPv4Network("10.0.3.0/24")),
+                lockdown=HomelabNetwork(
+                    "lockdown", IPv4Network("10.0.21.0/24"), vlan_id=21
+                ),
+                net_infra=HomelabNetwork(
+                    "net_infra", IPv4Network("10.0.20.0/24"), vlan_id=20
+                ),
+                untrusted=HomelabNetwork(
+                    "untrusted", IPv4Network("10.0.14.0/24"), vlan_id=14
+                ),
+            ),
+            switches=[
+                HomelabSwitch(
+                    name="test-switch",
+                    ports=[
+                        HomelabSwitchPort(
+                            port="0/1",
+                            untagged="trusted",
+                            tagged=["untrusted", "net_infra"],
+                            description="router uplink",
+                        ),
+                        HomelabSwitchPort(port="0/2", untagged="untrusted"),
+                    ],
+                ),
+            ],
+            dns_records=[
+                HomelabDNSRecord(
+                    name="test-record",
+                    ip=IPv4Address("10.0.2.10"),
+                    dns=["test-record.lan"],
+                ),
+            ],
+            port_forwards=[
+                HomelabPortForward(
+                    description="https",
+                    src_port=443,
+                    dest_ip=IPv4Address("10.0.2.10"),
+                    dest_port=443,
+                    protocol="tcp",
+                ),
+            ],
+            router=HomelabRouter(
+                admin=HomelabRouterAdmin(
+                    username="test-admin",
+                    full_name="Test Admin",
+                    encrypted_password="$5$testsalt$" + "a" * 43,
+                    pubkey="ssh-ed25519 AAAAtest",
+                ),
+                pppoe=HomelabPPPoE(
+                    username="test-pppoe", password="test-pppoe-password"
+                ),
+                dyndns=HomelabDynDNS(
+                    hostname="dyndns.test.example.com",
+                    url="https://dyndns.test.example.com/",
+                    username="test-dyndns",
+                    password="test-dyndns-password",
+                ),
+            ),
+        ),
     )
     notification_channels = NotificationChannels(
         [
