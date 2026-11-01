@@ -19,6 +19,11 @@ def main(ctx: click.Context) -> None:
     """
     Infrastructure deployment CLI.
     """
+    # The test commands use dummy configuration. Keeping real configuration and the
+    # backend out of their process is what makes them safe to run at any time.
+    if ctx.invoked_subcommand == "test":
+        return
+
     G.initialize_globals_from_env()
 
     @ctx.call_on_close
