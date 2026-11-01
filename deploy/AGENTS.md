@@ -29,6 +29,8 @@ or call `pip`.
 ./run-tests -k test_name
 ./with-venv ruff format .   # not enforced by the scripts, but the tree is formatted
 ./pcli --help               # infrastructure CLI
+./pcli test check           # render every stack offline and check the results
+./pcli test render -p homelab.unifi -e prod   # print what a stack would create
 ```
 
 The test suite needs:
@@ -45,6 +47,9 @@ plugin.
 
 ## Safety: this manages live infrastructure
 
+- **`pcli test` is always safe to run.** It uses Pulumi's mock runtime and dummy
+  configuration. `main()` skips global initialization for it, so it never loads
+  real configuration or touches a backend, and it needs no credentials.
 - **Do not run `pcli stack up`, `destroy`, or `rename` unless the user asks.**
   They act on real AWS, GCP, and homelab resources. Never add `--no-confirm` on
   your own initiative.
@@ -73,10 +78,11 @@ missing, ask the user rather than creating substitutes.
 | `infralib/deployment/` | `InfrastructureProject`, `InfrastructureStack`, `DeploymentTarget`, `DeploymentContext` |
 | `infralib/pulumi/` | `PulumiOperator`, `InfrastructureComponent`, `ProviderFactory`, backend and naming helpers |
 | `infralib/config/` | Typed configuration, parsed from YAML |
+| `infralib/testing/` | Offline rendering and checks behind `pcli test` |
 | `infralib/error.py` | All infralib errors, derived from `InfralibError` |
 | `cli/` | Click CLI behind `pcli` |
 | `projects/` | Concrete projects, such as `dns.zones` and `homelab.traefik` |
-| `tests/` | Mirrors `cli/` and `infralib/` |
+| `tests/` | Mirrors `cli/` and `infralib/`; `tests/projects/` renders every project |
 
 There are no `Pulumi.yaml` files. A project is a Python class, and a stack is a
 project plus a target. Stacks are named `<project>/<env>` or
@@ -157,7 +163,9 @@ any such change to the user, especially for stateful resources:
   moves a stack's state)
 
 Bringing an existing resource under management uses `ResourceOptions(import_=...)`;
-the `namespace()` helper takes `import_=True`.
+the `namespace()` helper takes `import_=True`. Imports are temporary: remove them once
+the import has been deployed, because a leftover import prevents a stack from being
+rebuilt. `pcli test check` and `./run-tests` fail while one is in place.
 
 ## Code style
 
@@ -186,9 +194,30 @@ Python 3.14 with `mypy --strict`, including tests. Match the surrounding code:
 
 - Add tests under `tests/`, mirroring the source path, for any change to `cli/` or
   `infralib/`.
-- **`projects/` has no tests or coverage.** For project changes, the automated
-  checks are `run-linters` and the fact that `pcli` imports every project. Say so
-  when reporting: real validation needs a preview, which the user must request.
+- **Do not write throwaway mock scripts to test a project.** `tests/projects/`
+  renders every stack of every project and runs the checks in
+  `infralib/testing/checks.py`, so new projects are covered automatically.
+- **To test a change to a project, render the previous revision and compare.** Run
+  this from `deploy/`, with `<rev>` set to the revision the change is based on, and
+  use a temporary directory that is outside the repository:
+
+  ```bash
+  git archive <rev> . | tar -x -C "$old_tree"
+  diff -u <("$old_tree/pcli" test render -p homelab.unifi -e prod) \
+          <(./pcli test render -p homelab.unifi -e prod)
+  ```
+
+  For a change to shared code, leave out `-p` and `-e` to compare every stack. Read
+  the diff and confirm that it contains only what you intended. Call out URN changes,
+  because they can replace resources.
+- **To assert something specific about a project,** add a test under `tests/projects/`
+  using `render_with_dependencies` and `Rendering.one`.
+- **If a render crashes on a value that a provider would compute,** add it to
+  `_computed_state` or `_CALL_RESULTS` in `infralib/testing/render.py`.
+- **Rendering does not validate a deployment.** No provider code runs, so it cannot
+  find provider validation errors, missing permissions, collisions with existing
+  resources, or chart behavior. Say so when reporting: real validation needs a
+  preview, which the user must request.
 - Operator tests run real Pulumi against a temporary local backend. Use the
   fixtures in `tests/conftest.py` and `tests/infralib/pulumi/conftest.py`, along
   with `Environment.TEST`, `CommandOnlyProviderFactory`, and the Pulumi mock
