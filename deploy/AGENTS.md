@@ -82,7 +82,7 @@ missing, ask the user rather than creating substitutes.
 | `infralib/error.py` | All infralib errors, derived from `InfralibError` |
 | `cli/` | Click CLI behind `pcli` |
 | `projects/` | Concrete projects, such as `dns.zones` and `homelab.traefik` |
-| `provision/` | pyinfra inventory, deployment and server roles. Do not run it against real hosts unless the user asks |
+| `provision/` | pyinfra inventory, deployment and server roles. Do not run it against real hosts unless the user asks. `render_switch_config` only prints switch commands |
 | `tests/` | Mirrors `cli/` and `infralib/`; `tests/projects/` renders every project |
 
 There are no `Pulumi.yaml` files. A project is a Python class, and a stack is a

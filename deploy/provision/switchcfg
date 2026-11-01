@@ -1,0 +1,8 @@
+#!/bin/bash
+
+script_path=$(readlink -f "$0")
+script_dir=$(dirname "$script_path")
+
+export PYTHONPATH="${script_dir}:${PYTHONPATH}"
+
+"${script_dir}/../with-venv" python3 "${script_dir}/tools/switchcfg.py"
