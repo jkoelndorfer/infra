@@ -1,0 +1,12 @@
+#!/bin/vbash
+
+set -eo pipefail
+
+function vyos() {
+    /opt/vyatta/sbin/vyatta-cfg-cmd-wrapper "$@"
+}
+
+vyos begin
+vyos load /config/config.pyinfra
+vyos commit
+vyos end

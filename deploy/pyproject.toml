@@ -14,6 +14,7 @@ dependencies = [
     "pulumi-gcp>=9.37.0",
     "pulumi-kubernetes>=4.34.2",
     "pulumi-random>=4.21.2, <5",
+    "pyinfra>=3.10.0,<4",
     "pyyaml>=6.0.3, <7",
     "rich>=15.0.0, <16",
 ]

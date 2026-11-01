@@ -26,6 +26,21 @@ Syncthing folder in `config/config.yaml`.
 state backend. Presently this resides in the `infra-deploy` Syncthing folder
 in `pulumi/backend`.
 
+### pyinfra
+
+`provision/provision_server.py` provisions each server according to its role in
+`provision/inventory.py`. It reads the same configuration as `pcli`, so
+`INFRALIB_CONFIG_PATH` must be set. Run it from this directory:
+
+```bash
+./with-venv pyinfra --dry provision/inventory.py provision/provision_server.py
+./with-venv pyinfra provision/inventory.py provision/provision_server.py
+```
+
+Without `--dry`, pyinfra shows the detected changes and asks before applying them.
+Avoid `--diff` where output is kept or shared, because it prints the contents of
+changed files, including the router's PPPoE and dynamic DNS passwords.
+
 ## Architecture
 
 This deployment code uses Pulumi to provision infrastructure. Pulumi's

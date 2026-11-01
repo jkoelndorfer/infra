@@ -1,0 +1,913 @@
+{% set networks = network.networks %}
+{% set router = network.router %}
+{% set internal_dns = (
+    networks.infra.dhcp.assignments | selectattr("name", "eq", "kserv") | first
+    ).ip %}
+{% set unifi = internal_dns %}
+firewall {
+  all-ping enable
+  broadcast-ping disable
+  ipv6-receive-redirects disable
+  ipv6-src-route disable
+  ip-src-route disable
+  log-martians enable
+  options {
+    mss-clamp {
+      interface-type all
+        mss 1400
+    }
+  }
+  receive-redirects disable
+  send-redirects enable
+  source-validation disable
+  syn-cookies enable
+
+  group {
+    network-group usa-ipv4 {
+      /* The content of this group is managed by ipset directly. */
+    }
+    network-group RFC1918 {
+      network 10.0.0.0/8
+      network 172.16.0.0/12
+      network 192.168.0.0/16
+    }
+    network-group ADDR_MGMT {
+      network {{ networks.mgmt.ipv4_network }}
+      network {{ networks.mgmt_backup.ipv4_network }}
+    }
+    network-group ADDR_INFRA {
+      network {{ networks.infra.ipv4_network }}
+    }
+    network-group ADDR_NET_INFRA {
+      network {{ networks.net_infra.ipv4_network }}
+    }
+    network-group ADDR_TRUSTED {
+      network {{ networks.trusted.ipv4_network }}
+    }
+    network-group ADDR_TRUSTED_PLUS {
+      network {{ networks.mgmt.ipv4_network }}
+      network {{ networks.mgmt_backup.ipv4_network }}
+      network {{ networks.infra.ipv4_network }}
+      network {{ networks.trusted.ipv4_network }}
+    }
+    network-group ADDR_UNTRUSTED_MINUS {
+      network {{ networks.untrusted.ipv4_network }}
+      network {{ networks.lockdown.ipv4_network }}
+    }
+  }
+
+  name WAN_IN {
+    default-action drop
+      rule 1 {
+        action accept
+        description "Responses to allowed connections"
+        state {
+          established enable
+          related enable
+        }
+      }
+    rule 2 {
+      action drop
+      description "Invalid packets"
+      state {
+        invalid enable
+      }
+    }
+    rule 3 {
+      action drop
+      description "RFC1918 private via WAN"
+      source {
+        group {
+          network-group RFC1918
+        }
+      }
+    }
+    rule 100 {
+      action accept
+      description "Connections from the US, to forwarded ports"
+      source {
+        group {
+          network-group usa-ipv4
+        }
+      }
+    }
+  }
+
+  name WAN_LOCAL {
+    default-action drop
+      rule 1 {
+        action accept
+        description "Responses to allowed connections"
+        state {
+          established enable
+          related enable
+        }
+      }
+    rule 2 {
+      action drop
+      description "Invalid packets"
+      state {
+        invalid enable
+      }
+    }
+  }
+
+  /* Connections to infra and Kubernetes, on eth0. */
+  name INFRA_OUT {
+    default-action reject
+      rule 1 {
+        action accept
+        description "Responses to allowed connections"
+        state {
+          established enable
+          related enable
+        }
+      }
+    rule 2 {
+      action drop
+      description "Invalid packets"
+      state {
+        invalid enable
+      }
+    }
+    rule 100 {
+      action accept
+      description "mgmt -> infra"
+      source {
+        group {
+          network-group ADDR_MGMT
+        }
+      }
+      destination {
+        group {
+          network-group ADDR_INFRA
+        }
+      }
+    }
+    rule 110 {
+      action accept
+      description "trusted+ -> infra HTTPS"
+      protocol tcp
+      source {
+        group {
+          network-group ADDR_TRUSTED_PLUS
+        }
+      }
+      destination {
+        group {
+          network-group ADDR_INFRA
+        }
+        port 443
+      }
+    }
+    /* For HTTP -> HTTPS redirects. */
+    rule 111 {
+      action accept
+      description "trusted+ -> infra HTTP"
+      protocol tcp
+      source {
+        group {
+          network-group ADDR_TRUSTED_PLUS
+        }
+      }
+      destination {
+        group {
+          network-group ADDR_INFRA
+        }
+        port 80
+      }
+    }
+    rule 120 {
+      action accept
+      description "trusted+ -> infra Syncthing"
+      protocol tcp_udp
+      source {
+        group {
+          network-group ADDR_TRUSTED_PLUS
+        }
+      }
+      destination {
+        group {
+          network-group ADDR_INFRA
+        }
+        port 22000
+      }
+    }
+    rule 130 {
+      action accept
+      description "net_infra -> infra UniFi device port"
+      protocol tcp
+      source {
+        group {
+          network-group ADDR_NET_INFRA
+        }
+      }
+      destination {
+        address {{ unifi }}
+        port 8080
+      }
+    }
+    rule 140 {
+      action accept
+      description "net_infra -> infra UniFi STUN port"
+      protocol udp
+      source {
+        group {
+          network-group ADDR_NET_INFRA
+        }
+      }
+      destination {
+        address {{ unifi }}
+        port 3478
+      }
+    }
+    rule 160 {
+      action accept
+      description "Internal DNS"
+      protocol tcp_udp
+      destination {
+        address {{ internal_dns }}
+        port 53
+      }
+    }
+    {% for i in network.port_forwards %}
+    rule {{ 1000 + loop.index0 }} {
+      action accept
+        description "Port forward: {{ i.description }}"
+        protocol {{ i.protocol }}
+        destination {
+          address {{ i.dest_ip }}
+          port {{ i.dest_port }}
+        }
+    }
+    {% endfor %}
+  }
+
+  /* The default set of traffic permitted to the router. */
+  name ROUTER_LOCAL {
+    default-action drop
+    rule 1 {
+      action accept
+      description "Responses to allowed connections"
+      state {
+        established enable
+        related enable
+      }
+    }
+    rule 2 {
+      action drop
+      description "Invalid packets"
+      state {
+        invalid enable
+      }
+    }
+    rule 100 {
+      action accept
+      description "DHCP"
+      protocol udp
+      destination {
+        port 67
+      }
+    }
+    rule 110 {
+      action accept
+      description "DNS"
+      protocol tcp_udp
+      destination {
+        port 53
+      }
+    }
+    rule 120 {
+      action accept
+      description "Ping"
+      protocol icmp
+    }
+  }
+
+  /* Connections to mgmt. */
+  name MGMT_OUT {
+    default-action reject
+    rule 1 {
+      action accept
+      description "Responses to allowed connections"
+      state {
+        established enable
+        related enable
+      }
+    }
+    rule 2 {
+      action drop
+      description "Invalid packets"
+      state {
+        invalid enable
+      }
+    }
+
+    /* Desktop is on the management network; allows Steam streaming and such. */
+    rule 100 {
+      action accept
+      description "Accept traffic from trusted+ networks."
+      source {
+        group {
+          network-group ADDR_TRUSTED_PLUS
+        }
+      }
+    }
+  }
+
+  name NET_INFRA_OUT {
+    default-action drop
+    rule 1 {
+      action accept
+      description "Responses to allowed connections"
+      state {
+        established enable
+        related enable
+      }
+    }
+    rule 2 {
+      action drop
+      description "Invalid packets"
+      state {
+        invalid enable
+      }
+    }
+    rule 100 {
+      action accept
+      description "mgmt -> net_infra"
+      source {
+        group {
+          network-group ADDR_MGMT
+        }
+      }
+      destination {
+        group {
+          network-group ADDR_NET_INFRA
+        }
+      }
+    }
+  }
+
+  name TRUSTED_OUT {
+    default-action reject
+    rule 1 {
+      action accept
+      description "Responses to allowed connections"
+      state {
+        established enable
+        related enable
+      }
+    }
+    rule 2 {
+      action drop
+      description "Invalid packets"
+      state {
+        invalid enable
+      }
+    }
+    rule 100 {
+      action drop
+      description "Drop traffic from untrusted- networks."
+      source {
+        group {
+          network-group ADDR_UNTRUSTED_MINUS
+        }
+      }
+    }
+    rule 110 {
+      action accept
+      description "Accept traffic from trusted+ networks."
+      source {
+        group {
+          network-group ADDR_TRUSTED_PLUS
+        }
+      }
+    }
+  }
+
+  name LOCKDOWN_OUT {
+    default-action drop
+    rule 1 {
+      action accept
+      description "Responses to allowed connections"
+      state {
+        established enable
+        related enable
+      }
+    }
+    rule 2 {
+      action drop
+      description "Invalid packets"
+      state {
+        invalid enable
+      }
+    }
+    rule 3 {
+      action accept
+      description "DNS"
+      protocol tcp_udp
+      destination {
+        port 53
+      }
+    }
+    rule 4 {
+      action drop
+      description "Drop traffic bound for internal networks."
+      destination {
+        group {
+          network-group RFC1918
+        }
+      }
+    }
+    rule 5 {
+      action accept
+      description "Allow all other traffic."
+    }
+  }
+}
+
+interfaces {
+  ethernet eth0 {
+    address {{ networks.infra.router_interface }}
+    description "Servers"
+    duplex auto
+    firewall {
+      local {
+        name ROUTER_LOCAL
+      }
+      out {
+        name INFRA_OUT
+      }
+    }
+    poe {
+      output off
+    }
+    speed auto
+  }
+  ethernet eth1 {
+    address {{ networks.mgmt_backup.router_interface }}
+    description "Management recovery"
+    duplex auto
+    poe {
+      output off
+    }
+    speed auto
+  }
+  ethernet eth2 {
+    duplex auto
+    speed auto
+  }
+  ethernet eth3 {
+    duplex auto
+    poe {
+      output off
+    }
+    speed auto
+  }
+  ethernet eth4 {
+    address {{ networks.modem.router_interface }}
+    description "CenturyLink Modem"
+    duplex auto
+    poe {
+      output off
+    }
+    pppoe 0 {
+      default-route auto
+      description "CenturyLink Internet"
+      firewall {
+        in {
+          name WAN_IN
+        }
+        local {
+          name WAN_LOCAL
+        }
+      }
+      mtu 1492
+      name-server auto
+      user-id {{ router.pppoe.username }}
+      password {{ router.pppoe.password }}
+    }
+    speed auto
+  }
+  ethernet eth5 {
+    description "EdgeSwitch 24"
+    duplex auto
+    speed auto
+    vif {{ networks.mgmt.vlan_id }} {
+      address {{ networks.mgmt.router_interface }}
+      description "mgmt"
+
+      firewall {
+        out {
+          name MGMT_OUT
+        }
+      }
+    }
+    vif {{ networks.net_infra.vlan_id }} {
+      address {{ networks.net_infra.router_interface }}
+      description "net_infra"
+
+      firewall {
+        local {
+          name ROUTER_LOCAL
+        }
+        out {
+          name NET_INFRA_OUT
+        }
+      }
+    }
+    vif {{ networks.trusted.vlan_id }} {
+      address {{ networks.trusted.router_interface }}
+      description "trusted"
+
+      firewall {
+        local {
+          name ROUTER_LOCAL
+        }
+        out {
+          name TRUSTED_OUT
+        }
+      }
+    }
+    vif {{ networks.untrusted.vlan_id }} {
+      address {{ networks.untrusted.router_interface }}
+      description "untrusted"
+
+      firewall {
+        local {
+          name ROUTER_LOCAL
+        }
+      }
+    }
+    vif {{ networks.lockdown.vlan_id }} {
+      address {{ networks.lockdown.router_interface }}
+      description "lockdown"
+
+      firewall {
+        local {
+          name ROUTER_LOCAL
+        }
+      }
+    }
+  }
+  loopback lo {
+  }
+}
+port-forward {
+  auto-firewall disable
+  hairpin-nat enable
+  lan-interface eth5.{{ networks.mgmt.vlan_id }}
+  lan-interface eth5.{{ networks.net_infra.vlan_id }}
+  lan-interface eth5.{{ networks.trusted.vlan_id }}
+  lan-interface eth5.{{ networks.untrusted.vlan_id }}
+  lan-interface eth5.{{ networks.lockdown.vlan_id }}
+  {% for i in network.port_forwards %}
+  rule {{ loop.index }} {
+    description "{{ i.description }}"
+    forward-to {
+      address {{ i.dest_ip }}
+      port {{ i.dest_port }}
+    }
+    original-port {{ i.src_port }}
+    protocol {{ i.protocol }}
+  }
+  {% endfor %}
+  wan-interface pppoe0
+}
+protocols {
+  static {
+  }
+}
+service {
+  dhcp-server {
+    disabled false
+      hostfile-update disable
+      {% if networks.mgmt.dhcp is not none %}
+    shared-network-name mgmt {
+      authoritative enable
+      subnet {{ networks.mgmt.ipv4_network }} {
+        default-router {{ networks.mgmt.router_interface.ip }}
+        dns-server {{ internal_dns }}
+        lease 86400
+        {% if networks.mgmt.dhcp.range is not none %}
+        start {{ networks.mgmt.dhcp.range.start }} {
+          stop {{ networks.mgmt.dhcp.range.end }}
+        }
+        {% endif %}
+        {% for a in networks.mgmt.dhcp.assignments %}
+        static-mapping {{ a.name }} {
+          ip-address   {{ a.ip }}
+          mac-address  {{ a.mac }}
+        }
+        {% endfor %}
+      }
+    }
+    {% endif %}
+    {% if networks.mgmt_backup.dhcp is not none %}
+    shared-network-name mgmt_backup {
+      authoritative enable
+      subnet {{ networks.mgmt_backup.ipv4_network }} {
+        default-router {{ networks.mgmt_backup.router_interface.ip }}
+        dns-server {{ internal_dns }}
+        lease 86400
+        {% if networks.mgmt_backup.dhcp.range is not none %}
+        start {{ networks.mgmt_backup.dhcp.range.start }} {
+          stop {{ networks.mgmt_backup.dhcp.range.end }}
+        }
+        {% endif %}
+        {% for a in networks.mgmt_backup.dhcp.assignments %}
+        static-mapping {{ a.name }} {
+          ip-address   {{ a.ip }}
+          mac-address  {{ a.mac }}
+        }
+        {% endfor %}
+      }
+    }
+    {% endif %}
+    {% if networks.infra.dhcp is not none %}
+    /* infra's DNS server can't depend on the DNS it serves. */
+    shared-network-name infra {
+      authoritative enable
+      subnet {{ networks.infra.ipv4_network }} {
+        default-router {{ networks.infra.router_interface.ip }}
+        dns-server {{ networks.infra.router_interface.ip }}
+        lease 86400
+        {% if networks.infra.dhcp.range is not none %}
+        start {{ networks.infra.dhcp.range.start }} {
+          stop {{ networks.infra.dhcp.range.end }}
+        }
+        {% endif %}
+        {% for a in networks.infra.dhcp.assignments %}
+        static-mapping {{ a.name }} {
+          ip-address   {{ a.ip }}
+          mac-address  {{ a.mac }}
+        }
+        {% endfor %}
+      }
+    }
+    {% endif %}
+    {% if networks.net_infra.dhcp is not none %}
+    shared-network-name net_infra {
+      authoritative enable
+      subnet {{ networks.net_infra.ipv4_network }} {
+        default-router {{ networks.net_infra.router_interface.ip }}
+        dns-server {{ internal_dns }}
+        lease 86400
+        {% if networks.net_infra.dhcp.range is not none %}
+        start {{ networks.net_infra.dhcp.range.start }} {
+          stop {{ networks.net_infra.dhcp.range.end }}
+        }
+        {% endif %}
+        {% for a in networks.net_infra.dhcp.assignments %}
+        static-mapping {{ a.name }} {
+          ip-address   {{ a.ip }}
+          mac-address  {{ a.mac }}
+        }
+        {% endfor %}
+      }
+    }
+    {% endif %}
+    {% if networks.trusted.dhcp is not none %}
+    shared-network-name trusted {
+      authoritative enable
+      subnet {{ networks.trusted.ipv4_network }} {
+        default-router {{ networks.trusted.router_interface.ip }}
+        dns-server {{ internal_dns }}
+        lease 86400
+        {% if networks.trusted.dhcp.range is not none %}
+        start {{ networks.trusted.dhcp.range.start }} {
+          stop {{ networks.trusted.dhcp.range.end }}
+        }
+        {% endif %}
+        {% for a in networks.trusted.dhcp.assignments %}
+        static-mapping {{ a.name }} {
+          ip-address   {{ a.ip }}
+          mac-address  {{ a.mac }}
+        }
+        {% endfor %}
+      }
+    }
+    {% endif %}
+    {% if networks.untrusted.dhcp is not none %}
+    shared-network-name untrusted {
+      authoritative enable
+      subnet {{ networks.untrusted.ipv4_network }} {
+        default-router {{ networks.untrusted.router_interface.ip }}
+        dns-server {{ internal_dns }}
+        lease 86400
+        {% if networks.untrusted.dhcp.range is not none %}
+        start {{ networks.untrusted.dhcp.range.start }} {
+          stop {{ networks.untrusted.dhcp.range.end }}
+        }
+        {% endif %}
+        {% for a in networks.untrusted.dhcp.assignments %}
+        static-mapping {{ a.name }} {
+          ip-address   {{ a.ip }}
+          mac-address  {{ a.mac }}
+        }
+        {% endfor %}
+      }
+    }
+    {% endif %}
+    {% if networks.lockdown.dhcp is not none %}
+    shared-network-name lockdown {
+      authoritative enable
+      subnet {{ networks.lockdown.ipv4_network }} {
+        default-router {{ networks.lockdown.router_interface.ip }}
+        dns-server {{ internal_dns }}
+        lease 86400
+        {% if networks.lockdown.dhcp.range is not none %}
+        start {{ networks.lockdown.dhcp.range.start }} {
+          stop {{ networks.lockdown.dhcp.range.end }}
+        }
+        {% endif %}
+        {% for a in networks.lockdown.dhcp.assignments %}
+        static-mapping {{ a.name }} {
+          ip-address   {{ a.ip }}
+          mac-address  {{ a.mac }}
+        }
+        {% endfor %}
+      }
+    }
+    {% endif %}
+    static-arp disable
+      use-dnsmasq disable
+  }
+  dns {
+    forwarding {
+      cache-size 10000
+      listen-on vtun0
+      listen-on eth0
+      listen-on eth1
+      listen-on eth5.{{ networks.mgmt.vlan_id }}
+      listen-on eth5.{{ networks.net_infra.vlan_id }}
+      listen-on eth5.{{ networks.trusted.vlan_id }}
+      listen-on eth5.{{ networks.untrusted.vlan_id }}
+      listen-on eth5.{{ networks.lockdown.vlan_id }}
+      {% for i in network.upstream_dns %}
+      name-server {{ i }}
+      {% endfor %}
+      {% for record in network.dns_records %}
+      {% for name in record.dns %}
+      options address=/{{ name }}/{{ record.ip }}
+      {% endfor %}
+      {% endfor %}
+      {% for n in networks.by_name.values() if n.dhcp is not none %}
+      {% for a in n.dhcp.assignments %}
+      {% for name in a.dns %}
+      options address=/{{ name }}/{{ a.ip }}
+      {% endfor %}
+      {% endfor %}
+      {% endfor %}
+    }
+  }
+  nat {
+    rule 1300 {
+      description "Redirect outbound DNS to internal DNS server"
+      inbound-interface eth5.{{ networks.lockdown.vlan_id }}
+      protocol tcp_udp
+      source {
+        address {{ networks.lockdown.ipv4_network }}
+      }
+      inside-address {
+        address {{ internal_dns }}
+        port    53
+      }
+      destination {
+        address !{{ internal_dns }}
+        port    53
+      }
+      type destination
+    }
+    rule 7000 {
+      description "NAT: mgmt <-> Internet"
+        outbound-interface pppoe0
+        protocol all
+        source {
+          address {{ networks.mgmt.ipv4_network }}
+        }
+      type masquerade
+    }
+    rule 7001 {
+      description "NAT: mgmt_backup <-> Internet"
+        outbound-interface pppoe0
+        protocol all
+        source {
+          address {{ networks.mgmt_backup.ipv4_network }}
+        }
+      type masquerade
+    }
+    rule 7002 {
+      description "NAT: infra <-> Internet"
+        outbound-interface pppoe0
+        protocol all
+        source {
+          address {{ networks.infra.ipv4_network }}
+        }
+      type masquerade
+    }
+    rule 7003 {
+      description "NAT: net_infra <-> Internet"
+        outbound-interface pppoe0
+        protocol all
+        source {
+          address {{ networks.net_infra.ipv4_network }}
+        }
+      type masquerade
+    }
+    rule 7004 {
+      description "NAT: trusted <-> Internet"
+        outbound-interface pppoe0
+        protocol all
+        source {
+          address {{ networks.trusted.ipv4_network }}
+        }
+      type masquerade
+    }
+    rule 7005 {
+      description "NAT: untrusted <-> Internet"
+        outbound-interface pppoe0
+        protocol all
+        source {
+          address {{ networks.untrusted.ipv4_network }}
+        }
+      type masquerade
+    }
+    rule 7006 {
+      description "NAT: lockdown <-> Internet"
+        outbound-interface pppoe0
+        protocol all
+        source {
+          address {{ networks.lockdown.ipv4_network }}
+        }
+      type masquerade
+    }
+  }
+  ssh {
+    disable-password-authentication
+    listen-address {{ networks.mgmt.router_interface.ip }}
+    listen-address {{ networks.mgmt_backup.router_interface.ip }}
+    port 22
+      protocol-version v2
+  }
+}
+system {
+  host-name router0
+    login {
+      user {{ router.admin.username }} {
+        authentication {
+          encrypted-password {{ router.admin.encrypted_password }}
+          plaintext-password ""
+            public-keys {{ router.admin.username }}@main {
+              type {{ router.admin.pubkey_type }}
+              key {{ router.admin.pubkey_key }}
+            }
+        }
+        full-name "{{ router.admin.full_name }}"
+        level admin
+      }
+    }
+  name-server {{ network.upstream_dns[0] }}
+  ntp {
+    server 0.ubnt.pool.ntp.org {
+    }
+    server 1.ubnt.pool.ntp.org {
+    }
+    server 2.ubnt.pool.ntp.org {
+    }
+    server 3.ubnt.pool.ntp.org {
+    }
+  }
+  package {
+    repository stretch {
+      components "main contrib non-free"
+        distribution stretch
+        password ""
+        url http://http.us.debian.org/debian
+        username ""
+    }
+  }
+  syslog {
+    global {
+      facility all {
+        level notice
+      }
+      facility protocols {
+        level debug
+      }
+    }
+  }
+  task-scheduler {
+    task dyndns {
+      executable {
+        path /config/user-data/dyndns/dyndns.sh
+      }
+      interval 1m
+    }
+  }
+  time-zone UTC
+}
+
+/* Warning: Do not remove the following line. */
+/* === vyatta-config-version: "config-management@1:conntrack@1:cron@1:dhcp-relay@1:dhcp-server@4:firewall@5:ipsec@5:nat@3:qos@1:quagga@2:suspend@1:system@5:ubnt-l2tp@1:ubnt-pptp@1:ubnt-udapi-server@1:ubnt-unms@2:ubnt-util@1:vrrp@1:vyatta-netflow@1:webgui@1:webproxy@1:zone-policy@1" === */
+/* Release version: v2.0.9-hotfix.4.5521907.220630.0658 */
