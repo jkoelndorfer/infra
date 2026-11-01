@@ -137,7 +137,6 @@ class AWSBootstrapProject(InfrastructureProject):
             name=self.dctx.config.aws_organization.personal_iam_user,
             opts=ResourceOptions(
                 provider=self.aws_provider,
-                import_=self.dctx.config.aws_organization.personal_iam_user,
                 ignore_changes=["tags", "tagsAll"],
             ),
         )

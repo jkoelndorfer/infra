@@ -93,9 +93,7 @@ class HomelabTraefikProject(InfrastructureProject):
             sha256=self.chart_sha256,
             namespace=self.ns_name,
             values=self._traefik_chart_values(),
-            opts=self.default_ropts.merge(
-                ResourceOptions(import_="traefik"),
-            ),
+            opts=self.default_ropts,
         )
 
     def _configure_dns_update_credentials(self) -> None:

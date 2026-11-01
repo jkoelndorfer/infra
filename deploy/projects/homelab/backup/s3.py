@@ -35,7 +35,6 @@ def provision_backup_bucket(
         bucket=bucket_name,
         opts=aws_opts.merge(
             ResourceOptions(
-                import_=bucket_name,
                 protect=True,
             )
         ),
