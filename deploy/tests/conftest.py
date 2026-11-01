@@ -17,15 +17,7 @@ from infralib import (
     InfrastructureConfiguration,
     LocalBackendProvider,
 )
-from infralib.config.aws import AWSAccount, AWSOrganization
-from infralib.config.domain import Domain, DKIMv1
-from infralib.config.gcp import GCPOrganization
-from infralib.config.homelab import Homelab
-from infralib.config.notification import (
-    EmailChannel,
-    NotificationCategory,
-    NotificationChannels,
-)
+from infralib.testing import dummy_infrastructure_configuration
 
 
 @pytest.fixture(autouse=True)
@@ -72,72 +64,7 @@ def test_infrastructure_configuration() -> InfrastructureConfiguration:
     """
     Returns a test infrastructure configuration containing dummy values.
     """
-    domains = {
-        "primary": Domain(
-            id="primary",
-            domain="test.example.com",
-            description="Primary domain",
-            dkim_v1=[
-                DKIMv1("test1", "rsa", "test1_public_key"),
-                DKIMv1("test2", "ed25519", "test2_public_key"),
-            ],
-            google_site_verification="primary_verification",
-        ),
-        "personal": Domain(
-            id="personal",
-            domain="personal.test.example.com",
-            description="Personal domain",
-            dkim_v1=[],
-            google_site_verification="personal_verification",
-        ),
-    }
-    aws_mgmt_account = AWSAccount("000000000777")
-    aws_organization = AWSOrganization(
-        organization_id="o-ooooooooid",
-        root_ou_id="r-xxou",
-        management_account=aws_mgmt_account,
-        member_account_email_generator=lambda environment, function: (
-            f"aws.{environment}.{function}@{domains['personal']._domain}"
-        ),
-        organization_account_access_role="MyRole",
-        preferred_region="us-west-1",
-        personal_iam_user="john.doe",
-        infrastructure_manager_role="arn:aws:iam::000000000777:role/MyInfraRole",
-        sso_user="john.doe@personal.test.example.com",
-    )
-    gcp_organization = GCPOrganization(
-        domain=domains["primary"]._domain,
-        organization_id="000000000888",
-        billing_account_id="000000-000000-100001",
-        preferred_region="us-west2",
-        personal_iam_user="john.doe@test.example.com",
-        infrastructure_manager_service_account="my-infra-sa@infra-mgmt-000000000888.iam.gserviceaccount.com",
-        quota_project="my-quota-project",
-    )
-    homelab = Homelab(
-        kubernetes_context="k8stest",
-    )
-    notification_channels = NotificationChannels(
-        [
-            EmailChannel(
-                name="First Billing Test",
-                category=NotificationCategory.CLOUD_BILLING,
-                email=f"billing@{domains['primary']._domain}",
-            ),
-            EmailChannel(
-                name="Second Billing Test",
-                category=NotificationCategory.CLOUD_BILLING,
-                email=f"second.billing@{domains['primary']._domain}",
-            ),
-        ]
-    )
-    return InfrastructureConfiguration(
-        domains=domains,
-        aws_organization=aws_organization,
-        gcp_organization=gcp_organization,
-        homelab=homelab,
-        notification_channels=notification_channels,
-    )
+    return dummy_infrastructure_configuration()
 
 
 @pytest.fixture
