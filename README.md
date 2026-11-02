@@ -13,7 +13,6 @@ This repository is broken into a few different top-level directories:
 * `deploy`: contains a small, opionated, custom [Pulumi Automation API][1] framework
   for provisioning infrastructure consistently and eliminating boilerplate. This is
   what infrastructure as code _should be_.
-* `srvtools`: contains tools that are deployed to servers, including pyinfra
 
 Overview
 --------
