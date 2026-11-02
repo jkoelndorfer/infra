@@ -53,9 +53,6 @@ class HomelabBlockyProject(InfrastructureProject):
     container_dns_port = 5353
     host_dns_port = 53
 
-    # FIXME: Set the router IP in a repo-level configuration file accessible by
-    # both Pulumi and pyinfra.
-    upstream_dns_servers = ["192.168.192.1"]
     ad_denylists = ["https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"]
 
     @classmethod
@@ -139,10 +136,15 @@ class HomelabBlockyProject(InfrastructureProject):
         """
         Returns the Blocky configuration.
         """
+        # Blocky runs on the infra network, where the router's DNS forwarder is the
+        # DNS server that the router hands out. See the router's provisioning role.
+        networks = self.dctx.config.homelab.network.networks
+        upstream_dns_servers = [str(networks.infra.router_interface.ip)]
+
         return {
             "upstreams": {
                 "groups": {
-                    "default": self.upstream_dns_servers,
+                    "default": upstream_dns_servers,
                 },
             },
             "blocking": {
