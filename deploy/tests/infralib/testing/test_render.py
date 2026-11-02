@@ -413,4 +413,5 @@ def test_fake_kubernetes_client_returns_real_models() -> None:
 
     volume = core.read_persistent_volume("fake-name")
     assert isinstance(volume, kubernetes.client.V1PersistentVolume)
+    assert volume.metadata is not None and volume.metadata.annotations is not None
     assert volume.metadata.annotations["backing-volume"] == "data0"

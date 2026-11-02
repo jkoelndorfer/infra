@@ -7,7 +7,7 @@ Kubernetes persistent volumes.
 """
 
 from dataclasses import dataclass
-from typing import Any, get_args, Literal, Self, Sequence
+from typing import Any, cast, get_args, Literal, Self, Sequence
 
 import kubernetes
 
@@ -48,6 +48,9 @@ class HomelabBackingVolume:
                 f"expected one node with backing volume {backing_volume_id}; got {cnt}"
             )
         n = matching_nodes[0]
+        assert n.metadata is not None and n.metadata.name is not None
+        assert n.metadata.annotations is not None
+        assert n.status is not None
         annotations = n.metadata.annotations
 
         addresses = n.status.addresses
@@ -161,19 +164,28 @@ class HomelabPersistentVolume:
         pv = kv1.read_persistent_volume(name)
         assert isinstance(pv, kubernetes.client.V1PersistentVolume)
 
-        bv_base_untyped = pv.metadata.annotations["backing-volume"]  # pyright: ignore
-        bv_base: HomelabBackingVolumeID = bv_base_untyped
-        assert bv_base in get_args(HomelabBackingVolumeID)
+        metadata = pv.metadata
+        spec = pv.spec
+        assert metadata is not None and metadata.annotations is not None
+        assert spec is not None and spec.local is not None
+        assert spec.access_modes is not None and spec.capacity is not None
+        assert spec.storage_class_name is not None
+        assert spec.persistent_volume_reclaim_policy is not None
+        annotations = metadata.annotations
 
-        namespace = pv.metadata.annotations["namespace"]  # pyright: ignore
-        user = pv.metadata.annotations["user"]  # pyright: ignore
-        group = pv.metadata.annotations["group"]  # pyright: ignore
-        mode = pv.metadata.annotations["mode"]  # pyright: ignore
-        access_modes = pv.spec.access_modes  # pyright: ignore
-        pv_path = pv.spec.local.path  # pyright: ignore
-        storage = pv.spec.capacity["storage"]  # pyright: ignore
-        storage_class_name = pv.spec.storage_class_name  # pyright: ignore
-        volume_reclaim_policy = pv.spec.persistent_volume_reclaim_policy  # pyright: ignore
+        bv_base = annotations["backing-volume"]
+        assert bv_base in get_args(HomelabBackingVolumeID)
+        assert all(m in get_args(AccessMode) for m in spec.access_modes)
+
+        namespace = annotations["namespace"]
+        user = int(annotations["user"])
+        group = int(annotations["group"])
+        mode = annotations["mode"]
+        access_modes = cast(list[AccessMode], spec.access_modes)
+        pv_path = spec.local.path
+        storage = spec.capacity["storage"]
+        storage_class_name = spec.storage_class_name
+        volume_reclaim_policy = spec.persistent_volume_reclaim_policy
 
         basename = name.removeprefix(f"{namespace}-")
 
@@ -181,7 +193,7 @@ class HomelabPersistentVolume:
             basename=basename,
             namespace=namespace,
             access_modes=access_modes,
-            backing_volume=bv_base,
+            backing_volume=cast(HomelabBackingVolumeID, bv_base),
             path=pv_path,
             storage=storage,
             storage_class_name=storage_class_name,

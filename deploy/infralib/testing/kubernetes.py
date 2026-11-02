@@ -21,6 +21,18 @@ class _Annotations(dict[str, str]):
         return f"fake-{key}"
 
 
+def _object_meta(
+    name: str, annotations: _Annotations
+) -> kubernetes.client.V1ObjectMeta:
+    """
+    Builds object metadata without validation, which would copy the annotations
+    into a plain dict and lose their placeholders.
+    """
+    return kubernetes.client.V1ObjectMeta.model_construct(
+        name=name, annotations=annotations
+    )
+
+
 class FakeCoreV1Api:
     """
     Fake CoreV1Api. Every lookup succeeds and returns a placeholder object.
@@ -36,9 +48,7 @@ class FakeCoreV1Api:
         Returns exactly one node.
         """
         node = kubernetes.client.V1Node(
-            metadata=kubernetes.client.V1ObjectMeta(
-                name="fake-node", annotations=_Annotations()
-            ),
+            metadata=_object_meta(name="fake-node", annotations=_Annotations()),
             status=kubernetes.client.V1NodeStatus(
                 addresses=[
                     kubernetes.client.V1NodeAddress(
@@ -54,7 +64,7 @@ class FakeCoreV1Api:
         Returns a persistent volume whose namespace is "fake".
         """
         return kubernetes.client.V1PersistentVolume(
-            metadata=kubernetes.client.V1ObjectMeta(
+            metadata=_object_meta(
                 name=name,
                 annotations=_Annotations(
                     {

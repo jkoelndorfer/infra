@@ -175,9 +175,11 @@ class StandardProviderFactory(ProviderFactory):
     def kubernetes_client(
         self,
     ) -> KubernetesClientModule:  # pragma: no cover
-        kubernetes.config.load_kube_config(context=self.kubernetes_default_context)
+        kubernetes.config.load_kube_config(  # type: ignore[no-untyped-call]
+            context=self.kubernetes_default_context
+        )
 
-        return kubernetes.client  # type: ignore
+        return kubernetes.client
 
     def kubernetes_provider(
         self, name: str = "kubernetes"
