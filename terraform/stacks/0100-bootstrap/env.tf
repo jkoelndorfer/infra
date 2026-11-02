@@ -1,6 +1,0 @@
-locals {
-  environments = {
-    dev  = {}
-    prod = {}
-  }
-}

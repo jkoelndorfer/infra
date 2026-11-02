@@ -14,8 +14,6 @@ This repository is broken into a few different top-level directories:
   for provisioning infrastructure consistently and eliminating boilerplate. This is
   what infrastructure as code _should be_.
 * `srvtools`: contains tools that are deployed to servers, including pyinfra
-* `terraform`: *legacy*; contains terraform stacks and reusable modules for provisioning
-  infrastructure
 
 Overview
 --------
