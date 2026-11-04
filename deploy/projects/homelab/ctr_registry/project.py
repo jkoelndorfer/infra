@@ -8,6 +8,7 @@ This module contains the homelab container registry project.
 from typing import Literal, Sequence
 
 from pulumi import export, ResourceOptions
+import pulumi_kubernetes as k8s
 import pulumi_random as random
 
 from infralib import (
@@ -94,6 +95,7 @@ class HomelabContainerRegistryProject(InfrastructureProject):
         )
 
         self._provision_traefik_middlewares()
+        self._provision_image_write_secret()
         HomelabKubernetesDeployment(
             name="deployment",
             args=HomelabKubernetesDeploymentArgs(
@@ -138,6 +140,7 @@ class HomelabContainerRegistryProject(InfrastructureProject):
             assert secret is not None
 
             credentials[access] = {
+                "hostname": self.registry_fqdn(self.dctx, access, self.dctx.target),
                 "username": secret.data.apply(lambda d: decode_secret(d["username"])),
                 "password": secret.data.apply(lambda d: decode_secret(d["password"])),
                 "secret": {
@@ -147,6 +150,27 @@ class HomelabContainerRegistryProject(InfrastructureProject):
             }
 
         export("credentials", credentials)
+
+    def _provision_image_write_secret(self) -> None:
+        """
+        Provisions a secret with credentials for writing to the container registry.
+        """
+        secret = self.rw_middleware.secret
+        assert secret is not None
+
+        k8s.core.v1.Secret(
+            "image_write",
+            metadata=k8s.meta.v1.ObjectMetaArgs(
+                namespace=self.ns_name,
+                name="image-write",
+            ),
+            string_data={
+                "hostname": self.registry_fqdn(self.dctx, "rw", self.dctx.target),
+                "username": secret.data.apply(lambda d: decode_secret(d["username"])),
+                "password": secret.data.apply(lambda d: decode_secret(d["password"])),
+            },
+            opts=self.default_ropts,
+        )
 
     def _provision_traefik_middlewares(self) -> None:
         """
