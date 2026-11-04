@@ -2,7 +2,7 @@
 
 set -eo pipefail
 
-python_version='3.13'
+python_version='3.14'
 base_image_tag="${python_version}-trixie"
 
 build_stage=${1:-base}
@@ -20,6 +20,7 @@ base)
 
 	buildah run "$python_image_working_ctr" -- apt-get update
 	buildah run "$python_image_working_ctr" -- apt-get -y install awscli kubectl restic rclone
+	buildah run "$python_image_working_ctr" -- pip install uv
 
 	buildah commit "$python_image_working_ctr" 'backupjob:base'
 	buildah rm "$python_image_working_ctr"
@@ -28,9 +29,15 @@ base)
 appdeps)
 	pkgs_ctr=$(buildah from 'backupjob:base')
 
-	buildah add "$pkgs_ctr" 'app/requirements.txt' '/app/requirements.txt'
+	buildah add "$pkgs_ctr" 'app/pyproject.toml' '/app/pyproject.toml'
+	buildah add "$pkgs_ctr" 'app/uv.lock' '/app/uv.lock'
+	buildah config \
+		--env UV_PROJECT_ENVIRONMENT='/venv' \
+		--env PATH='/venv/bin:/usr/local/bin:/usr/bin:/bin' \
+		"$pkgs_ctr"
 
-	buildah run "$pkgs_ctr" -- pip install -r '/app/requirements.txt'
+	buildah run --workingdir /app "$pkgs_ctr" -- \
+		uv --no-managed-python sync --frozen --group dev
 
 	buildah commit "$pkgs_ctr" 'backupjob:appdeps'
 	buildah rm "$pkgs_ctr"
