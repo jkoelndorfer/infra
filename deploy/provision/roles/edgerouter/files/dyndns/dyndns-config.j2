@@ -4,6 +4,10 @@ iface=pppoe0
 # The dynamic DNS hostname that will be updated.
 hostname={{ hostname }}
 
+# A name server that is authoritative for the hostname. It is queried directly so
+# that caching and split-horizon resolvers cannot hide the record's real value.
+name_server={{ name_server }}
+
 # The URL of the dynamic DNS service.
 url={{ url }}
 

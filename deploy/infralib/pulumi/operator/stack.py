@@ -207,6 +207,26 @@ class PulumiStackOperator:
             stack_desc_list, key=lambda d: f"{d.stack.project.name}/{d.stack.name}"
         )
 
+    def outputs(self, stack: InfrastructureStack) -> auto.OutputMap:
+        """
+        Returns the outputs of an existing stack, with secrets in plain text.
+
+        Unlike the other operations, this neither runs the stack's program nor
+        refreshes it, and it raises auto.StackNotFoundError rather than creating a
+        missing stack.
+        """
+        work_dir = self.tools.work_dir()
+        pstack = auto.select_stack(
+            stack_name=stack.name,
+            project_name=stack.project.name,
+            program=self.tools.stack_program(stack),
+            opts=auto.LocalWorkspaceOptions(
+                project_settings=self.tools.project_settings(stack.project.name),
+                work_dir=work_dir.name,
+            ),
+        )
+        return pstack.outputs()
+
     def rename(
         self,
         source_stack: InfrastructureStack,

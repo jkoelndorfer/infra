@@ -195,11 +195,6 @@ def test_infrastructure_yaml_configuration() -> str:
                     pppoe:
                         username: test-pppoe
                         password: test-pppoe-password
-                    dyndns:
-                        hostname: dyndns.test.example.com
-                        url: https://dyndns.test.example.com/
-                        username: test-dyndns
-                        password: test-dyndns-password
 
         notification_channels:
             - name: First Billing Test

@@ -14,7 +14,9 @@ from pyinfra.api.util import get_template
 from pyinfra.operations import files, server
 
 from infralib import InfrastructureConfiguration
-from infralib.config.homelab import HomelabDynDNS, HomelabNetworking
+from infralib.config.homelab import HomelabNetworking
+from outputs import stack_outputs
+from projects.dns.dyndns import DNSDynDNSProject, DynDNSClient
 
 _FILES = Path(__file__).parent / "files"
 _IPSET_FILES = _FILES / "ipsets"
@@ -37,7 +39,7 @@ def provision(config: InfrastructureConfiguration) -> None:
     """
     networking = config.homelab.network
 
-    _provision_dyndns(networking.router.dyndns)
+    _provision_dyndns(DNSDynDNSProject.client(stack_outputs))
     _provision_ipsets()
     _execute_post_config_scripts()
     _provision_router_config(networking)
@@ -113,7 +115,7 @@ def _provision_ipsets() -> None:
         )
 
 
-def _provision_dyndns(dyndns: HomelabDynDNS) -> None:
+def _provision_dyndns(dyndns: DynDNSClient) -> None:
     files.template(
         name="deploy dyndns configuration",
         src=str(_FILES / "dyndns" / "dyndns-config.j2"),
@@ -123,6 +125,7 @@ def _provision_dyndns(dyndns: HomelabDynDNS) -> None:
         mode="0440",
         jinja_env_kwargs=_JINJA_ENV_KWARGS,
         hostname=quote(dyndns.hostname),
+        name_server=quote(dyndns.name_server),
         username=quote(dyndns.username),
         password=quote(dyndns.password),
         url=quote(dyndns.url),

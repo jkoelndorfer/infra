@@ -11,6 +11,7 @@ from base64 import b64encode
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import Enum
+from hashlib import sha256
 import json
 import threading
 from typing import Any
@@ -57,7 +58,16 @@ def _plain(value: Any) -> Any:
     Returns the value as it would be stored in state, with Pulumi's secret envelopes
     removed. Everything in a rendering is dummy data, and resources like Kubernetes
     Secrets wrap their inputs.
+
+    Assets and archives are represented by their contents, so that a rendering does
+    not depend on where the repository is checked out.
     """
+    if isinstance(value, pulumi.FileAsset):
+        return {"fileAsset": {"sha256": sha256(_read_asset(value.path)).hexdigest()}}
+    if isinstance(value, pulumi.StringAsset):
+        return {"stringAsset": value.text}
+    if isinstance(value, pulumi.AssetArchive):
+        return {"assetArchive": {k: _plain(v) for k, v in value.assets.items()}}
     if isinstance(value, Enum):
         return value.value
     # Pulumi's wire format represents every number as a float.
@@ -70,6 +80,13 @@ def _plain(value: Any) -> Any:
     if isinstance(value, list):
         return [_plain(v) for v in value]
     return value
+
+
+def _read_asset(path: Any) -> bytes:
+    # Pulumi resolves the path of an Output on its own; renderings only use plain
+    # paths.
+    with open(str(path), "rb") as f:
+        return f.read()
 
 
 def _computed_state(args: pulumi.runtime.MockResourceArgs) -> dict[str, Any]:

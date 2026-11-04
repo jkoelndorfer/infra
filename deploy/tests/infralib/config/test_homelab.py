@@ -17,7 +17,6 @@ from infralib.config.homelab import (
     HomelabDHCPAssignment,
     HomelabDHCPRange,
     HomelabDNSRecord,
-    HomelabDynDNS,
     HomelabNetwork,
     HomelabNetworking,
     HomelabNetworks,
@@ -124,12 +123,6 @@ def router_dict(admin_dict: dict[str, Any]) -> dict[str, Any]:
     return {
         "admin": admin_dict,
         "pppoe": {"username": "pppoe-user", "password": "pppoe-secret"},
-        "dyndns": {
-            "hostname": "dyndns.example.com",
-            "url": "https://dyndns.example.com/",
-            "username": "dyndns-user",
-            "password": "dyndns-secret",
-        },
     }
 
 
@@ -618,7 +611,6 @@ class TestHomelabRouter:
 
         assert router.admin.username == "admin"
         assert router.pppoe == HomelabPPPoE("pppoe-user", "pppoe-secret")
-        assert router.dyndns.hostname == "dyndns.example.com"
 
     def test_repr_hides_credentials(self, router_dict: dict[str, Any]) -> None:
         """
@@ -628,7 +620,6 @@ class TestHomelabRouter:
 
         assert "pppoe-user" in text
         assert "pppoe-secret" not in text
-        assert "dyndns-secret" not in text
         assert ENCRYPTED_PASSWORD not in text
 
     @pytest.mark.parametrize("password", ["", None, 12345])
@@ -641,12 +632,7 @@ class TestHomelabRouter:
         ):
             HomelabPPPoE("user", password)
 
-        with pytest.raises(
-            InvalidConfigurationError, match="password must be a non-empty string"
-        ):
-            HomelabDynDNS("host", "https://example.com/", "user", password)
-
-    @pytest.mark.parametrize("key", ["admin", "pppoe", "dyndns"])
+    @pytest.mark.parametrize("key", ["admin", "pppoe"])
     def test_from_dict_rejects_missing_sections(
         self, router_dict: dict[str, Any], key: str
     ) -> None:
@@ -663,7 +649,6 @@ class TestHomelabRouter:
         [
             ("admin", "username", HomelabRouterAdmin),
             ("pppoe", "password", HomelabPPPoE),
-            ("dyndns", "url", HomelabDynDNS),
         ],
     )
     def test_from_dict_rejects_missing_keys(

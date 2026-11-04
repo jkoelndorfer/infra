@@ -12,7 +12,7 @@ import time
 from typing import Any, Callable, Generator, TYPE_CHECKING
 from unittest.mock import call, Mock, patch
 
-from pulumi import automation as auto, export, ResourceOptions
+from pulumi import automation as auto, export, Output, ResourceOptions
 from pulumi_command import local
 import pytest
 
@@ -89,6 +89,7 @@ class LocalCommandProject(InfrastructureProject):
             ["stdout"],
         )
         export("tempfile", str(self.file_resource_path))
+        export("secret", Output.secret("test-secret"))
 
 
 class DependerProject(InfrastructureProject):
@@ -594,6 +595,38 @@ class TestPulumiOperator:
             return str(result.outputs["tempfile"].value)
 
         assert ov(depender_up_result) == ov(dependency_up_result)
+
+    def test_outputs(
+        self,
+        pulumi_operator: PulumiOperator,
+        local_command_stack: InfrastructureStack,
+        file_resource_path: Path,
+    ) -> None:
+        """
+        Tests reading the outputs of an existing stack, including secrets.
+        """
+        pulumi_operator.stack.up(local_command_stack)
+
+        outputs = pulumi_operator.stack.outputs(local_command_stack)
+
+        assert outputs["tempfile"].value == str(file_resource_path)
+        assert outputs["secret"].value == "test-secret"
+        assert outputs["secret"].secret
+
+    def test_outputs_of_missing_stack(
+        self,
+        pulumi_operator: PulumiOperator,
+        local_command_stack: InfrastructureStack,
+    ) -> None:
+        """
+        Tests that reading the outputs of a missing stack fails, rather than
+        creating the stack.
+        """
+        with pytest.raises(auto.StackNotFoundError):
+            pulumi_operator.stack.outputs(local_command_stack)
+
+        stacks = [d.stack for d in pulumi_operator.stack.list() if d.state]
+        assert local_command_stack not in stacks
 
     def test_stack_outputs_rejected_for_non_dependency(
         self,

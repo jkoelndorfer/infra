@@ -29,8 +29,10 @@ in `pulumi/backend`.
 ### pyinfra
 
 `provision/provision_server.py` provisions each server according to its role in
-`provision/inventory.py`. It reads the same configuration as `pcli`, so
-`INFRALIB_CONFIG_PATH` must be set. Run it from this directory:
+`provision/inventory.py`. It reads the same configuration as `pcli`, and some roles
+read outputs from deployed stacks, so the same environment variables must be set.
+For example, the router reads its dynamic DNS credentials from `dns.dyndns/prod`,
+which must be deployed first. Run it from this directory:
 
 ```bash
 ./with-venv pyinfra --dry provision/inventory.py provision/provision_server.py

@@ -18,7 +18,6 @@ from ..config.homelab import (
     HomelabDHCPAssignment,
     HomelabDHCPRange,
     HomelabDNSRecord,
-    HomelabDynDNS,
     HomelabNetwork,
     HomelabNetworking,
     HomelabNetworks,
@@ -195,12 +194,6 @@ def dummy_infrastructure_configuration() -> InfrastructureConfiguration:
                 ),
                 pppoe=HomelabPPPoE(
                     username="test-pppoe", password="test-pppoe-password"
-                ),
-                dyndns=HomelabDynDNS(
-                    hostname="dyndns.test.example.com",
-                    url="https://dyndns.test.example.com/",
-                    username="test-dyndns",
-                    password="test-dyndns-password",
                 ),
             ),
         ),

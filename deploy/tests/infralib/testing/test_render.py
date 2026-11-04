@@ -7,7 +7,9 @@ This module contains tests for rendering projects against the mock runtime.
 
 import asyncio
 from base64 import b64decode
+from hashlib import sha256
 import json
+from pathlib import Path
 
 import kubernetes
 import pulumi
@@ -89,6 +91,32 @@ class RenderUndeclaredProject(InfrastructureProject):
 
     def pulumi_program(self) -> None:
         self.dctx.outputs(RenderUpstreamProject.stack(self.dctx.target))
+
+
+class RenderAssetProject(InfrastructureProject):
+    name = "render.test.asset"
+
+    @classmethod
+    def dependencies(cls, target: DeploymentTarget) -> list[InfrastructureStack]:
+        return []
+
+    @classmethod
+    def deployment_targets(cls) -> list[DeploymentTarget]:
+        return [TARGET]
+
+    def pulumi_program(self) -> None:
+        provider = self.dctx.provider_factory.aws_provider("aws")
+        aws.lambda_.Function(
+            "function",
+            code=pulumi.AssetArchive(
+                {
+                    "file.py": pulumi.FileAsset(__file__),
+                    "string.txt": pulumi.StringAsset("contents"),
+                }
+            ),
+            role="arn:aws:iam::123456789012:role/function",
+            opts=ResourceOptions(provider=provider),
+        )
 
 
 class RenderFailingProject(InfrastructureProject):
@@ -259,6 +287,20 @@ def test_captures_outputs_as_plain_values() -> None:
         "zone_name": "upstream.example.com",
         "environment": "test",
     }
+
+
+def test_captures_assets_by_contents() -> None:
+    rendering = render(RenderAssetProject, TARGET)
+
+    function = rendering.one("aws:lambda/function:Function", "function")
+    file_sha256 = sha256(Path(__file__).read_bytes()).hexdigest()
+    assert function.inputs["code"] == {
+        "assetArchive": {
+            "file.py": {"fileAsset": {"sha256": file_sha256}},
+            "string.txt": {"stringAsset": "contents"},
+        }
+    }
+    assert __file__ not in render_yaml(rendering)
 
 
 def test_render_with_dependencies_feeds_real_outputs() -> None:

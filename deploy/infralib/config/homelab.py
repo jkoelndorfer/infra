@@ -494,36 +494,6 @@ class HomelabPPPoE:
 
 
 @dataclass
-class HomelabDynDNS:
-    """
-    The dynamic DNS service that the router reports its WAN address to.
-    """
-
-    # The hostname to keep updated.
-    hostname: str
-
-    # The URL of the dynamic DNS service.
-    url: str
-
-    # The username to authenticate with.
-    username: str
-
-    # The password to authenticate with.
-    password: str = field(repr=False)
-
-    def __post_init__(self) -> None:
-        _require_secret("router dynamic DNS", "password", self.password)
-
-    @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> Self:
-        """
-        Constructs a HomelabDynDNS from a dictionary.
-        """
-        with _invalid_configuration("router dynamic DNS"):
-            return cls(d["hostname"], d["url"], d["username"], d["password"])
-
-
-@dataclass
 class HomelabRouter:
     """
     Configuration only used to provision the router.
@@ -538,9 +508,6 @@ class HomelabRouter:
     # The credentials for the connection to the ISP.
     pppoe: HomelabPPPoE
 
-    # The router's dynamic DNS configuration.
-    dyndns: HomelabDynDNS
-
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> Self:
         """
@@ -550,7 +517,6 @@ class HomelabRouter:
             return cls(
                 HomelabRouterAdmin.from_dict(d["admin"]),
                 HomelabPPPoE.from_dict(d["pppoe"]),
-                HomelabDynDNS.from_dict(d["dyndns"]),
             )
 
 

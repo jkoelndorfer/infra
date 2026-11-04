@@ -9,7 +9,6 @@ Pulumi-related work belongs in `deploy/`.
 | --- | --- |
 | `deploy/` | **Modern. Work here.** Pulumi projects, the `pcli` CLI, and tests. |
 | `terraform/`, `terragrunt/` | **Legacy.** Do not extend. Read them only as a reference when porting something to `deploy/`. |
-| `aws/` | Legacy Lambda code. |
 | `container-images/` | Custom images, such as `backupjob`, which `homelab.backup` deploys. |
 | `srvtools/` | Tools deployed to servers, including pyinfra. |
 
