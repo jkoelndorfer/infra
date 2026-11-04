@@ -94,7 +94,9 @@ podman run \
 	'backupjob:latest' \
 	'/app/test' -m 'not live' -p 'no:cacheprovider'
 
-internal_registry_rw_domain=$(kubectl -n prod-registry get secret/registry-rw --template='{{ .data.hostname }}' | base64 -d)
+internal_registry_rw_domain=$(
+	kubectl -n prod-registry get secret/image-write --template '{{ .data.hostname }}' | base64 -d
+)
 if [[ -n "$internal_registry_rw_domain" ]]; then
 	buildah tag "backupjob:${repo_revision}" "${internal_registry_rw_domain}/backupjob:${repo_revision}"
 	buildah tag "backupjob:latest" "${internal_registry_rw_domain}/backupjob:latest"
