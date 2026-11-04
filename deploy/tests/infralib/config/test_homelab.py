@@ -22,6 +22,7 @@ from infralib.config.homelab import (
     HomelabNetworking,
     HomelabNetworks,
     HomelabPortForward,
+    HomelabPorts,
     HomelabPPPoE,
     HomelabRouter,
     HomelabRouterAdmin,
@@ -1025,6 +1026,18 @@ class TestHomelabNetworking:
         assert networking.networks.untrusted.ipv4_network.subnet_of(
             networking.networks.trusted.ipv4_network
         )
+
+    def test_from_dict_provides_named_ports(
+        self, networking_dict: dict[str, Any]
+    ) -> None:
+        """
+        Tests that from_dict() provides the well-known ports, by name.
+        """
+        networking = HomelabNetworking.from_dict(networking_dict)
+
+        assert networking.ports == HomelabPorts()
+        assert networking.ports.dns == 53
+        assert networking.ports.https == 443
 
     @pytest.mark.parametrize(
         "key,value",

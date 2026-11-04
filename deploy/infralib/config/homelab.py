@@ -640,6 +640,42 @@ class HomelabNetworks:
             return cls(**{network.name: network for network in parsed})
 
 
+@dataclass(frozen=True)
+class HomelabPorts:
+    """
+    The well-known ports that homelab services are reached on, by name. These are
+    fixed by the protocols and devices involved, so they are not read from
+    configuration.
+    """
+
+    # SSH, which the router is administered over.
+    ssh: int = 22
+
+    # DNS, served by the router and by the internal DNS server.
+    dns: int = 53
+
+    # DHCP, served by the router.
+    dhcp: int = 67
+
+    # HTTP, served by the ingress controller to redirect to HTTPS.
+    http: int = 80
+
+    # HTTPS, served by the ingress controller.
+    https: int = 443
+
+    # The Syncthing sync protocol.
+    syncthing: int = 22000
+
+    # The port UniFi devices report to the controller on.
+    unifi_device: int = 8080
+
+    # The port UniFi devices use for STUN with the controller.
+    unifi_stun: int = 3478
+
+    # The port UniFi access points are discovered on.
+    unifi_ap_discovery: int = 10001
+
+
 @dataclass
 class HomelabNetworking:
     """
@@ -663,6 +699,9 @@ class HomelabNetworking:
 
     # The ports forwarded from the router's WAN address.
     port_forwards: list[HomelabPortForward] = field(default_factory=list)
+
+    # The well-known ports that homelab services are reached on.
+    ports: HomelabPorts = field(default_factory=HomelabPorts)
 
     def __post_init__(self) -> None:
         if duplicates := _duplicates(s.name for s in self.switches):
