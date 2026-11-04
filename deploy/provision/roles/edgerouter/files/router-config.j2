@@ -1,5 +1,6 @@
 {% set networks = network.networks %}
 {% set router = network.router %}
+{% set ports = network.ports %}
 {% set internal_dns = (
     networks.infra.dhcp.assignments | selectattr("name", "eq", "kserv") | first
     ).ip %}
@@ -157,7 +158,7 @@ firewall {
         group {
           network-group ADDR_INFRA
         }
-        port 443
+        port {{ ports.https }}
       }
     }
     /* For HTTP -> HTTPS redirects. */
@@ -174,7 +175,7 @@ firewall {
         group {
           network-group ADDR_INFRA
         }
-        port 80
+        port {{ ports.http }}
       }
     }
     rule 120 {
@@ -190,7 +191,7 @@ firewall {
         group {
           network-group ADDR_INFRA
         }
-        port 22000
+        port {{ ports.syncthing }}
       }
     }
     rule 130 {
@@ -204,7 +205,7 @@ firewall {
       }
       destination {
         address {{ unifi }}
-        port 8080
+        port {{ ports.unifi_device }}
       }
     }
     rule 140 {
@@ -218,7 +219,7 @@ firewall {
       }
       destination {
         address {{ unifi }}
-        port 3478
+        port {{ ports.unifi_stun }}
       }
     }
     rule 160 {
@@ -227,7 +228,7 @@ firewall {
       protocol tcp_udp
       destination {
         address {{ internal_dns }}
-        port 53
+        port {{ ports.dns }}
       }
     }
     {% for i in network.port_forwards %}
@@ -266,7 +267,7 @@ firewall {
       description "DHCP"
       protocol udp
       destination {
-        port 67
+        port {{ ports.dhcp }}
       }
     }
     rule 110 {
@@ -274,7 +275,7 @@ firewall {
       description "DNS"
       protocol tcp_udp
       destination {
-        port 53
+        port {{ ports.dns }}
       }
     }
     rule 120 {
@@ -407,7 +408,7 @@ firewall {
       description "DNS"
       protocol tcp_udp
       destination {
-        port 53
+        port {{ ports.dns }}
       }
     }
     rule 4 {
@@ -771,11 +772,11 @@ service {
       }
       inside-address {
         address {{ internal_dns }}
-        port    53
+        port    {{ ports.dns }}
       }
       destination {
         address !{{ internal_dns }}
-        port    53
+        port    {{ ports.dns }}
       }
       type destination
     }
@@ -847,7 +848,7 @@ service {
     disable-password-authentication
     listen-address {{ networks.mgmt.router_interface.ip }}
     listen-address {{ networks.mgmt_backup.router_interface.ip }}
-    port 22
+    port {{ ports.ssh }}
       protocol-version v2
   }
 }

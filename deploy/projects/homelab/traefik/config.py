@@ -29,13 +29,3 @@ class TraefikConfiguration:
     """
     The name of the Traefik HTTPS entrypoint.
     """
-
-    http_port = 80
-    """
-    The port on which HTTP traffic is served by Traefik.
-    """
-
-    https_port = 443
-    """
-    The port on which HTTPS traffic is served by Traefik.
-    """

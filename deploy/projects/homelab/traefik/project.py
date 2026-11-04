@@ -213,6 +213,7 @@ class HomelabTraefikProject(InfrastructureProject):
         """
         homelab_domain = self.dctx.config.domains["homelab"]
         homelab_domain_fqdn = homelab_domain.domain_for(self.dctx.target)
+        ports = self.dctx.config.homelab.network.ports
 
         cert_resolver_defn = {
             "acme": {
@@ -292,7 +293,7 @@ class HomelabTraefikProject(InfrastructureProject):
             "ports": {
                 traefik_config.insecure_entrypoint: {
                     "port": 8888,
-                    "exposedPort": traefik_config.http_port,
+                    "exposedPort": ports.http,
                     "http": {
                         "redirections": {
                             "entryPoint": {
@@ -305,7 +306,7 @@ class HomelabTraefikProject(InfrastructureProject):
                 },
                 traefik_config.secure_entrypoint: {
                     "port": 8443,
-                    "exposedPort": traefik_config.https_port,
+                    "exposedPort": ports.https,
                     "asDefault": True,
                     "http": {
                         "tls": {

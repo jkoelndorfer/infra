@@ -54,9 +54,6 @@ class HomelabUnifiProject(InfrastructureProject):
     config_directory = Path("/config")
 
     web_port = 8443
-    device_port = 8080
-    ap_discovery_port = 10001
-    stun_port = 3478
 
     @classmethod
     def dependencies(cls, target: DeploymentTarget) -> list[InfrastructureStack]:
@@ -71,6 +68,7 @@ class HomelabUnifiProject(InfrastructureProject):
     def pulumi_program(self) -> None:
         k8s_provider = self.dctx.provider_factory.kubernetes_provider()
         self.default_ropts = ResourceOptions(provider=k8s_provider)
+        ports = self.dctx.config.homelab.network.ports
 
         # NOTE: The legacy homelab_unifi Terragrunt unit owns resources with the
         # same names, and its selector labels differ. Destroy that unit before
@@ -119,18 +117,18 @@ class HomelabUnifiProject(InfrastructureProject):
                 image=self.image,
                 ports=[
                     ContainerPortArgs(
-                        container_port=self.device_port,
-                        host_port=self.device_port,
+                        container_port=ports.unifi_device,
+                        host_port=ports.unifi_device,
                         protocol="TCP",
                     ),
                     ContainerPortArgs(
-                        container_port=self.ap_discovery_port,
-                        host_port=self.ap_discovery_port,
+                        container_port=ports.unifi_ap_discovery,
+                        host_port=ports.unifi_ap_discovery,
                         protocol="UDP",
                     ),
                     ContainerPortArgs(
-                        container_port=self.stun_port,
-                        host_port=self.stun_port,
+                        container_port=ports.unifi_stun,
+                        host_port=ports.unifi_stun,
                         protocol="UDP",
                     ),
                 ],
@@ -175,15 +173,15 @@ class HomelabUnifiProject(InfrastructureProject):
                         ],
                         ports=[
                             k8s.networking.v1.NetworkPolicyPortArgs(
-                                port=self.device_port,
+                                port=ports.unifi_device,
                                 protocol="TCP",
                             ),
                             k8s.networking.v1.NetworkPolicyPortArgs(
-                                port=self.ap_discovery_port,
+                                port=ports.unifi_ap_discovery,
                                 protocol="UDP",
                             ),
                             k8s.networking.v1.NetworkPolicyPortArgs(
-                                port=self.stun_port,
+                                port=ports.unifi_stun,
                                 protocol="UDP",
                             ),
                         ],

@@ -51,7 +51,6 @@ class HomelabBlockyProject(InfrastructureProject):
     config_file_name = "main.yml"
 
     container_dns_port = 5353
-    host_dns_port = 53
 
     ad_denylists = ["https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"]
 
@@ -111,7 +110,7 @@ class HomelabBlockyProject(InfrastructureProject):
                 ports=[
                     ContainerPortArgs(
                         container_port=self.container_dns_port,
-                        host_port=self.host_dns_port,
+                        host_port=self.dctx.config.homelab.network.ports.dns,
                         protocol="UDP",
                     ),
                 ],

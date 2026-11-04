@@ -48,7 +48,6 @@ class HomelabSyncthingProject(InfrastructureProject):
     config_directory = Path("/config")
 
     container_http_port = 8384
-    container_sync_port = 22000
 
     @classmethod
     def dependencies(cls, target: DeploymentTarget) -> list[InfrastructureStack]:
@@ -62,6 +61,13 @@ class HomelabSyncthingProject(InfrastructureProject):
             DeploymentTarget(Environment.DEV, None),
             DeploymentTarget(Environment.PROD, None),
         ]
+
+    @property
+    def container_sync_port(self) -> int:
+        """
+        Returns the container sync protocol port.
+        """
+        return self.dctx.config.homelab.network.ports.syncthing
 
     @property
     def host_sync_port(self) -> int:
