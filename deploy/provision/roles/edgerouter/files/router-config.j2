@@ -370,6 +370,17 @@ firewall {
         }
       }
     }
+    rule 110 {
+      action accept
+      description "SNMP from the Kubernetes host"
+      protocol udp
+      source {
+        address {{ network.kubernetes_host }}
+      }
+      destination {
+        port {{ ports.snmp }}
+      }
+    }
   }
 
   name TRUSTED_OUT {

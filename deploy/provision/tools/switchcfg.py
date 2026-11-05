@@ -2,8 +2,8 @@
 tools/switchcfg -- Switch Configuration Renderer
 ================================================
 
-This script prints the EdgeSwitch CLI commands that configure the VLANs and
-ports for the homelab.
+This script prints the EdgeSwitch CLI commands that configure the VLANs, ports and
+SNMP access for the homelab.
 
 This script only prints commands to be executed to configure a switch.
 """
@@ -15,6 +15,7 @@ import click
 from infralib.config.homelab import (
     HomelabNetworking,
     HomelabNetworks,
+    HomelabSNMP,
     HomelabSwitch,
     HomelabSwitchPort,
 )
@@ -139,6 +140,20 @@ def _render_port(
     return lines
 
 
+def _render_snmp(networking: HomelabNetworking) -> list[str]:
+    """
+    Renders the commands that grant read-only SNMP access to the Kubernetes host,
+    and remove the communities the switch starts with.
+    """
+    # NOTE: The default private community grants write access. Removing a community
+    # that is already gone prints an error, which is harmless.
+    return [
+        f"snmp-server community {networking.snmp.community} ro "
+        f"ipaddress {networking.kubernetes_host}",
+        *(f"no snmp-server community {c}" for c in HomelabSNMP.default_communities),
+    ]
+
+
 def render_switch(switch: HomelabSwitch, networking: HomelabNetworking) -> str:
     """
     Renders the commands that configure a switch, starting from privileged mode.
@@ -156,11 +171,10 @@ def render_switch(switch: HomelabSwitch, networking: HomelabNetworking) -> str:
         "! This does not move the management VLAN or run write memory.",
         *_render_vlan_database(switch_vlans, networks),
     ]
-    if switch.ports:
-        lines.append("configure")
-        for port in switch.ports:
-            lines += _render_port(switch, port, switch_vlans, networks)
-        lines.append("exit")
+    lines += ["configure", *_render_snmp(networking)]
+    for port in switch.ports:
+        lines += _render_port(switch, port, switch_vlans, networks)
+    lines.append("exit")
     return "\n".join(lines) + "\n"
 
 
