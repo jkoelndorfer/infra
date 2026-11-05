@@ -7,6 +7,7 @@ This file contains code to test the stack subcommand of the CLI.
 
 from click import Group
 from click.testing import CliRunner
+import pytest
 
 from infralib import (
     InfrastructureProject,
@@ -68,6 +69,7 @@ def stack_cmd(*cmd: str) -> list[str]:
     return ["stack", *cmd, "-e", "test", "-p", CLITestProject.name]
 
 
+@pytest.mark.slow
 class TestCLIStackSubcommand:
     """
     This class tests the CLI's stack subcommand.

@@ -22,9 +22,10 @@ Run these from `deploy/`. The scripts set up the environment themselves through
 or call `pip`.
 
 ```bash
-./run-checks                # linters and tests; run before calling work finished
+./run-checks                # linters and every test, including slow ones
 ./run-linters               # mypy --strict . and ruff check .
 ./run-tests                 # pytest under coverage; extra args go to pytest
+./run-tests -m "not slow"   # skip the slow tests (see "Slow tests" below)
 ./run-tests -k test_name
 ./with-venv ruff format .   # not enforced by the scripts, but the tree is formatted
 ./pcli --help               # infrastructure CLI
@@ -43,6 +44,19 @@ Without these, tests fail with `No such file or directory: 'pulumi'` or
 `passphrase must be set`. Those are environment problems, not code bugs. Tests
 need no cloud credentials, but the first run downloads the `command` provider
 plugin.
+
+### Slow tests
+
+Tests marked `@pytest.mark.slow` run real Pulumi operations against a temporary
+backend and take most of the suite's time. They are the operator tests in
+`tests/infralib/pulumi/test_operator.py` and the `pcli stack` tests in
+`tests/cli/test_stack_cmd.py`.
+
+Run them only when a change touches infralib's Pulumi code: `infralib/pulumi/`,
+`cli/stack.py`, or the Pulumi CLI or SDK versions. For any other change, run
+`./run-linters` and `./run-tests -m "not slow"` before calling work finished,
+instead of `./run-checks`. Coverage of `infralib/pulumi/` and `cli/stack.py` drops
+when the slow tests are skipped; that is expected.
 
 ## Safety: this manages live infrastructure
 

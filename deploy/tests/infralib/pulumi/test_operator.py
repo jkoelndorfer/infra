@@ -185,6 +185,7 @@ def pulumi_operator(
     return PulumiOperator.new(pulumi_operator_tools)
 
 
+@pytest.mark.slow
 class TestPulumiOperator:
     """
     Contains tests for the PulumiOperator class.

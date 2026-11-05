@@ -29,6 +29,12 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
+# --strict-markers turns a misspelled marker into an error rather than a marker
+# that silently selects nothing.
+addopts = ["--strict-markers"]
+markers = [
+  "slow: runs real Pulumi operations against a temporary backend; deselect with '-m \"not slow\"'",
+]
 filterwarnings = [
   "ignore::DeprecationWarning:pulumi_aws.*",
 ]
