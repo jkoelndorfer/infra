@@ -41,7 +41,7 @@ class HomelabVaultwardenProject(InfrastructureProject):
     name = "homelab.vaultwarden"
     backing_volume: HomelabBackingVolumeID = "data0"
     container_port = 8080
-    image = "vaultwarden/server:1.37.1"
+    image = "vaultwarden/server:1.37.5"
     data_directory = Path("/data")
     log_directory = Path("/log")
     service_name = "vaultwarden"
