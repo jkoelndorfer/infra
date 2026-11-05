@@ -5,13 +5,18 @@ projects.homelab.monitoring.grafana
 This module provisions Grafana [1], served through Traefik, with VictoriaMetrics
 provisioned as its default data source.
 
+Grafana also provisions each dashboard in the `dashboards` directory next to this
+module [2]. Provisioned dashboards cannot be saved from the UI. To change one, edit
+it in Grafana, export it as JSON, and replace its file here.
+
 [1]: https://grafana.com/docs/grafana/latest/setup-grafana/configure-docker/
+[2]: https://grafana.com/docs/grafana/latest/administration/provisioning/#dashboards
 """
 
 from dataclasses import dataclass
 import hashlib
 import json
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 
 from pulumi import Output, ResourceOptions
 import pulumi_kubernetes as k8s
@@ -35,7 +40,7 @@ from ..kubernetes import (
     HomelabKubernetesDeploymentArgs,
     service_fqdn,
 )
-from .victoriametrics import VictoriaMetricsResult
+from .victoriametrics import SCRAPE_INTERVAL, VictoriaMetricsResult
 
 SERVICE_NAME = "grafana"
 IMAGE = "grafana/grafana:13.2.4"
@@ -46,6 +51,15 @@ BACKING_VOLUME: HomelabBackingVolumeID = "data0"
 DATA_PATH = PurePosixPath("/var/lib/grafana")
 DATASOURCES_PATH = PurePosixPath("/etc/grafana/provisioning/datasources")
 DATASOURCES_FILE_NAME = "datasources.yml"
+DASHBOARD_PROVIDERS_PATH = PurePosixPath("/etc/grafana/provisioning/dashboards")
+DASHBOARD_PROVIDERS_FILE_NAME = "dashboards.yml"
+DASHBOARDS_PATH = PurePosixPath("/etc/grafana/dashboards")
+DASHBOARDS_FOLDER = "Homelab"
+
+DASHBOARDS_SOURCE_DIRECTORY = Path(__file__).parent / "dashboards"
+"""
+The directory of dashboard JSON files that Grafana provisions.
+"""
 
 
 @dataclass
@@ -121,6 +135,21 @@ def provision_grafana(
         opts=opts,
     )
 
+    dashboard_providers_config_map = _hashed_config_map(
+        "grafana_dashboard_providers",
+        args.namespace,
+        f"{SERVICE_NAME}-dashboard-providers",
+        {DASHBOARD_PROVIDERS_FILE_NAME: _dashboard_providers()},
+        opts,
+    )
+    dashboards_config_map = _hashed_config_map(
+        "grafana_dashboards",
+        args.namespace,
+        f"{SERVICE_NAME}-dashboards",
+        _dashboards(),
+        opts,
+    )
+
     env = {
         "GF_SERVER_ROOT_URL": f"https://{service_fqdn(dctx, SERVICE_NAME)}",
         "GF_SECURITY_ADMIN_USER": ADMIN_USER,
@@ -179,6 +208,22 @@ def provision_grafana(
                         default_mode=0o444,
                     ),
                 ),
+                HomelabContainerConfigMapVolumeArgs(
+                    name="dashboard-providers",
+                    mount_path=str(DASHBOARD_PROVIDERS_PATH),
+                    config_map=ConfigMapVolumeSourceArgs(
+                        name=dashboard_providers_config_map.metadata["name"],
+                        default_mode=0o444,
+                    ),
+                ),
+                HomelabContainerConfigMapVolumeArgs(
+                    name="dashboards",
+                    mount_path=str(DASHBOARDS_PATH),
+                    config_map=ConfigMapVolumeSourceArgs(
+                        name=dashboards_config_map.metadata["name"],
+                        default_mode=0o444,
+                    ),
+                ),
             ],
         ),
         dctx=dctx,
@@ -210,9 +255,71 @@ def _datasources(victoriametrics_url: str) -> str:
                     "url": victoriametrics_url,
                     "isDefault": True,
                     "editable": False,
+                    # Lets $__rate_interval cover at least a few scrapes.
+                    "jsonData": {"timeInterval": SCRAPE_INTERVAL},
                 },
             ],
         },
         indent=2,
         sort_keys=True,
     )
+
+
+def _hashed_config_map(
+    resource_name: str,
+    namespace: Output[str],
+    name_prefix: str,
+    data: dict[str, str],
+    opts: ResourceOptions,
+) -> k8s.core.v1.ConfigMap:
+    """
+    Returns a ConfigMap of provisioning files, named after a hash of its contents.
+
+    Grafana reads provisioning files at startup. Autonaming is verbatim, so a
+    content hash in the name is what rolls the pod on a change.
+    """
+    digest = hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
+    return k8s.core.v1.ConfigMap(
+        resource_name,
+        metadata=k8s.meta.v1.ObjectMetaArgs(
+            namespace=namespace,
+            name=f"{name_prefix}-{digest[:8]}",
+        ),
+        data=data,
+        opts=opts,
+    )
+
+
+def _dashboard_providers() -> str:
+    """
+    Returns the dashboard provider provisioning file [1].
+
+    [1]: https://grafana.com/docs/grafana/latest/administration/provisioning/#dashboards
+    """
+    return json.dumps(
+        {
+            "apiVersion": 1,
+            "providers": [
+                {
+                    "name": "homelab",
+                    "type": "file",
+                    "folder": DASHBOARDS_FOLDER,
+                    "disableDeletion": True,
+                    "allowUiUpdates": False,
+                    "options": {"path": str(DASHBOARDS_PATH)},
+                },
+            ],
+        },
+        indent=2,
+        sort_keys=True,
+    )
+
+
+def _dashboards() -> dict[str, str]:
+    """
+    Returns the contents of each dashboard file, keyed by file name.
+    """
+    return {
+        p.name: p.read_text()
+        for p in sorted(DASHBOARDS_SOURCE_DIRECTORY.glob("*.json"))
+    }

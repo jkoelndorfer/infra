@@ -11,7 +11,7 @@ own, and only in-cluster clients need it.
 [1]: https://docs.victoriametrics.com/victoriametrics/single-server-victoriametrics/
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import hashlib
 import json
 from pathlib import PurePosixPath
@@ -65,6 +65,14 @@ class ScrapeJob:
     targets: list[str]
     """
     The host:port of each endpoint, scraped at /metrics.
+    """
+
+    metric_relabel_configs: list[dict[str, Any]] = field(default_factory=list)
+    """
+    Relabeling rules [1] that VictoriaMetrics applies to each scraped sample,
+    before storing it.
+
+    [1]: https://docs.victoriametrics.com/victoriametrics/relabeling/
     """
 
 
@@ -205,11 +213,18 @@ def _scrape_config(args: VictoriaMetricsArgs) -> dict[str, Any]:
         "global": {
             "scrape_interval": SCRAPE_INTERVAL,
         },
-        "scrape_configs": [
-            {
-                "job_name": job.name,
-                "static_configs": [{"targets": job.targets}],
-            }
-            for job in args.scrape_jobs
-        ],
+        "scrape_configs": [_scrape_job_config(job) for job in args.scrape_jobs],
     }
+
+
+def _scrape_job_config(job: ScrapeJob) -> dict[str, Any]:
+    """
+    Returns the configuration of one scrape job.
+    """
+    config: dict[str, Any] = {
+        "job_name": job.name,
+        "static_configs": [{"targets": job.targets}],
+    }
+    if job.metric_relabel_configs:
+        config["metric_relabel_configs"] = job.metric_relabel_configs
+    return config

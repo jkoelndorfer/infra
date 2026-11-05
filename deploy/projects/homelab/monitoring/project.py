@@ -19,6 +19,7 @@ from infralib import (
 from ..kubernetes import namespace
 from ..traefik import HomelabTraefikProject
 from .grafana import GrafanaArgs, GrafanaResult, provision_grafana
+from .traefik_metrics import traefik_metric_relabel_configs
 from .victoriametrics import (
     ScrapeJob,
     VictoriaMetricsArgs,
@@ -57,6 +58,7 @@ class HomelabMonitoringProject(InfrastructureProject):
                     ScrapeJob(
                         name="traefik",
                         targets=[HomelabTraefikProject.metrics_target(self.dctx)],
+                        metric_relabel_configs=traefik_metric_relabel_configs(),
                     ),
                 ],
             ),
