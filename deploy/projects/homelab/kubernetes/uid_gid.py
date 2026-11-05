@@ -34,6 +34,7 @@ _service_ids = {
     "victoriametrics": 9,
     "grafana": 10,
     "snmp-exporter": 11,
+    "unifi-db": 12,
 }
 
 

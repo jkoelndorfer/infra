@@ -4,9 +4,11 @@ projects.homelab.unifi.project
 
 This module contains the InfrastructureProject for the UniFi Controller.
 
-The ports used by the controller are documented at [1].
+The controller is the UniFi Network Application [1], which stores its data in
+a MongoDB database that `database` provisions. The ports it uses are documented
+at [1].
 
-[1]: https://github.com/linuxserver-archive/docker-unifi-controller?tab=readme-ov-file#parameters
+[1]: https://github.com/linuxserver/docker-unifi-network-application#parameters
 """
 
 from pathlib import Path
@@ -38,6 +40,7 @@ from ..traefik import (
     TraefikRouteBuilder,
     TraefikServiceRef,
 )
+from .database import UnifiDatabaseArgs, provision_database
 
 
 class HomelabUnifiProject(InfrastructureProject):
@@ -48,7 +51,7 @@ class HomelabUnifiProject(InfrastructureProject):
     name = "homelab.unifi"
     service_name = "unifi"
 
-    image = "linuxserver/unifi-controller:7.3.76-ls174"
+    image = "linuxserver/unifi-network-application:10.6.109-ls153"
 
     backing_volume_id: HomelabBackingVolumeID = "data0"
     config_directory = Path("/config")
@@ -75,13 +78,19 @@ class HomelabUnifiProject(InfrastructureProject):
         # the first up of this stack. Devices cannot reach the controller until
         # this stack is up.
         #
-        # The legacy unit stored its data in a differently named directory, and
-        # its volume is retained when destroyed. Move the data on the node before
-        # the first up, or the controller starts empty and devices must be
-        # adopted again.
+        # NOTE: The UniFi Network Application cannot read the data of the
+        # unifi-controller image it replaced, which ran MongoDB inside its own
+        # container. Its settings move over through a backup instead:
         #
-        #     $ cd $BACKING_VOLUME_PATH/prod-unifi
-        #     $ sudo mv unifi-config config
+        # 1. In the old controller, download a backup from Settings > System >
+        #    Backups, before the first up of this version of the stack.
+        # 2. Once this stack is up, choose to restore from a backup in the
+        #    setup wizard, and upload it.
+        #
+        # Devices keep reporting to the same host ports, so they do not need to
+        # be adopted again. The old controller's data remains on the node in
+        # $BACKING_VOLUME_PATH/prod-unifi/config; delete it once the restore
+        # has been verified.
         self.ns_name, self.ns = namespace(
             "namespace",
             self.dctx.target.environment,
@@ -105,6 +114,17 @@ class HomelabUnifiProject(InfrastructureProject):
             opts=self.default_ropts,
         )
 
+        self.database = provision_database(
+            self.dctx,
+            UnifiDatabaseArgs(
+                namespace=self.ns_name,
+                client_label_selector=k8s.meta.v1.LabelSelectorArgs(
+                    match_labels={"service-name": self.service_name},
+                ),
+            ),
+            self.default_ropts,
+        )
+
         self.deployment = HomelabKubernetesDeployment(
             name="deployment",
             args=HomelabKubernetesDeploymentArgs(
@@ -115,6 +135,7 @@ class HomelabUnifiProject(InfrastructureProject):
                     traefik_route_transform=self._traefik_route_transform,
                 ),
                 image=self.image,
+                env=self.database.client_env,
                 ports=[
                     ContainerPortArgs(
                         container_port=ports.unifi_device,
@@ -134,8 +155,13 @@ class HomelabUnifiProject(InfrastructureProject):
                 ],
                 privilege_drop_mode="s6-entrypoint",
                 volumes=[
+                    # The application reads its database settings from the
+                    # environment only on its first start, when /config is
+                    # empty. This volume is named differently from the one the
+                    # unifi-controller image used, whose configuration points
+                    # at that image's own database.
                     HomelabContainerVolumeArgs(
-                        name="config",
+                        name="data",
                         mount_path=str(self.config_directory),
                         source=HomelabContainerVolumeProvisionedSource(
                             backing_volume=self.backing_volume_id,
