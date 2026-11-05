@@ -50,6 +50,8 @@ STORAGE_PATH = PurePosixPath("/storage")
 CONFIG_DIRECTORY = PurePosixPath("/config")
 SCRAPE_CONFIG_FILE_NAME = "scrape.yml"
 
+DEFAULT_METRICS_PATH = "/metrics"
+
 
 @dataclass
 class ScrapeJob:
@@ -64,7 +66,26 @@ class ScrapeJob:
 
     targets: list[str]
     """
-    The host:port of each endpoint, scraped at /metrics.
+    The host:port of each endpoint. relabel_configs may turn these into something
+    else, such as the devices that a multi-target exporter is asked about.
+    """
+
+    metrics_path: str = DEFAULT_METRICS_PATH
+    """
+    The HTTP path that each endpoint is scraped at.
+    """
+
+    params: dict[str, list[str]] = field(default_factory=dict)
+    """
+    URL query parameters sent with each scrape.
+    """
+
+    relabel_configs: list[dict[str, Any]] = field(default_factory=list)
+    """
+    Relabeling rules [1] that VictoriaMetrics applies to each target, before
+    scraping it.
+
+    [1]: https://docs.victoriametrics.com/victoriametrics/relabeling/
     """
 
     metric_relabel_configs: list[dict[str, Any]] = field(default_factory=list)
@@ -98,6 +119,21 @@ class VictoriaMetricsResult:
     """
     The in-cluster URL of the VictoriaMetrics HTTP API.
     """
+
+
+def multi_target_relabel_configs(exporter: str) -> list[dict[str, Any]]:
+    """
+    Returns relabeling rules for a multi-target exporter [1], which queries another
+    device on each scrape. Each target is passed to the exporter at host:port as
+    its target parameter, and is kept as the instance label.
+
+    [1]: https://prometheus.io/docs/guides/multi-target-exporter/
+    """
+    return [
+        {"source_labels": ["__address__"], "target_label": "__param_target"},
+        {"source_labels": ["__param_target"], "target_label": "instance"},
+        {"target_label": "__address__", "replacement": exporter},
+    ]
 
 
 def provision_victoriametrics(
@@ -225,6 +261,12 @@ def _scrape_job_config(job: ScrapeJob) -> dict[str, Any]:
         "job_name": job.name,
         "static_configs": [{"targets": job.targets}],
     }
+    if job.metrics_path != DEFAULT_METRICS_PATH:
+        config["metrics_path"] = job.metrics_path
+    if job.params:
+        config["params"] = job.params
+    if job.relabel_configs:
+        config["relabel_configs"] = job.relabel_configs
     if job.metric_relabel_configs:
         config["metric_relabel_configs"] = job.metric_relabel_configs
     return config

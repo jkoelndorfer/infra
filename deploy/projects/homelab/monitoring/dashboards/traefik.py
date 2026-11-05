@@ -17,7 +17,17 @@ from ..traefik_metrics import (
     NAMESPACE_LABEL,
     OTHER_CODE_CLASS,
 )
-from .common import DATASOURCE, Dashboard, legend_var, legend_vars
+from .common import (
+    DATASOURCE,
+    Dashboard,
+    fixed_color,
+    legend_var,
+    legend_vars,
+    row,
+    stat,
+    target,
+    timeseries,
+)
 
 UID = "homelab-traefik"
 
@@ -41,7 +51,7 @@ def traefik_dashboard(dctx: DeploymentContext) -> Dashboard:
     Returns the Traefik dashboard.
     """
     panels = [
-        _row("Overview", y=0),
+        row("Overview", y=0),
         *_overview_stats(y=1),
         _timeseries(
             "Requests by status class",
@@ -59,7 +69,7 @@ def traefik_dashboard(dctx: DeploymentContext) -> Dashboard:
             {"h": 8, "w": 12, "x": 12, "y": 5},
         ),
         _requests_table(y=13),
-        {**_row("$namespace", y=23), "repeat": "namespace"},
+        {**row("$namespace", y=23), "repeat": "namespace"},
         _timeseries(
             "Requests by deployment and status class",
             "Requests per second to each deployment in the namespace, by status class.",
@@ -115,7 +125,7 @@ def _namespace_variable() -> dict[str, Any]:
 def _overview_stats(y: int) -> list[dict[str, Any]]:
     total = f"sum(rate({_METRIC}{{{_SELECTED}}}[{_RATE_INTERVAL}]))"
     stats = [
-        _stat(
+        stat(
             "Request rate",
             "Requests per second across the selected namespaces.",
             total,
@@ -123,7 +133,7 @@ def _overview_stats(y: int) -> list[dict[str, Any]]:
             x=0,
             y=y,
         ),
-        _stat(
+        stat(
             "Requests",
             "Requests across the selected namespaces, over the dashboard's time range.",
             f"sum(increase({_METRIC}{{{_SELECTED}}}[$__range]))",
@@ -141,7 +151,7 @@ def _overview_stats(y: int) -> list[dict[str, Any]]:
             f"[{_RATE_INTERVAL}]))"
         )
         stats.append(
-            _stat(
+            stat(
                 f"{code_class} ratio",
                 f"The share of requests that returned {code_class}.",
                 f"{matching} / {total}",
@@ -166,7 +176,7 @@ def _requests_table(y: int) -> dict[str, Any]:
     group = f"sum by ({NAMESPACE_LABEL}, {DEPLOYMENT_LABEL})"
     ref_ids = "ABCD"
     targets = [
-        _target(
+        target(
             f"{group} (increase({_METRIC}{{{_SELECTED},"
             f'{CODE_CLASS_LABEL}="{code_class}"}}[$__range]))',
             legend=code_class,
@@ -176,7 +186,7 @@ def _requests_table(y: int) -> dict[str, Any]:
         for code_class, ref_id in zip(_STATUS_CLASSES, ref_ids)
     ]
     targets.append(
-        _target(
+        target(
             f"{group} (increase({_METRIC}{{{_SELECTED}}}[$__range]))",
             legend="Total",
             ref_id="E",
@@ -217,7 +227,7 @@ def _requests_table(y: int) -> dict[str, Any]:
                     "matcher": {"id": "byName", "options": c},
                     "properties": [
                         {"id": "custom.cellOptions", "value": {"type": "color-text"}},
-                        {"id": "color", "value": _fixed_color(_CODE_CLASS_COLORS[c])},
+                        {"id": "color", "value": fixed_color(_CODE_CLASS_COLORS[c])},
                     ],
                 }
                 for c in _STATUS_CLASSES
@@ -231,59 +241,6 @@ def _requests_table(y: int) -> dict[str, Any]:
     }
 
 
-def _rate_by(label: str) -> str:
-    return f"sum by ({label}) (rate({_METRIC}{{{_SELECTED}}}[{_RATE_INTERVAL}]))"
-
-
-def _row(title: str, y: int) -> dict[str, Any]:
-    return {
-        "type": "row",
-        "title": title,
-        "collapsed": False,
-        "gridPos": {"h": 1, "w": 24, "x": 0, "y": y},
-        "panels": [],
-    }
-
-
-def _stat(
-    title: str,
-    description: str,
-    expr: str,
-    unit: str,
-    x: int,
-    y: int,
-    thresholds: list[dict[str, Any]] | None = None,
-    decimals: int | None = None,
-) -> dict[str, Any]:
-    defaults: dict[str, Any] = {
-        "unit": unit,
-        "color": {"mode": "thresholds"},
-        "thresholds": {
-            "mode": "absolute",
-            "steps": thresholds or [{"color": "text", "value": None}],
-        },
-    }
-    if decimals is not None:
-        defaults["decimals"] = decimals
-    return {
-        "type": "stat",
-        "title": title,
-        "description": description,
-        "datasource": dict(DATASOURCE),
-        "gridPos": {"h": 4, "w": 6, "x": x, "y": y},
-        "targets": [_target(expr, legend=title)],
-        "fieldConfig": {"defaults": defaults, "overrides": []},
-        "options": {
-            "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": False},
-            "colorMode": "value",
-            "graphMode": "area",
-            "textMode": "auto",
-            "justifyMode": "auto",
-            "orientation": "auto",
-        },
-    }
-
-
 def _timeseries(
     title: str,
     description: str,
@@ -292,53 +249,13 @@ def _timeseries(
     grid_pos: dict[str, int],
     overrides: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    return {
-        "type": "timeseries",
-        "title": title,
-        "description": description,
-        "datasource": dict(DATASOURCE),
-        "gridPos": grid_pos,
-        "targets": [_target(expr, legend=legend)],
-        "fieldConfig": {
-            "defaults": {
-                "unit": "reqps",
-                "min": 0,
-                "color": {"mode": "palette-classic"},
-                "custom": {
-                    "drawStyle": "line",
-                    "lineWidth": 1,
-                    "fillOpacity": 25,
-                    "stacking": {"mode": "normal", "group": "A"},
-                    "showPoints": "never",
-                    "spanNulls": False,
-                },
-            },
-            "overrides": overrides or [],
-        },
-        "options": {
-            "legend": {
-                "displayMode": "table",
-                "placement": "right",
-                "showLegend": True,
-                "calcs": ["mean", "max"],
-            },
-            "tooltip": {"mode": "multi", "sort": "desc"},
-        },
-    }
+    return timeseries(
+        title, description, [target(expr, legend=legend)], grid_pos, "reqps", overrides
+    )
 
 
-def _target(
-    expr: str, legend: str, ref_id: str = "A", instant: bool = False
-) -> dict[str, Any]:
-    return {
-        "datasource": dict(DATASOURCE),
-        "expr": expr,
-        "legendFormat": legend,
-        "refId": ref_id,
-        "range": not instant,
-        "instant": instant,
-        "format": "table" if instant else "time_series",
-    }
+def _rate_by(label: str) -> str:
+    return f"sum by ({label}) (rate({_METRIC}{{{_SELECTED}}}[{_RATE_INTERVAL}]))"
 
 
 def _code_class_overrides(display_name_regex: str) -> list[dict[str, Any]]:
@@ -352,14 +269,10 @@ def _code_class_overrides(display_name_regex: str) -> list[dict[str, Any]]:
                 "id": "byRegexp",
                 "options": display_name_regex.format(_regex_escape(code_class)),
             },
-            "properties": [{"id": "color", "value": _fixed_color(color)}],
+            "properties": [{"id": "color", "value": fixed_color(color)}],
         }
         for code_class, color in _CODE_CLASS_COLORS.items()
     ]
-
-
-def _fixed_color(color: str) -> dict[str, str]:
-    return {"mode": "fixed", "fixedColor": color}
 
 
 def _regex_escape(s: str) -> str:
