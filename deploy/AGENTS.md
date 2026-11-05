@@ -62,10 +62,9 @@ plugin.
 - **Do not read or print the files behind `INFRALIB_CONFIG_PATH` or
   `INFRALIB_LOCAL_BACKEND_PATH`** unless asked. They hold real configuration and
   state, and the folder is synced by Syncthing, so changes propagate.
-- **Keep sensitive secrets out of Pulumi state.** Some, such as the restic
-  password and the SMTP credentials, are created by hand with `kubectl` and only
-  referenced by name. Follow that pattern, and leave a `NOTE:` comment at the
-  reference explaining how to create the secret.
+- Generating secrets that land in Pulumi state is acceptable. Pulumi's state
+  encrypts secrets. The state is protected and not pushed to any remote source,
+	except via encrypted backups.
 
 `pcli` requires `INFRALIB_CONFIG_PATH`, `INFRALIB_LOCAL_BACKEND_PATH`, and
 `PULUMI_CONFIG_PASSPHRASE` (or `PULUMI_CONFIG_PASSPHRASE_FILE`). If they are
@@ -211,8 +210,6 @@ Python 3.14 with `mypy --strict`, including tests. Match the surrounding code:
   For a change to shared code, leave out `-p` and `-e` to compare every stack. Read
   the diff and confirm that it contains only what you intended. Call out URN changes,
   because they can replace resources.
-- **To assert something specific about a project,** add a test under `tests/projects/`
-  using `render_with_dependencies` and `Rendering.one`.
 - **If a render crashes on a value that a provider would compute,** add it to
   `_computed_state` or `_CALL_RESULTS` in `infralib/testing/render.py`.
 - **Rendering does not validate a deployment.** No provider code runs, so it cannot
@@ -223,6 +220,9 @@ Python 3.14 with `mypy --strict`, including tests. Match the surrounding code:
   fixtures in `tests/conftest.py` and `tests/infralib/pulumi/conftest.py`, along
   with `Environment.TEST`, `CommandOnlyProviderFactory`, and the Pulumi mock
   fixture.
+- **DO NOT** write tests to make assertions about specific projects. Infrastructure
+  functionality needs to be manually validated after deployment and after every
+	change. Previews help detect unwanted changes.
 - Never point tests at real cloud providers or real configuration.
 - Mark code that only runs against real providers with `# pragma: no cover`, as in
   `StandardProviderFactory`.
