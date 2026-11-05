@@ -100,6 +100,17 @@ class HomelabContainerConfigMapVolumeArgs:
 
 
 @dataclass
+class HomelabContainerSecretVolumeArgs:
+    """
+    Class that defines a read-only volume backed by an existing Secret.
+    """
+
+    name: str
+    mount_path: str
+    secret: k8s.core.v1.SecretVolumeSourceArgs
+
+
+@dataclass
 class HomelabHTTPSDeploymentIngressArgs:
     """
     Class that provides arguments to a deployment for establishing a standard
@@ -141,6 +152,7 @@ class HomelabKubernetesDeploymentArgs:
     config_map_volumes: list[HomelabContainerConfigMapVolumeArgs] = field(
         default_factory=list
     )
+    secret_volumes: list[HomelabContainerSecretVolumeArgs] = field(default_factory=list)
     https_ingress: HomelabHTTPSDeploymentIngressArgs | None = None
     command: Input[Sequence[Input[str]]] | None = None
     env: list[k8s.core.v1.EnvVarArgs] = field(default_factory=list)
@@ -228,6 +240,14 @@ class HomelabKubernetesDeployment(
                     )
                     for v in self.args.config_map_volumes
                 ],
+                *[
+                    k8s.core.v1.VolumeMountArgs(
+                        name=v.name,
+                        mount_path=v.mount_path,
+                        read_only=True,
+                    )
+                    for v in self.args.secret_volumes
+                ],
             ],
         )
 
@@ -264,6 +284,10 @@ class HomelabKubernetesDeployment(
                 *[
                     k8s.core.v1.VolumeArgs(name=v.name, config_map=v.config_map)
                     for v in self.args.config_map_volumes
+                ],
+                *[
+                    k8s.core.v1.VolumeArgs(name=v.name, secret=v.secret)
+                    for v in self.args.secret_volumes
                 ],
             ],
         )
