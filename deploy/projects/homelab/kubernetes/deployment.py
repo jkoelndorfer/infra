@@ -284,7 +284,7 @@ class HomelabKubernetesDeployment(
         )
 
         self.deployment = k8s.apps.v1.Deployment(
-            "deployment",
+            self.args.name,
             metadata=k8s.meta.v1.ObjectMetaArgs(
                 namespace=self.args.namespace,
                 name=self.args.name,
