@@ -202,6 +202,13 @@ class RenderComputedProject(InfrastructureProject):
         )
         pulumi.export("secret_data", secret.data)
 
+        release = k8s.helm.v3.Release("release", chart="example", opts=k8s_opts)
+        pulumi.export("release_name", release.name)
+        named_release = k8s.helm.v3.Release(
+            "named_release", chart="example", name="explicit", opts=k8s_opts
+        )
+        pulumi.export("named_release_name", named_release.name)
+
         password = random.RandomPassword("password", length=8, opts=random_opts)
         pulumi.export("password", password.result)
 
@@ -363,6 +370,8 @@ def test_computed_values_are_available() -> None:
 
     assert b64decode(outputs["secret_data"]["username"]) == b"admin"
     assert outputs["password"] == "mock-random-password"
+    assert outputs["release_name"] == "release"
+    assert outputs["named_release_name"] == "explicit"
     assert outputs["zone_name"] == "example.com"
     assert outputs["name_servers"]
     assert outputs["validation"] == [

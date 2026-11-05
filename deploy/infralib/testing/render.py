@@ -107,6 +107,10 @@ def _computed_state(args: pulumi.runtime.MockResourceArgs) -> dict[str, Any]:
             k: b64encode(str(v).encode("utf-8")).decode("ascii")
             for k, v in (_plain(args.inputs.get("stringData")) or {}).items()
         }
+    if args.typ == "kubernetes:helm.sh/v3:Release":
+        # The provider names a release after its resource when no name is given.
+        # An explicit name is an input, which takes precedence over this.
+        state["name"] = args.name
     if args.typ == "aws:route53/zone:Zone":
         state["zoneId"] = f"{_ZONE_ID_PREFIX}{args.inputs.get('name')}"
     if args.typ == "aws:route53/record:Record":
