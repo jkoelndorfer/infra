@@ -1,10 +1,12 @@
 {% set networks = network.networks %}
 {% set router = network.router %}
 {% set ports = network.ports %}
-{% set internal_dns = (
+{% set kserv = (
     networks.infra.dhcp.assignments | selectattr("name", "eq", "kserv") | first
     ).ip %}
-{% set unifi = internal_dns %}
+{% set internal_dns = kserv %}
+{% set unifi = kserv %}
+{% set wireguard = kserv %}
 firewall {
   all-ping enable
   broadcast-ping disable
@@ -44,6 +46,7 @@ firewall {
     }
     network-group ADDR_TRUSTED {
       network {{ networks.trusted.ipv4_network }}
+      network {{ networks.wireguard_trusted.ipv4_network }}
     }
     network-group ADDR_TRUSTED_PLUS {
       network {{ networks.mgmt.ipv4_network }}
@@ -229,6 +232,15 @@ firewall {
       destination {
         address {{ internal_dns }}
         port {{ ports.dns }}
+      }
+    }
+    rule 170 {
+      action accept
+      description "Port forward: WireGuard (trusted)"
+      protocol udp
+      destination {
+        address {{ wireguard }}
+        port {{ ports.wireguard_trusted }}
       }
     }
     {% for i in network.port_forwards %}
@@ -573,6 +585,16 @@ port-forward {
     protocol {{ i.protocol }}
   }
   {% endfor %}
+  {# Numbered after the configured port forwards, so that theirs do not change. #}
+  rule {{ network.port_forwards | length + 1 }} {
+    description "WireGuard (trusted)"
+    forward-to {
+      address {{ wireguard }}
+      port {{ ports.wireguard_trusted }}
+    }
+    original-port {{ ports.wireguard_trusted }}
+    protocol udp
+  }
   wan-interface pppoe0
 }
 protocols {

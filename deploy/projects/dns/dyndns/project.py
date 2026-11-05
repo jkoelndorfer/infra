@@ -16,6 +16,7 @@ import pulumi_random as random
 from infralib import (
     DeploymentTarget,
     Environment,
+    InfrastructureConfiguration,
     InfrastructureProject,
     InfrastructureStack,
     StackOutputResolver,
@@ -75,6 +76,15 @@ class DNSDynDNSProject(InfrastructureProject):
         return [DeploymentTarget(Environment.PROD, None)]
 
     @classmethod
+    def hostname(cls, config: InfrastructureConfiguration) -> str:
+        """
+        Returns the hostname that resolves to the homelab's public address.
+        """
+        return config.domains[cls.domain_id].domain_for(
+            DeploymentTarget(Environment.PROD, None)
+        )
+
+    @classmethod
     def client(cls, outputs: StackOutputResolver) -> DynDNSClient:
         """
         Returns the configuration a client needs to update the record, given a
@@ -91,7 +101,7 @@ class DNSDynDNSProject(InfrastructureProject):
 
     def pulumi_program(self) -> None:
         env = self.dctx.target.environment
-        hostname = self.dctx.config.domains[self.domain_id].domain_for(self.dctx.target)
+        hostname = self.hostname(self.dctx.config)
 
         # The function is deployed into whichever account owns the zone, so its
         # role never needs to cross an account boundary.

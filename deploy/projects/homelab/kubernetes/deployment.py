@@ -148,6 +148,8 @@ class HomelabKubernetesDeploymentArgs:
     image_pull_policy: Literal["Always", "IfNotPresent", "Never"] = "IfNotPresent"
     image_pull_secret_provider: ImagePullSecretProvider | None = None
     privilege_drop_mode: Literal["pod-exec", "s6-entrypoint", None] = "pod-exec"
+    security_context: k8s.core.v1.SecurityContextArgs | None = None
+    init_containers: list[k8s.core.v1.ContainerArgs] = field(default_factory=list)
 
 
 class HomelabKubernetesDeployment(
@@ -215,6 +217,7 @@ class HomelabKubernetesDeployment(
             image_pull_policy=self.args.image_pull_policy,
             env=[*self.args.env, *addl_env],
             ports=[*self.args.ports, *addl_ports],
+            security_context=self.args.security_context,
             volume_mounts=[
                 *[v.volume_mount_args for v in self.volumes.values()],
                 *[
@@ -254,6 +257,7 @@ class HomelabKubernetesDeployment(
         pod_spec = k8s.core.v1.PodSpecArgs(
             containers=[container_args],
             image_pull_secrets=image_pull_secrets,
+            init_containers=self.args.init_containers or None,
             security_context=pod_security_context,
             volumes=[
                 *[v.volume_args for v in self.volumes.values()],

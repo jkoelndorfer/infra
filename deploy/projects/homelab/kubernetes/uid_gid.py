@@ -30,6 +30,7 @@ _service_ids = {
     "speedtest": 5,
     "unifi": 6,
     "blocky": 7,
+    "vpn": 8,
 }
 
 

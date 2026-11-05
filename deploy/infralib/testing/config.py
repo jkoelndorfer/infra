@@ -141,7 +141,17 @@ def dummy_infrastructure_configuration() -> InfrastructureConfiguration:
                 ),
                 kube_service=HomelabNetwork("kube_service", IPv4Network("10.0.8.0/22")),
                 infra=HomelabNetwork(
-                    "infra", IPv4Network("10.0.2.0/24"), dhcp=HomelabDHCP()
+                    "infra",
+                    IPv4Network("10.0.2.0/24"),
+                    dhcp=HomelabDHCP(
+                        assignments=[
+                            HomelabDHCPAssignment(
+                                name="kserv",
+                                mac="00:00:5e:00:53:02",
+                                ip=IPv4Address("10.0.2.5"),
+                            ),
+                        ],
+                    ),
                 ),
                 mgmt=HomelabNetwork("mgmt", IPv4Network("10.0.4.0/22")),
                 mgmt_backup=HomelabNetwork("mgmt_backup", IPv4Network("10.0.3.0/24")),

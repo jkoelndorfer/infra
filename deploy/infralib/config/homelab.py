@@ -641,6 +641,9 @@ class HomelabPorts:
     # The port UniFi access points are discovered on.
     unifi_ap_discovery: int = 10001
 
+    # WireGuard, for peers attached to the wireguard_trusted network.
+    wireguard_trusted: int = 51820
+
 
 @dataclass
 class HomelabNetworking:
