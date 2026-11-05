@@ -31,6 +31,8 @@ _service_ids = {
     "unifi": 6,
     "blocky": 7,
     "vpn": 8,
+    "victoriametrics": 9,
+    "grafana": 10,
 }
 
 
