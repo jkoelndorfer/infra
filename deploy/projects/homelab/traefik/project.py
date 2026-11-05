@@ -59,8 +59,8 @@ class HomelabTraefikProject(InfrastructureProject):
     backing_volume_id: HomelabBackingVolumeID = "data0"
 
     chart_oci_uri = "oci://ghcr.io/traefik/helm/traefik"
-    chart_version = "41.0.0"
-    chart_sha256 = "c7425a28bdc731dcb59a61cf85349463a235bf76c3c5f9f42ca8f6e2dbc62f72"
+    chart_version = "42.3.0"
+    chart_sha256 = "de80db5ff49b72d040904a3e0bc11f631648dc421e2bd0ac5c888990be1400ca"
 
     data_path = Path("/data")
 
@@ -362,6 +362,11 @@ class HomelabTraefikProject(InfrastructureProject):
                         },
                     },
                 },
+            },
+            "providers": {
+                "kubernetesCRD": {
+                    "safeNaming": True,
+                }
             },
             "tlsOptions": {
                 "default": {
