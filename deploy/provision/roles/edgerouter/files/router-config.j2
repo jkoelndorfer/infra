@@ -295,6 +295,17 @@ firewall {
       description "Ping"
       protocol icmp
     }
+    rule 130 {
+      action accept
+      description "SNMP from the Kubernetes host"
+      protocol udp
+      source {
+        address {{ network.kubernetes_host }}
+      }
+      destination {
+        port {{ ports.snmp }}
+      }
+    }
   }
 
   /* Connections to mgmt. */
@@ -864,6 +875,16 @@ service {
           address {{ networks.lockdown.ipv4_network }}
         }
       type masquerade
+    }
+  }
+  /* Read-only, for the SNMP exporter, whose queries come from the Kubernetes host. */
+  snmp {
+    community {{ network.snmp.community }} {
+      authorization ro
+      client {{ network.kubernetes_host }}
+    }
+    listen-address {{ networks.infra.router_interface.ip }} {
+      port {{ ports.snmp }}
     }
   }
   ssh {

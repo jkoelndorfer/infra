@@ -25,6 +25,7 @@ from infralib.config.homelab import (
     HomelabPPPoE,
     HomelabRouter,
     HomelabRouterAdmin,
+    HomelabSNMP,
     HomelabSwitch,
     HomelabSwitchPort,
 )
@@ -77,6 +78,7 @@ def networking_dict(
     return {
         "upstream_dns": ["192.0.2.53", "198.51.100.53"],
         "router": router_dict,
+        "snmp": {"community": "test-community"},
         "networks": [
             network_dict,
             {"name": "wireguard_trusted", "ipv4_network": "10.0.15.0/24"},
@@ -663,6 +665,59 @@ class TestHomelabRouter:
             cls.from_dict(router_dict[section])
 
 
+class TestHomelabSNMP:
+    """
+    Container for HomelabSNMP tests.
+    """
+
+    def test_from_dict_parses_values(self) -> None:
+        """
+        Tests that from_dict() parses the community.
+        """
+        snmp = HomelabSNMP.from_dict({"community": "Ab-1_" + "c" * 11})
+
+        assert snmp.community == "Ab-1_ccccccccccc"
+
+    def test_repr_hides_community(self) -> None:
+        """
+        Tests that the community does not appear in debug output.
+        """
+        assert "test-community" not in repr(HomelabSNMP("test-community"))
+
+    @pytest.mark.parametrize(
+        "community",
+        ["", "a" * 17, "has space", 'has"quote', "has'quote", None, 12345],
+    )
+    def test_rejects_invalid_communities_without_revealing_them(
+        self, community: Any
+    ) -> None:
+        """
+        Tests that the community must suit every device, and stays out of the error.
+        """
+        with pytest.raises(
+            InvalidConfigurationError, match="community must be 1 to 16"
+        ) as excinfo:
+            HomelabSNMP(community)
+
+        if community:
+            assert str(community) not in str(excinfo.value)
+
+    @pytest.mark.parametrize("community", ["public", "private"])
+    def test_rejects_default_communities(self, community: str) -> None:
+        """
+        Tests that the community is not one that devices create by default.
+        """
+        with pytest.raises(InvalidConfigurationError, match="device default"):
+            HomelabSNMP(community)
+
+    def test_from_dict_rejects_missing_community(self) -> None:
+        """
+        Tests that from_dict() names a missing community.
+        """
+        with pytest.raises(InvalidConfigurationError, match="missing 'community'"):
+            HomelabSNMP.from_dict({})
+
+
 class TestHomelabSwitchPort:
     """
     Container for HomelabSwitchPort tests.
@@ -1043,7 +1098,7 @@ class TestHomelabNetworking:
         with pytest.raises(InvalidConfigurationError, match="homelab networking"):
             HomelabNetworking.from_dict(networking_dict)
 
-    @pytest.mark.parametrize("key", ["upstream_dns", "networks", "router"])
+    @pytest.mark.parametrize("key", ["upstream_dns", "networks", "router", "snmp"])
     def test_from_dict_rejects_missing_keys(
         self, networking_dict: dict[str, Any], key: str
     ) -> None:
@@ -1054,6 +1109,31 @@ class TestHomelabNetworking:
 
         with pytest.raises(InvalidConfigurationError, match=f"missing '{key}'"):
             HomelabNetworking.from_dict(networking_dict)
+
+    def test_kubernetes_host_is_kserv(self, networking_dict: dict[str, Any]) -> None:
+        """
+        Tests that the Kubernetes host is found by its infra DHCP assignment.
+        """
+        named_network(networking_dict, "infra")["dhcp"]["assignments"] = [
+            {"name": "other", "mac": "00:00:5e:00:53:03", "ip": "10.0.2.6"},
+            {"name": "kserv", "mac": "00:00:5e:00:53:02", "ip": "10.0.2.5"},
+        ]
+        networking = HomelabNetworking.from_dict(networking_dict)
+
+        assert networking.kubernetes_host == IPv4Address("10.0.2.5")
+
+    @pytest.mark.parametrize("dhcp", [None, {"assignments": []}])
+    def test_kubernetes_host_must_be_assigned(
+        self, networking_dict: dict[str, Any], dhcp: dict[str, Any] | None
+    ) -> None:
+        """
+        Tests that a missing Kubernetes host assignment gets a clear error.
+        """
+        named_network(networking_dict, "infra")["dhcp"] = dhcp
+        networking = HomelabNetworking.from_dict(networking_dict)
+
+        with pytest.raises(InvalidConfigurationError, match="'kserv'"):
+            networking.kubernetes_host
 
 
 class TestHomelab:

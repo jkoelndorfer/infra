@@ -25,6 +25,7 @@ from ..config.homelab import (
     HomelabPPPoE,
     HomelabRouter,
     HomelabRouterAdmin,
+    HomelabSNMP,
     HomelabSwitch,
     HomelabSwitchPort,
 )
@@ -206,6 +207,7 @@ def dummy_infrastructure_configuration() -> InfrastructureConfiguration:
                     username="test-pppoe", password="test-pppoe-password"
                 ),
             ),
+            snmp=HomelabSNMP(community="test-community"),
         ),
     )
     notification_channels = NotificationChannels(

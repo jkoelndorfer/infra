@@ -195,6 +195,8 @@ def test_infrastructure_yaml_configuration() -> str:
                     pppoe:
                         username: test-pppoe
                         password: test-pppoe-password
+                snmp:
+                    community: test-community
 
         notification_channels:
             - name: First Billing Test

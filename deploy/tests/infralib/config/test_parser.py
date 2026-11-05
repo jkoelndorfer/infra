@@ -123,6 +123,7 @@ class TestInfrastructureConfigurationYAMLParser:
         assert homelab.network.port_forwards[0].dest_port == 443
         assert homelab.network.router.admin.pubkey_key == "AAAAtest"
         assert homelab.network.router.pppoe.password == "test-pppoe-password"
+        assert homelab.network.snmp.community == "test-community"
 
         nc = config.notification_channels
         nc0 = nc[0]

@@ -11,13 +11,20 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field, fields
 from ipaddress import IPv4Address, IPv4Interface, IPv4Network
 import re
-from typing import Any, Self
+from typing import Any, ClassVar, Self
 
 from ..error import InvalidConfigurationError
 
 _MAC_PATTERN = re.compile(r"[0-9a-fA-F]{2}(:[0-9a-fA-F]{2}){5}")
 _ENCRYPTED_PASSWORD_PATTERN = re.compile(r"\$5\$[./0-9A-Za-z]{1,16}\$[./0-9A-Za-z]{43}")
 _PORT_FORWARD_PROTOCOLS = ("tcp", "udp", "tcp_udp")
+
+# EdgeSwitch limits community names to 16 characters, and neither the switch's nor the
+# router's configuration can quote one safely.
+_SNMP_COMMUNITY_PATTERN = re.compile(r"[A-Za-z0-9_-]{1,16}")
+
+# The name of the infra DHCP assignment for the Kubernetes host.
+_KUBERNETES_HOST = "kserv"
 
 
 @contextmanager
@@ -521,6 +528,45 @@ class HomelabRouter:
 
 
 @dataclass
+class HomelabSNMP:
+    """
+    Read-only SNMP access to the router and switches, for monitoring.
+
+    NOTE: Unlike HomelabRouter, this is passed to Pulumi, because the SNMP exporter
+    needs the community. It is kept in state as a secret.
+    """
+
+    # The SNMPv2c community that grants read-only access: 1 to 16 letters, digits,
+    # hyphens and underscores.
+    community: str = field(repr=False)
+
+    # The communities that devices create by default. Provisioning removes them.
+    default_communities: ClassVar[tuple[str, ...]] = ("public", "private")
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.community, str) or not _SNMP_COMMUNITY_PATTERN.fullmatch(
+            self.community
+        ):
+            raise InvalidConfigurationError(
+                "invalid SNMP: community must be 1 to 16 letters, digits, hyphens "
+                "or underscores"
+            )
+
+        if self.community in self.default_communities:
+            raise InvalidConfigurationError(
+                "invalid SNMP: community must not be a device default"
+            )
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> Self:
+        """
+        Constructs a HomelabSNMP from a dictionary.
+        """
+        with _invalid_configuration("SNMP"):
+            return cls(d["community"])
+
+
+@dataclass
 class HomelabNetworks:
     """
     The homelab's networks. Each is configured with its attribute's name.
@@ -626,6 +672,9 @@ class HomelabPorts:
     # HTTP, served by the ingress controller to redirect to HTTPS.
     http: int = 80
 
+    # SNMP, served by the router and switches for monitoring.
+    snmp: int = 161
+
     # HTTPS, served by the ingress controller.
     https: int = 443
 
@@ -660,6 +709,9 @@ class HomelabNetworking:
     # Configuration only used to provision the router.
     router: HomelabRouter
 
+    # SNMP access to the router and switches.
+    snmp: HomelabSNMP
+
     # The managed switches.
     switches: list[HomelabSwitch] = field(default_factory=list)
 
@@ -684,6 +736,21 @@ class HomelabNetworking:
         for switch in self.switches:
             for port in switch.ports:
                 self._check_switch_port(switch, port)
+
+    @property
+    def kubernetes_host(self) -> IPv4Address:
+        """
+        The address of the Kubernetes host, from its infra DHCP assignment. Pods reach
+        the rest of the network from this address.
+        """
+        dhcp = self.networks.infra.dhcp
+        assignments = [] if dhcp is None else dhcp.assignments
+        for assignment in assignments:
+            if assignment.name == _KUBERNETES_HOST:
+                return assignment.ip
+        raise InvalidConfigurationError(
+            f"no infra DHCP assignment for the Kubernetes host {_KUBERNETES_HOST!r}"
+        )
 
     def _check_switch_port(
         self, switch: HomelabSwitch, port: HomelabSwitchPort
@@ -726,6 +793,7 @@ class HomelabNetworking:
                 upstream_dns=[IPv4Address(a) for a in d["upstream_dns"]],
                 networks=HomelabNetworks.from_list(d["networks"]),
                 router=HomelabRouter.from_dict(d["router"]),
+                snmp=HomelabSNMP.from_dict(d["snmp"]),
                 switches=[HomelabSwitch.from_dict(s) for s in d.get("switches", [])],
                 dns_records=[
                     HomelabDNSRecord.from_dict(r) for r in d.get("dns_records", [])
