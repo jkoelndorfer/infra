@@ -118,8 +118,7 @@ class HomelabExampleProject(InfrastructureProject):
     def deployment_targets(cls) -> list[DeploymentTarget]:
         return [DeploymentTarget(e, None) for e in [Environment.DEV, Environment.PROD]]
 
-    def pulumi_program(self) -> None:
-        ...
+    def pulumi_program(self) -> None: ...
 ```
 
 - **Registration is automatic.** Subclassing registers the project, and importing
