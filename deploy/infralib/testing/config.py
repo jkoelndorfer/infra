@@ -169,6 +169,7 @@ def dummy_infrastructure_configuration() -> InfrastructureConfiguration:
             switches=[
                 HomelabSwitch(
                     name="test-switch",
+                    address=IPv4Address("10.0.4.2"),
                     ports=[
                         HomelabSwitchPort(
                             port="0/1",

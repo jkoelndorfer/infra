@@ -166,6 +166,7 @@ def test_infrastructure_yaml_configuration() -> str:
                       vlan_id: 14
                 switches:
                     - name: test-switch
+                      address: 10.0.4.2
                       ports:
                           - port: 0/1
                             description: router uplink

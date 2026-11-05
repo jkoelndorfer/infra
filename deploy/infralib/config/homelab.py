@@ -388,6 +388,9 @@ class HomelabSwitch:
     # The switch's managed ports.
     ports: list[HomelabSwitchPort] = field(default_factory=list)
 
+    # The address the switch is managed at. None if it is not monitored.
+    address: IPv4Address | None = None
+
     def __post_init__(self) -> None:
         if duplicates := _duplicates(p.port for p in self.ports):
             listed = ", ".join(duplicates)
@@ -401,9 +404,11 @@ class HomelabSwitch:
         Constructs a HomelabSwitch from a dictionary.
         """
         with _invalid_configuration("switch"):
+            address = d.get("address")
             return cls(
                 d["name"],
                 [HomelabSwitchPort.from_dict(p) for p in d.get("ports", [])],
+                None if address is None else IPv4Address(address),
             )
 
 

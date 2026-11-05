@@ -33,6 +33,7 @@ _service_ids = {
     "vpn": 8,
     "victoriametrics": 9,
     "grafana": 10,
+    "snmp-exporter": 11,
 }
 
 

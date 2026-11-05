@@ -788,11 +788,29 @@ class TestHomelabSwitch:
     Container for HomelabSwitch tests.
     """
 
-    def test_ports_are_optional(self) -> None:
+    def test_ports_and_address_are_optional(self) -> None:
         """
-        Tests that a switch may have no managed ports.
+        Tests that a switch may have no managed ports, and need not be monitored.
         """
-        assert HomelabSwitch.from_dict({"name": "core"}).ports == []
+        switch = HomelabSwitch.from_dict({"name": "core"})
+
+        assert switch.ports == []
+        assert switch.address is None
+
+    def test_from_dict_parses_address(self) -> None:
+        """
+        Tests that from_dict() parses the switch's management address.
+        """
+        switch = HomelabSwitch.from_dict({"name": "core", "address": "10.0.4.2"})
+
+        assert switch.address == IPv4Address("10.0.4.2")
+
+    def test_from_dict_rejects_invalid_address(self) -> None:
+        """
+        Tests that an invalid address names the switch configuration.
+        """
+        with pytest.raises(InvalidConfigurationError, match="invalid switch"):
+            HomelabSwitch.from_dict({"name": "core", "address": "not-an-address"})
 
     def test_rejects_duplicate_ports(self) -> None:
         """

@@ -3,7 +3,8 @@ projects.homelab.monitoring.project
 ===================================
 
 This module contains the InfrastructureProject for homelab monitoring: VictoriaMetrics
-stores metrics, and Grafana visualizes them.
+stores metrics, and Grafana visualizes them. The SNMP exporter collects metrics from
+the router and switches.
 """
 
 from pulumi import ResourceOptions
@@ -16,14 +17,19 @@ from infralib import (
     InfrastructureStack,
 )
 
-from ..kubernetes import namespace
+from ..kubernetes import HomelabKubernetesDeployment, namespace
 from ..traefik import HomelabTraefikProject
-from .grafana import GrafanaArgs, GrafanaResult, provision_grafana
+from .grafana import GrafanaArgs, provision_grafana
+from .snmp_exporter import (
+    SNMPExporterArgs,
+    provision_snmp_exporter,
+    snmp_devices,
+    snmp_scrape_job,
+)
 from .traefik_metrics import traefik_metric_relabel_configs
 from .victoriametrics import (
     ScrapeJob,
     VictoriaMetricsArgs,
-    VictoriaMetricsResult,
     provision_victoriametrics,
 )
 
@@ -50,6 +56,16 @@ class HomelabMonitoringProject(InfrastructureProject):
             opts=self.default_ropts,
         )
 
+        networking = self.dctx.config.homelab.network
+        snmp_exporter = provision_snmp_exporter(
+            self.dctx,
+            SNMPExporterArgs(
+                namespace=self.ns_name,
+                community=networking.snmp.community,
+            ),
+            self.default_ropts,
+        )
+
         vm = provision_victoriametrics(
             self.dctx,
             VictoriaMetricsArgs(
@@ -60,6 +76,7 @@ class HomelabMonitoringProject(InfrastructureProject):
                         targets=[HomelabTraefikProject.metrics_target(self.dctx)],
                         metric_relabel_configs=traefik_metric_relabel_configs(),
                     ),
+                    *[snmp_scrape_job(d) for d in snmp_devices(networking)],
                 ],
             ),
             self.default_ropts,
@@ -74,31 +91,37 @@ class HomelabMonitoringProject(InfrastructureProject):
             self.default_ropts,
         )
 
-        self._provision_victoriametrics_ingress_policy(vm, grafana)
+        self._provision_ingress_policy(
+            "victoriametrics", vm.deployment, grafana.deployment
+        )
+        self._provision_ingress_policy(
+            "snmp_exporter", snmp_exporter.deployment, vm.deployment
+        )
 
-    def _provision_victoriametrics_ingress_policy(
+    def _provision_ingress_policy(
         self,
-        vm: VictoriaMetricsResult,
-        grafana: GrafanaResult,
+        name: str,
+        server: HomelabKubernetesDeployment,
+        client: HomelabKubernetesDeployment,
     ) -> None:
         """
-        Provisions a policy that permits only Grafana to reach VictoriaMetrics.
-        Selecting the pods denies all other ingress to them.
+        Provisions a policy that permits only the client's pods to reach the server's
+        HTTP port. Selecting the server's pods denies all other ingress to them.
         """
         k8s.networking.v1.NetworkPolicy(
-            "victoriametrics_ingress",
+            f"{name}_ingress",
             metadata=k8s.meta.v1.ObjectMetaArgs(
                 namespace=self.ns_name,
-                name="victoriametrics-ingress",
+                name=f"{name.replace('_', '-')}-ingress",
             ),
             spec=k8s.networking.v1.NetworkPolicySpecArgs(
-                pod_selector=vm.deployment.label_selector,
+                pod_selector=server.label_selector,
                 policy_types=["Ingress"],
                 ingress=[
                     k8s.networking.v1.NetworkPolicyIngressRuleArgs(
                         from_=[
                             k8s.networking.v1.NetworkPolicyPeerArgs(
-                                pod_selector=grafana.deployment.label_selector,
+                                pod_selector=client.label_selector,
                             ),
                         ],
                         ports=[

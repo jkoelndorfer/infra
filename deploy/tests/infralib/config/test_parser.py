@@ -5,6 +5,7 @@ tests/infralib/config/test_parser -- Configuration Parser Tests
 This file contains code to test infralib configuration parsers.
 """
 
+from ipaddress import IPv4Address
 from os import PathLike
 
 import pytest
@@ -124,6 +125,7 @@ class TestInfrastructureConfigurationYAMLParser:
         assert homelab.network.router.admin.pubkey_key == "AAAAtest"
         assert homelab.network.router.pppoe.password == "test-pppoe-password"
         assert homelab.network.snmp.community == "test-community"
+        assert homelab.network.switches[0].address == IPv4Address("10.0.4.2")
 
         nc = config.notification_channels
         nc0 = nc[0]
