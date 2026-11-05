@@ -5,9 +5,9 @@ projects.homelab.monitoring.grafana
 This module provisions Grafana [1], served through Traefik, with VictoriaMetrics
 provisioned as its default data source.
 
-Grafana also provisions each dashboard in the `dashboards` directory next to this
-module [2]. Provisioned dashboards cannot be saved from the UI. To change one, edit
-it in Grafana, export it as JSON, and replace its file here.
+Grafana also provisions each dashboard in `dashboards.DASHBOARDS` [2]. Provisioned
+dashboards cannot be saved from the UI. To change one, change its function; a
+dashboard edited in Grafana can be exported as JSON to see what to change.
 
 [1]: https://grafana.com/docs/grafana/latest/setup-grafana/configure-docker/
 [2]: https://grafana.com/docs/grafana/latest/administration/provisioning/#dashboards
@@ -16,7 +16,7 @@ it in Grafana, export it as JSON, and replace its file here.
 from dataclasses import dataclass
 import hashlib
 import json
-from pathlib import Path, PurePosixPath
+from pathlib import PurePosixPath
 
 from pulumi import Output, ResourceOptions
 import pulumi_kubernetes as k8s
@@ -40,6 +40,7 @@ from ..kubernetes import (
     HomelabKubernetesDeploymentArgs,
     service_fqdn,
 )
+from .dashboards import DATASOURCE_UID, dashboard_files
 from .victoriametrics import SCRAPE_INTERVAL, VictoriaMetricsResult
 
 SERVICE_NAME = "grafana"
@@ -55,11 +56,6 @@ DASHBOARD_PROVIDERS_PATH = PurePosixPath("/etc/grafana/provisioning/dashboards")
 DASHBOARD_PROVIDERS_FILE_NAME = "dashboards.yml"
 DASHBOARDS_PATH = PurePosixPath("/etc/grafana/dashboards")
 DASHBOARDS_FOLDER = "Homelab"
-
-DASHBOARDS_SOURCE_DIRECTORY = Path(__file__).parent / "dashboards"
-"""
-The directory of dashboard JSON files that Grafana provisions.
-"""
 
 
 @dataclass
@@ -146,7 +142,7 @@ def provision_grafana(
         "grafana_dashboards",
         args.namespace,
         f"{SERVICE_NAME}-dashboards",
-        _dashboards(),
+        dashboard_files(dctx),
         opts,
     )
 
@@ -249,7 +245,7 @@ def _datasources(victoriametrics_url: str) -> str:
             "datasources": [
                 {
                     "name": "VictoriaMetrics",
-                    "uid": "victoriametrics",
+                    "uid": DATASOURCE_UID,
                     "type": "prometheus",
                     "access": "proxy",
                     "url": victoriametrics_url,
@@ -313,13 +309,3 @@ def _dashboard_providers() -> str:
         indent=2,
         sort_keys=True,
     )
-
-
-def _dashboards() -> dict[str, str]:
-    """
-    Returns the contents of each dashboard file, keyed by file name.
-    """
-    return {
-        p.name: p.read_text()
-        for p in sorted(DASHBOARDS_SOURCE_DIRECTORY.glob("*.json"))
-    }
