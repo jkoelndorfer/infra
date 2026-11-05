@@ -14,9 +14,10 @@ from pulumi_aws.iam import (
     GetPolicyDocumentStatementArgs as Statement,
     GetPolicyDocumentStatementConditionArgs as Condition,
 )
-from pulumi import InvokeOptions, ResourceOptions
+from pulumi import export, InvokeOptions, ResourceOptions
 
 from infralib import (
+    DeploymentContext,
     DeploymentTarget,
     Environment,
     InfrastructureProject,
@@ -38,6 +39,15 @@ from ..kubernetes.volume import (
 from .config import TraefikConfiguration as traefik_config
 
 
+def _metrics_service_name(release_name: str | None) -> str:
+    """
+    Returns the name of the metrics service that the chart creates for a release.
+    """
+    if release_name is None:
+        raise ValueError("the Traefik Helm release has no name")
+    return f"{release_name}-metrics"
+
+
 class HomelabTraefikProject(InfrastructureProject):
     """
     Project that installs Traefik on the homelab Kubernetes cluster.
@@ -54,6 +64,12 @@ class HomelabTraefikProject(InfrastructureProject):
 
     data_path = Path("/data")
 
+    metrics_port = 9100
+    """
+    The port that Traefik serves Prometheus metrics on, through its metrics
+    entrypoint and the chart's metrics service.
+    """
+
     @classmethod
     def dependencies(cls, target: DeploymentTarget) -> list[InfrastructureStack]:
         return [
@@ -67,6 +83,18 @@ class HomelabTraefikProject(InfrastructureProject):
         return [
             DeploymentTarget(Environment.PROD, None),
         ]
+
+    @classmethod
+    def metrics_target(cls, dctx: DeploymentContext) -> str:
+        """
+        Returns the in-cluster host:port that Traefik's Prometheus metrics are
+        scraped from.
+        """
+        # NOTE: This output exists only once this stack has been up'd with the
+        # metrics service enabled.
+        outputs = dctx.outputs(cls.stack(DeploymentTarget(Environment.PROD, None)))
+        svc = outputs["metrics_service"].value
+        return f"{svc['name']}.{svc['namespace']}.svc:{svc['port']}"
 
     def pulumi_program(self) -> None:
         homelab_domain = self.dctx.config.domains["homelab"]
@@ -86,7 +114,7 @@ class HomelabTraefikProject(InfrastructureProject):
         self._configure_dns_update_credentials()
         self._configure_kubernetes_volume()
 
-        helm_release(
+        release = helm_release(
             "traefik",
             oci_uri=self.chart_oci_uri,
             version=self.chart_version,
@@ -94,6 +122,16 @@ class HomelabTraefikProject(InfrastructureProject):
             namespace=self.ns_name,
             values=self._traefik_chart_values(),
             opts=self.default_ropts,
+        )
+
+        # The chart names the metrics service after the release.
+        export(
+            "metrics_service",
+            {
+                "namespace": self.ns_name,
+                "name": release.name.apply(_metrics_service_name),
+                "port": self.metrics_port,
+            },
         )
 
     def _configure_dns_update_credentials(self) -> None:
@@ -243,9 +281,15 @@ class HomelabTraefikProject(InfrastructureProject):
                 "dashboard": True,
                 "insecure": False,
             },
+            # The chart enables Prometheus metrics on the internal metrics
+            # entrypoint by default. That entrypoint is not exposed outside the
+            # cluster.
             "metrics": {
                 "prometheus": {
-                    "enabled": False,
+                    "addRoutersLabels": True,
+                    "service": {
+                        "enabled": True,
+                    },
                 },
             },
             "certificatesResolvers": {
@@ -291,6 +335,9 @@ class HomelabTraefikProject(InfrastructureProject):
                 "runAsGroup": uid_gid(self.dctx.target.environment, "traefik"),
             },
             "ports": {
+                "metrics": {
+                    "port": self.metrics_port,
+                },
                 traefik_config.insecure_entrypoint: {
                     "port": 8888,
                     "exposedPort": ports.http,
