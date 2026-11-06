@@ -19,13 +19,18 @@ from typing import Any
 
 from pulumi import Output, ResourceOptions
 import pulumi_kubernetes as k8s
-from pulumi_kubernetes.core.v1 import ConfigMapVolumeSourceArgs, ContainerPortArgs
+from pulumi_kubernetes.core.v1 import (
+    ConfigMapVolumeSourceArgs,
+    ContainerPortArgs,
+    SecretVolumeSourceArgs,
+)
 
 from infralib import DeploymentContext
 
 from ..kubernetes import (
     HomelabBackingVolumeID,
     HomelabContainerConfigMapVolumeArgs,
+    HomelabContainerSecretVolumeArgs,
     HomelabContainerVolumeArgs,
     HomelabContainerVolumeProvisionedSource,
     HomelabKubernetesDeployment,
@@ -49,8 +54,19 @@ SCRAPE_INTERVAL = "30s"
 STORAGE_PATH = PurePosixPath("/storage")
 CONFIG_DIRECTORY = PurePosixPath("/config")
 SCRAPE_CONFIG_FILE_NAME = "scrape.yml"
+SCRAPE_AUTH_DIRECTORY = PurePosixPath("/scrape-auth")
 
 DEFAULT_METRICS_PATH = "/metrics"
+
+
+@dataclass
+class ScrapeBasicAuth:
+    """
+    HTTP basic authentication credentials that a scrape job sends to its targets.
+    """
+
+    username: str
+    password: Output[str]
 
 
 @dataclass
@@ -94,6 +110,11 @@ class ScrapeJob:
     before storing it.
 
     [1]: https://docs.victoriametrics.com/victoriametrics/relabeling/
+    """
+
+    basic_auth: ScrapeBasicAuth | None = None
+    """
+    Credentials sent with each scrape, for targets that require authentication.
     """
 
 
@@ -160,6 +181,8 @@ def provision_victoriametrics(
         opts=opts,
     )
 
+    secret_volumes = _scrape_auth_secret_volumes(args, opts)
+
     deployment = HomelabKubernetesDeployment(
         name="victoriametrics",
         args=HomelabKubernetesDeploymentArgs(
@@ -204,6 +227,7 @@ def provision_victoriametrics(
                     ),
                 ),
             ],
+            secret_volumes=secret_volumes,
         ),
         dctx=dctx,
         opts=opts,
@@ -239,6 +263,45 @@ def provision_victoriametrics(
     return VictoriaMetricsResult(deployment=deployment, url=url)
 
 
+def _scrape_auth_secret_volumes(
+    args: VictoriaMetricsArgs,
+    opts: ResourceOptions,
+) -> list[HomelabContainerSecretVolumeArgs]:
+    """
+    Provisions a secret that holds the password of each scrape job that has basic
+    authentication, keyed by job name, and returns the volume that mounts it. Jobs
+    read their password from the mounted file, so that it stays out of the scrape
+    configuration's ConfigMap.
+    """
+    passwords = {
+        job.name: job.basic_auth.password
+        for job in args.scrape_jobs
+        if job.basic_auth is not None
+    }
+    if not passwords:
+        return []
+
+    secret = k8s.core.v1.Secret(
+        "victoriametrics_scrape_auth",
+        metadata=k8s.meta.v1.ObjectMetaArgs(
+            namespace=args.namespace,
+            name=f"{SERVICE_NAME}-scrape-auth",
+        ),
+        string_data=passwords,
+        opts=opts,
+    )
+    return [
+        HomelabContainerSecretVolumeArgs(
+            name="scrape-auth",
+            mount_path=str(SCRAPE_AUTH_DIRECTORY),
+            secret=SecretVolumeSourceArgs(
+                secret_name=secret.metadata["name"],
+                default_mode=0o444,
+            ),
+        ),
+    ]
+
+
 def _scrape_config(args: VictoriaMetricsArgs) -> dict[str, Any]:
     """
     Returns the Prometheus-compatible scrape configuration [1].
@@ -269,4 +332,9 @@ def _scrape_job_config(job: ScrapeJob) -> dict[str, Any]:
         config["relabel_configs"] = job.relabel_configs
     if job.metric_relabel_configs:
         config["metric_relabel_configs"] = job.metric_relabel_configs
+    if job.basic_auth is not None:
+        config["basic_auth"] = {
+            "username": job.basic_auth.username,
+            "password_file": str(SCRAPE_AUTH_DIRECTORY / job.name),
+        }
     return config
