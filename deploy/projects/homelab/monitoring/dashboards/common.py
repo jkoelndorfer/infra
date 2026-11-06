@@ -6,6 +6,7 @@ This module contains definitions shared by Grafana dashboards.
 """
 
 from collections.abc import Callable
+from string import ascii_uppercase
 from typing import Any
 
 from infralib import DeploymentContext
@@ -178,3 +179,93 @@ def fixed_color(color: str) -> dict[str, str]:
     Returns a color setting that gives a field one color.
     """
     return {"mode": "fixed", "fixedColor": color}
+
+
+def column(name: str, properties: list[dict[str, Any]]) -> dict[str, Any]:
+    """
+    Returns a field override that sets properties of the field (or table column)
+    with the given display name.
+    """
+    return {"matcher": {"id": "byName", "options": name}, "properties": properties}
+
+
+def color_text() -> dict[str, Any]:
+    """
+    Returns a property that colors a table cell's text by its value.
+    """
+    return {"id": "custom.cellOptions", "value": {"type": "color-text"}}
+
+
+def value_mappings(mappings: dict[int, tuple[str, str]]) -> dict[str, Any]:
+    """
+    Returns a property that shows each value as text in a color, from a mapping of
+    value to (text, color).
+    """
+    return {
+        "id": "mappings",
+        "value": [
+            {
+                "type": "value",
+                "options": {
+                    str(value): {"text": text, "color": color, "index": i}
+                    for i, (value, (text, color)) in enumerate(mappings.items())
+                },
+            }
+        ],
+    }
+
+
+def table(
+    title: str,
+    description: str,
+    columns: dict[str, str],
+    labels: dict[str, str],
+    grid_pos: dict[str, int],
+    overrides: list[dict[str, Any]],
+    sort_by: str,
+) -> dict[str, Any]:
+    """
+    Returns a table with a row per distinct set of labels. Each query in columns,
+    keyed by column name, is an instant query whose result fills its column, and
+    each must return the labels in labels, which maps a label to its column name.
+    The label columns come first, in order, and rows are sorted by sort_by.
+    """
+    ref_ids = ascii_uppercase[: len(columns)]
+    targets = [
+        target(expr, legend=name, ref_id=ref_id, instant=True)
+        for (name, expr), ref_id in zip(columns.items(), ref_ids)
+    ]
+    rename = {f"Value #{r}": name for name, r in zip(columns, ref_ids)}
+    rename |= labels
+    order = [*labels, *[f"Value #{r}" for r in ref_ids]]
+
+    return {
+        "type": "table",
+        "title": title,
+        "description": description,
+        "datasource": dict(DATASOURCE),
+        "gridPos": grid_pos,
+        "targets": targets,
+        "transformations": [
+            {"id": "merge", "options": {}},
+            {
+                "id": "organize",
+                "options": {
+                    "excludeByName": {"Time": True},
+                    "indexByName": {c: i for i, c in enumerate(order)},
+                    "renameByName": rename,
+                },
+            },
+        ],
+        "fieldConfig": {
+            "defaults": {
+                "custom": {"align": "auto", "cellOptions": {"type": "auto"}},
+            },
+            "overrides": overrides,
+        },
+        "options": {
+            "showHeader": True,
+            "cellHeight": "sm",
+            "sortBy": [{"displayName": sort_by, "desc": False}],
+        },
+    }

@@ -16,13 +16,17 @@ from ..snmp_exporter import JOB_PREFIX, ROUTER_NAME
 from .common import (
     DATASOURCE,
     Dashboard,
+    color_text,
+    column,
     fixed_color,
     legend_var,
     legend_vars,
     row,
     stat,
+    table,
     target,
     timeseries,
+    value_mappings,
 )
 
 UID = "homelab-network"
@@ -291,87 +295,32 @@ def _interfaces_table(y: int) -> dict[str, Any]:
             f"+ increase(ifOutDiscards{{{_INTERFACES}}}[$__range])"
         ),
     }
-    ref_ids = "ABCDEF"
-    targets = [
-        target(f"{group} ({expr})", legend=name, ref_id=ref_id, instant=True)
-        for (name, expr), ref_id in zip(columns.items(), ref_ids)
-    ]
-    rename = {f"Value #{r}": name for name, r in zip(columns, ref_ids)}
-    rename |= {"instance": "Device", "ifName": "Interface", "ifAlias": "Description"}
-    order = ["instance", "ifName", "ifAlias", *[f"Value #{r}" for r in ref_ids]]
-
-    return {
-        "type": "table",
-        "title": "Interfaces",
-        "description": (
-            "Each interface's status and speed, its current traffic, and its errors "
-            "and discards over the dashboard's time range."
-        ),
-        "datasource": dict(DATASOURCE),
-        "gridPos": {"h": 10, "w": 24, "x": 0, "y": y},
-        "targets": targets,
-        "transformations": [
-            {"id": "merge", "options": {}},
-            {
-                "id": "organize",
-                "options": {
-                    "excludeByName": {"Time": True},
-                    "indexByName": {c: i for i, c in enumerate(order)},
-                    "renameByName": rename,
-                },
-            },
-        ],
-        "fieldConfig": {
-            "defaults": {
-                "custom": {"align": "auto", "cellOptions": {"type": "auto"}},
-            },
-            "overrides": [
-                _column("Status", [_status_mappings(), _color_text()]),
-                _column("Speed", [{"id": "unit", "value": "bps"}]),
-                _column("Receive", [{"id": "unit", "value": "bps"}]),
-                _column("Transmit", [{"id": "unit", "value": "bps"}]),
-                *[
-                    _column(
-                        name,
-                        [
-                            {"id": "unit", "value": "short"},
-                            {"id": "decimals", "value": 0},
-                            {"id": "noValue", "value": "0"},
-                        ],
-                    )
-                    for name in ["Errors", "Discards"]
-                ],
+    return table(
+        "Interfaces",
+        "Each interface's status and speed, its current traffic, and its errors "
+        "and discards over the dashboard's time range.",
+        {name: f"{group} ({expr})" for name, expr in columns.items()},
+        {"instance": "Device", "ifName": "Interface", "ifAlias": "Description"},
+        {"h": 10, "w": 24, "x": 0, "y": y},
+        [
+            column("Status", [value_mappings(_OPER_STATUSES), color_text()]),
+            column("Speed", [{"id": "unit", "value": "bps"}]),
+            column("Receive", [{"id": "unit", "value": "bps"}]),
+            column("Transmit", [{"id": "unit", "value": "bps"}]),
+            *[
+                column(
+                    name,
+                    [
+                        {"id": "unit", "value": "short"},
+                        {"id": "decimals", "value": 0},
+                        {"id": "noValue", "value": "0"},
+                    ],
+                )
+                for name in ["Errors", "Discards"]
             ],
-        },
-        "options": {
-            "showHeader": True,
-            "cellHeight": "sm",
-            "sortBy": [{"displayName": "Device", "desc": False}],
-        },
-    }
-
-
-def _column(name: str, properties: list[dict[str, Any]]) -> dict[str, Any]:
-    return {"matcher": {"id": "byName", "options": name}, "properties": properties}
-
-
-def _status_mappings() -> dict[str, Any]:
-    return {
-        "id": "mappings",
-        "value": [
-            {
-                "type": "value",
-                "options": {
-                    str(value): {"text": text, "color": color, "index": i}
-                    for i, (value, (text, color)) in enumerate(_OPER_STATUSES.items())
-                },
-            }
         ],
-    }
-
-
-def _color_text() -> dict[str, Any]:
-    return {"id": "custom.cellOptions", "value": {"type": "color-text"}}
+        sort_by="Device",
+    )
 
 
 def _router_cpu(grid_pos: dict[str, int]) -> dict[str, Any]:
@@ -409,7 +358,7 @@ def _router_memory(grid_pos: dict[str, int]) -> dict[str, Any]:
         grid_pos,
         "bytes",
         overrides=[
-            _column("free", [{"id": "color", "value": fixed_color("green")}]),
+            column("free", [{"id": "color", "value": fixed_color("green")}]),
         ],
     )
 
