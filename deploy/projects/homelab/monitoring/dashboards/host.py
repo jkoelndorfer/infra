@@ -3,7 +3,7 @@ projects.homelab.monitoring.dashboards.host
 ===========================================
 
 This module defines a Grafana dashboard of the Kubernetes host: its CPU, memory,
-filesystems, disk I/O and network, the state of its software RAID arrays, and the
+hardware temperatures, filesystems, disk I/O and network, the state of its software RAID arrays, and the
 health of its disks. The metrics come from the node and smartctl exporters, through
 the jobs that `projects.homelab.monitoring.node_exporter` and
 `projects.homelab.monitoring.smartctl_exporter` define.
@@ -22,6 +22,7 @@ from .common import (
     column,
     fixed_color,
     legend_var,
+    legend_vars,
     row,
     stat,
     table,
@@ -110,7 +111,8 @@ def host_dashboard(dctx: DeploymentContext) -> Dashboard:
             fill_opacity=0,
         ),
         _pressure({"h": 8, "w": 12, "x": 12, "y": 18}),
-        row("Storage", y=26),
+        _hardware_temperatures({"h": 8, "w": 24, "x": 0, "y": 26}),
+        row("Storage", y=34),
         timeseries(
             "Filesystem usage",
             "The share of each filesystem in use.",
@@ -121,7 +123,7 @@ def host_dashboard(dctx: DeploymentContext) -> Dashboard:
                     legend=legend_var("mountpoint"),
                 )
             ],
-            {"h": 8, "w": 12, "x": 0, "y": 27},
+            {"h": 8, "w": 12, "x": 0, "y": 35},
             "percentunit",
             stacked=False,
             fill_opacity=0,
@@ -135,7 +137,7 @@ def host_dashboard(dctx: DeploymentContext) -> Dashboard:
                     legend=legend_var("device"),
                 )
             ],
-            {"h": 8, "w": 12, "x": 12, "y": 27},
+            {"h": 8, "w": 12, "x": 12, "y": 35},
             "percentunit",
             stacked=False,
             fill_opacity=0,
@@ -146,11 +148,11 @@ def host_dashboard(dctx: DeploymentContext) -> Dashboard:
             "node_disk_read_bytes_total",
             "node_disk_written_bytes_total",
             "Bps",
-            {"h": 8, "w": 12, "x": 0, "y": 35},
+            {"h": 8, "w": 12, "x": 0, "y": 43},
         ),
-        _disk_latency({"h": 8, "w": 12, "x": 12, "y": 35}),
-        row("RAID", y=43),
-        _raid_table(y=44),
+        _disk_latency({"h": 8, "w": 12, "x": 12, "y": 43}),
+        row("RAID", y=51),
+        _raid_table(y=52),
         timeseries(
             "Array sync progress",
             "How far each array is through a resync, recovery or check. Arrays that "
@@ -161,13 +163,13 @@ def host_dashboard(dctx: DeploymentContext) -> Dashboard:
                     legend=legend_var("device"),
                 )
             ],
-            {"h": 8, "w": 24, "x": 0, "y": 50},
+            {"h": 8, "w": 24, "x": 0, "y": 58},
             "percentunit",
             stacked=False,
             fill_opacity=0,
         ),
-        row("Disk health", y=58),
-        _smart_table(y=59),
+        row("Disk health", y=66),
+        _smart_table(y=67),
         timeseries(
             "Disk temperature",
             "Each disk's temperature, as it reports it.",
@@ -177,23 +179,23 @@ def host_dashboard(dctx: DeploymentContext) -> Dashboard:
                     legend=legend_var("device"),
                 )
             ],
-            {"h": 8, "w": 24, "x": 0, "y": 67},
+            {"h": 8, "w": 24, "x": 0, "y": 75},
             "celsius",
             stacked=False,
             fill_opacity=0,
         ),
-        row("Network", y=75),
+        row("Network", y=83),
         _network_traffic(
             "Receive",
             "node_network_receive_bytes_total",
-            {"h": 8, "w": 12, "x": 0, "y": 76},
+            {"h": 8, "w": 12, "x": 0, "y": 84},
         ),
         _network_traffic(
             "Transmit",
             "node_network_transmit_bytes_total",
-            {"h": 8, "w": 12, "x": 12, "y": 76},
+            {"h": 8, "w": 12, "x": 12, "y": 84},
         ),
-        _network_problems({"h": 8, "w": 24, "x": 0, "y": 84}),
+        _network_problems({"h": 8, "w": 24, "x": 0, "y": 92}),
     ]
     for i, panel in enumerate(panels, start=1):
         panel["id"] = i
@@ -394,6 +396,42 @@ def _pressure(grid_pos: dict[str, int]) -> dict[str, Any]:
         ],
         grid_pos,
         "percentunit",
+        stacked=False,
+        fill_opacity=0,
+    )
+
+
+def _hardware_temperatures(grid_pos: dict[str, int]) -> dict[str, Any]:
+    """
+    Returns a graph of every temperature sensor that the kernel's hardware
+    monitoring drivers [1] expose, such as the CPU's, the chipset's and the
+    memory's. Which there are depends on the hardware.
+
+    Each series is named by its chip, such as coretemp or k10temp, its sensor, and
+    the sensor's label, where the driver gives one.
+
+    [1]: https://docs.kernel.org/hwmon/sysfs-interface.html
+    """
+    sensor = ("instance", "chip", "sensor")
+    on_sensor = f"on ({', '.join(sensor)})"
+    temps = f"node_hwmon_temp_celsius{{{_NODE}}}"
+    # The chip's name and the sensor's label are series of their own, with the
+    # value 1. A sensor that either is missing for is kept without it.
+    named = (
+        f"({temps} * on (instance, chip) group_left (chip_name) "
+        f"node_hwmon_chip_names{{{_NODE}}}) or {on_sensor} {temps}"
+    )
+    labeled = (
+        f"(({named}) * {on_sensor} group_left (label) "
+        f"node_hwmon_sensor_label{{{_NODE}}}) or {on_sensor} ({named})"
+    )
+    return timeseries(
+        "Hardware temperatures",
+        "The temperature of each hardware sensor on the host. CPU sensors usually "
+        "come from the coretemp (Intel) or k10temp (AMD) chip.",
+        [target(labeled, legend=legend_vars("chip_name", "sensor", "label"))],
+        grid_pos,
+        "celsius",
         stacked=False,
         fill_opacity=0,
     )
