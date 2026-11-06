@@ -30,6 +30,11 @@ DATASOURCE = {"type": "prometheus", "uid": DATASOURCE_UID}
 A reference to the provisioned VictoriaMetrics data source, for panels and queries.
 """
 
+LOGS_DATASOURCE_UID = "victorialogs"
+"""
+The UID of the provisioned VictoriaLogs data source.
+"""
+
 
 def legend_var(label: str) -> str:
     """

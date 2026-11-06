@@ -3,9 +3,10 @@ projects.homelab.monitoring.project
 ===================================
 
 This module contains the InfrastructureProject for homelab monitoring: VictoriaMetrics
-stores metrics, and Grafana visualizes them. The SNMP exporter collects metrics from
-the router and switches. The node and smartctl exporters collect metrics from the
-Kubernetes host, and the health of its disks.
+stores metrics, VictoriaLogs stores logs, and Grafana visualizes both. The SNMP
+exporter collects metrics from the router and switches. The node and smartctl
+exporters collect metrics from the Kubernetes host, and the health of its disks.
+Fluent Bit collects the logs of every pod.
 """
 
 from pulumi import ResourceOptions
@@ -18,8 +19,9 @@ from infralib import (
     InfrastructureStack,
 )
 
-from ..kubernetes import HomelabKubernetesDeployment, namespace
+from ..kubernetes import namespace
 from ..traefik import HomelabTraefikProject
+from .fluent_bit import FluentBitArgs, provision_fluent_bit
 from .grafana import GrafanaArgs, provision_grafana
 from .node_exporter import NodeExporterArgs, provision_node_exporter
 from .smartctl_exporter import SmartctlExporterArgs, provision_smartctl_exporter
@@ -35,6 +37,7 @@ from .victoriametrics import (
     VictoriaMetricsArgs,
     provision_victoriametrics,
 )
+from .victorialogs import VictoriaLogsArgs, provision_victorialogs
 
 
 class HomelabMonitoringProject(InfrastructureProject):
@@ -82,6 +85,17 @@ class HomelabMonitoringProject(InfrastructureProject):
             self.default_ropts,
         )
 
+        vl = provision_victorialogs(
+            self.dctx,
+            VictoriaLogsArgs(namespace=self.ns_name),
+            self.default_ropts,
+        )
+        fluent_bit = provision_fluent_bit(
+            self.dctx,
+            FluentBitArgs(namespace=self.ns_name, victorialogs=vl),
+            self.default_ropts,
+        )
+
         vm = provision_victoriametrics(
             self.dctx,
             VictoriaMetricsArgs(
@@ -95,6 +109,8 @@ class HomelabMonitoringProject(InfrastructureProject):
                     *[snmp_scrape_job(d) for d in snmp_devices(networking)],
                     node_exporter.scrape_job,
                     smartctl_exporter.scrape_job,
+                    vl.scrape_job,
+                    fluent_bit.scrape_job,
                 ],
             ),
             self.default_ropts,
@@ -105,34 +121,50 @@ class HomelabMonitoringProject(InfrastructureProject):
             GrafanaArgs(
                 namespace=self.ns_name,
                 victoriametrics=vm,
+                victorialogs=vl,
             ),
             self.default_ropts,
         )
 
+        vm_pods = vm.deployment.label_selector
         self._provision_ingress_policy(
-            "victoriametrics", vm.deployment.label_selector, grafana.deployment
+            "victoriametrics",
+            vm.deployment.label_selector,
+            [grafana.deployment.label_selector],
         )
         self._provision_ingress_policy(
-            "snmp_exporter", snmp_exporter.deployment.label_selector, vm.deployment
+            "snmp_exporter", snmp_exporter.deployment.label_selector, [vm_pods]
         )
         # The node exporter runs in the host's network namespace, where no policy
         # applies to it. It requires authentication instead.
         self._provision_ingress_policy(
             "smartctl_exporter",
             smartctl_exporter.daemon_set.label_selector,
-            vm.deployment,
+            [vm_pods],
+        )
+        self._provision_ingress_policy(
+            "victorialogs",
+            vl.deployment.label_selector,
+            [
+                grafana.deployment.label_selector,
+                fluent_bit.daemon_set.label_selector,
+                vm_pods,
+            ],
+        )
+        self._provision_ingress_policy(
+            "fluent_bit", fluent_bit.daemon_set.label_selector, [vm_pods]
         )
 
     def _provision_ingress_policy(
         self,
         name: str,
         server: k8s.meta.v1.LabelSelectorArgs,
-        client: HomelabKubernetesDeployment,
+        clients: list[k8s.meta.v1.LabelSelectorArgs],
     ) -> None:
         """
-        Provisions a policy that permits only the client's pods to reach the HTTP
-        port of the pods that server selects. Selecting the server's pods denies all
-        other ingress to them.
+        Provisions a policy that permits only the pods that clients select to reach
+        the HTTP port of the pods that server selects. Selecting the server's pods
+        denies all other ingress to them.
         """
         k8s.networking.v1.NetworkPolicy(
             f"{name}_ingress",
@@ -147,8 +179,9 @@ class HomelabMonitoringProject(InfrastructureProject):
                     k8s.networking.v1.NetworkPolicyIngressRuleArgs(
                         from_=[
                             k8s.networking.v1.NetworkPolicyPeerArgs(
-                                pod_selector=client.label_selector,
-                            ),
+                                pod_selector=client,
+                            )
+                            for client in clients
                         ],
                         ports=[
                             k8s.networking.v1.NetworkPolicyPortArgs(port="http"),

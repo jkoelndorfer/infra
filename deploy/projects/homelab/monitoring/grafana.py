@@ -3,7 +3,7 @@ projects.homelab.monitoring.grafana
 ===================================
 
 This module provisions Grafana [1], served through Traefik, with VictoriaMetrics
-provisioned as its default data source.
+provisioned as its default data source, and VictoriaLogs as a data source for logs.
 
 Grafana also provisions each dashboard in `dashboards.DASHBOARDS` [2]. Provisioned
 dashboards cannot be saved from the UI. To change one, change its function; a
@@ -40,8 +40,9 @@ from ..kubernetes import (
     HomelabKubernetesDeploymentArgs,
     service_fqdn,
 )
-from .dashboards import DATASOURCE_UID, dashboard_files
+from .dashboards import DATASOURCE_UID, LOGS_DATASOURCE_UID, dashboard_files
 from .victoriametrics import SCRAPE_INTERVAL, VictoriaMetricsResult
+from .victorialogs import VictoriaLogsResult
 
 SERVICE_NAME = "grafana"
 IMAGE = "grafana/grafana:13.2.4"
@@ -57,6 +58,14 @@ DASHBOARD_PROVIDERS_FILE_NAME = "dashboards.yml"
 DASHBOARDS_PATH = PurePosixPath("/etc/grafana/dashboards")
 DASHBOARDS_FOLDER = "Homelab"
 
+VICTORIALOGS_PLUGIN = "victoriametrics-logs-datasource"
+VICTORIALOGS_PLUGIN_VERSION = "0.33.1"
+"""
+The VictoriaLogs data source plugin [1], which Grafana installs from its catalog.
+
+[1]: https://grafana.com/grafana/plugins/victoriametrics-logs-datasource/
+"""
+
 
 @dataclass
 class GrafanaArgs:
@@ -66,6 +75,7 @@ class GrafanaArgs:
 
     namespace: Output[str]
     victoriametrics: VictoriaMetricsResult
+    victorialogs: VictoriaLogsResult
 
 
 @dataclass
@@ -112,7 +122,9 @@ def provision_grafana(
         opts=opts,
     )
 
-    datasources = args.victoriametrics.url.apply(_datasources)
+    datasources = Output.all(args.victoriametrics.url, args.victorialogs.url).apply(
+        lambda urls: _datasources(urls[0], urls[1])
+    )
 
     # Grafana reads provisioning files at startup. Autonaming is verbatim, so a
     # content hash in the name is what rolls the pod on a change.
@@ -158,6 +170,11 @@ def provision_grafana(
         # Log to stdout only, so that logs are read with kubectl rather than
         # accumulating in the container.
         "GF_LOG_MODE": "console",
+        # Installs the plugin before Grafana provisions the data source that uses
+        # it. A pinned version is not updated at startup.
+        "GF_PLUGINS_PREINSTALL_SYNC": (
+            f"{VICTORIALOGS_PLUGIN}@{VICTORIALOGS_PLUGIN_VERSION}"
+        ),
     }
 
     deployment = HomelabKubernetesDeployment(
@@ -229,12 +246,13 @@ def provision_grafana(
     return GrafanaResult(deployment=deployment)
 
 
-def _datasources(victoriametrics_url: str) -> str:
+def _datasources(victoriametrics_url: str, victorialogs_url: str) -> str:
     """
     Returns the data source provisioning file [1].
 
     VictoriaMetrics implements the Prometheus query API, so Grafana's built-in
-    Prometheus data source works with it, without installing a plugin.
+    Prometheus data source works with it, without installing a plugin. VictoriaLogs
+    has a query language of its own, which takes its plugin.
 
     [1]: https://grafana.com/docs/grafana/latest/administration/provisioning/#data-sources
     """
@@ -253,6 +271,15 @@ def _datasources(victoriametrics_url: str) -> str:
                     "editable": False,
                     # Lets $__rate_interval cover at least a few scrapes.
                     "jsonData": {"timeInterval": SCRAPE_INTERVAL},
+                },
+                {
+                    "name": "VictoriaLogs",
+                    "uid": LOGS_DATASOURCE_UID,
+                    "type": VICTORIALOGS_PLUGIN,
+                    "access": "proxy",
+                    "url": victorialogs_url,
+                    "isDefault": False,
+                    "editable": False,
                 },
             ],
         },

@@ -13,7 +13,7 @@ import json
 
 from infralib import DeploymentContext
 
-from .common import DATASOURCE_UID, Dashboard, DashboardFactory
+from .common import DATASOURCE_UID, LOGS_DATASOURCE_UID, Dashboard, DashboardFactory
 from .host import host_dashboard
 from .network import network_dashboard
 from .traefik import traefik_dashboard
@@ -41,6 +41,7 @@ def dashboard_files(dctx: DeploymentContext) -> dict[str, str]:
 __all__ = [
     "DASHBOARDS",
     "DATASOURCE_UID",
+    "LOGS_DATASOURCE_UID",
     "Dashboard",
     "DashboardFactory",
     "dashboard_files",

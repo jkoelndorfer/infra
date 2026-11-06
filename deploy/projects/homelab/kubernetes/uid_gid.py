@@ -36,6 +36,7 @@ _service_ids = {
     "snmp-exporter": 11,
     "unifi-db": 12,
     "node-exporter": 13,
+    "victorialogs": 14,
 }
 
 

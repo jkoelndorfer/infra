@@ -2,10 +2,11 @@
 projects.homelab.monitoring.host_daemonset
 ==========================================
 
-This module provisions DaemonSets for exporters that report on the Kubernetes host
-itself, such as its hardware and kernel, rather than on a service. Each needs some
-access to the host that a HomelabKubernetesDeployment does not grant, and must run
-on every node, so these are DaemonSets of their own.
+This module provisions DaemonSets for agents that work with the Kubernetes host
+itself, such as exporters that report on its hardware and kernel, and the
+collector of its pods' logs. Each needs some access to the host that a
+HomelabKubernetesDeployment does not grant, and must run on every node, so these
+are DaemonSets of their own.
 """
 
 from dataclasses import dataclass
@@ -43,6 +44,7 @@ def provision_host_daemon_set(
     security_context: k8s.core.v1.PodSecurityContextArgs | None = None,
     host_network: bool = False,
     host_pid: bool = False,
+    service_account_name: Input[str] | None = None,
 ) -> HostDaemonSetResult:
     """
     Provisions a DaemonSet that runs containers on every node. Its pods are labeled
@@ -64,7 +66,8 @@ def provision_host_daemon_set(
                     security_context=security_context,
                     host_network=host_network or None,
                     host_pid=host_pid or None,
-                    # A host exporter belongs on every node, including any that
+                    service_account_name=service_account_name,
+                    # A host agent belongs on every node, including any that
                     # are tainted to keep ordinary workloads off.
                     tolerations=[
                         k8s.core.v1.TolerationArgs(
