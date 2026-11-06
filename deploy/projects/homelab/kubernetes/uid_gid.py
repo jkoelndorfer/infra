@@ -35,6 +35,7 @@ _service_ids = {
     "grafana": 10,
     "snmp-exporter": 11,
     "unifi-db": 12,
+    "node-exporter": 13,
 }
 
 
