@@ -680,6 +680,9 @@ class HomelabPorts:
     # SNMP, served by the router and switches for monitoring.
     snmp: int = 161
 
+    # Syslog, which the router and switches send their logs to the Kubernetes host on.
+    syslog: int = 514
+
     # HTTPS, served by the ingress controller.
     https: int = 443
 

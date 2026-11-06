@@ -9,6 +9,8 @@ exporters collect metrics from the Kubernetes host, and the health of its disks.
 Fluent Bit collects the logs of every pod.
 """
 
+from ipaddress import IPv4Network
+
 from pulumi import ResourceOptions
 import pulumi_kubernetes as k8s
 
@@ -37,7 +39,11 @@ from .victoriametrics import (
     VictoriaMetricsArgs,
     provision_victoriametrics,
 )
-from .victorialogs import VictoriaLogsArgs, provision_victorialogs
+from .victorialogs import (
+    VictoriaLogsArgs,
+    VictoriaLogsSyslogArgs,
+    provision_victorialogs,
+)
 
 
 class HomelabMonitoringProject(InfrastructureProject):
@@ -87,7 +93,7 @@ class HomelabMonitoringProject(InfrastructureProject):
 
         vl = provision_victorialogs(
             self.dctx,
-            VictoriaLogsArgs(namespace=self.ns_name),
+            VictoriaLogsArgs(namespace=self.ns_name, syslog=self._syslog_args()),
             self.default_ropts,
         )
         fluent_bit = provision_fluent_bit(
@@ -153,6 +159,26 @@ class HomelabMonitoringProject(InfrastructureProject):
         )
         self._provision_ingress_policy(
             "fluent_bit", fluent_bit.daemon_set.label_selector, [vm_pods]
+        )
+
+    def _syslog_args(self) -> VictoriaLogsSyslogArgs | None:
+        """
+        Returns how VictoriaLogs receives the network devices' syslog. Only prod
+        receives it, because the host port can be taken only once on the host.
+        """
+        if self.dctx.target.environment != Environment.PROD:
+            return None
+
+        networking = self.dctx.config.homelab.network
+        networks = networking.networks
+        return VictoriaLogsSyslogArgs(
+            host_port=networking.ports.syslog,
+            sources=[
+                networks.net_infra.ipv4_network,
+                # The router sends its own logs from its address on infra, which
+                # the Kubernetes host is attached to.
+                IPv4Network(networks.infra.router_interface.ip),
+            ],
         )
 
     def _provision_ingress_policy(
