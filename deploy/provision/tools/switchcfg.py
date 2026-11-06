@@ -2,8 +2,8 @@
 tools/switchcfg -- Switch Configuration Renderer
 ================================================
 
-This script prints the EdgeSwitch CLI commands that configure the VLANs, ports and
-SNMP access for the homelab.
+This script prints the EdgeSwitch CLI commands that configure the VLANs, ports,
+SNMP access and remote logging for the homelab.
 
 This script only prints commands to be executed to configure a switch.
 """
@@ -27,6 +27,10 @@ from config import load_configuration
 _DEFAULT_VLAN = 1
 
 _MAX_VLAN_NAME_LENGTH = 32
+
+# The least severe messages the switch sends to the Kubernetes host, as the router
+# does.
+_SYSLOG_SEVERITY = "notice"
 _PORT_PATTERN = re.compile(r"[0-9]+/[0-9]+")
 
 # Quotes would end a quoted value early, and a line break would start a new command.
@@ -154,6 +158,18 @@ def _render_snmp(networking: HomelabNetworking) -> list[str]:
     ]
 
 
+def _render_logging(networking: HomelabNetworking) -> list[str]:
+    """
+    Renders the commands that send the switch's logs, at notice and above, to
+    VictoriaLogs on the Kubernetes host.
+    """
+    return [
+        f"logging host {networking.kubernetes_host} ipv4 "
+        f"{networking.ports.syslog} {_SYSLOG_SEVERITY}",
+        "logging syslog",
+    ]
+
+
 def render_switch(switch: HomelabSwitch, networking: HomelabNetworking) -> str:
     """
     Renders the commands that configure a switch, starting from privileged mode.
@@ -171,7 +187,7 @@ def render_switch(switch: HomelabSwitch, networking: HomelabNetworking) -> str:
         "! This does not move the management VLAN or run write memory.",
         *_render_vlan_database(switch_vlans, networks),
     ]
-    lines += ["configure", *_render_snmp(networking)]
+    lines += ["configure", *_render_snmp(networking), *_render_logging(networking)]
     for port in switch.ports:
         lines += _render_port(switch, port, switch_vlans, networks)
     lines.append("exit")
