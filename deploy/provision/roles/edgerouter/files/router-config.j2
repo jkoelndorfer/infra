@@ -6,6 +6,7 @@
     ).ip %}
 {% set internal_dns = kserv %}
 {% set unifi = kserv %}
+{% set syslog = kserv %}
 {% set wireguard = kserv %}
 firewall {
   all-ping enable
@@ -228,7 +229,36 @@ firewall {
         port {{ ports.unifi_stun }}
       }
     }
+    /* This serves the router, mostly. */
+    rule 150 {
+      action accept
+      description "infra -> infra syslog"
+      protocol udp
+      source {
+        group {
+          network-group ADDR_INFRA
+        }
+      }
+      destination {
+        address {{ syslog }}
+        port {{ ports.syslog }}
+      }
+    }
     rule 160 {
+      action accept
+      description "net_infra -> infra syslog"
+      protocol udp
+      source {
+        group {
+          network-group ADDR_NET_INFRA
+        }
+      }
+      destination {
+        address {{ syslog }}
+        port {{ ports.syslog }}
+      }
+    }
+    rule 170 {
       action accept
       description "Internal DNS"
       protocol tcp_udp
@@ -237,7 +267,7 @@ firewall {
         port {{ ports.dns }}
       }
     }
-    rule 170 {
+    rule 180 {
       action accept
       description "Port forward: WireGuard (trusted)"
       protocol udp
@@ -986,10 +1016,16 @@ system {
   syslog {
     global {
       facility all {
-        level notice
+        level info
       }
       facility protocols {
         level debug
+      }
+    }
+    /* The standard syslog port, so no port is given. */
+    host {{ syslog }} {
+      facility all {
+        level info
       }
     }
   }
