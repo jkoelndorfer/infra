@@ -34,6 +34,9 @@ firewall {
       network 172.16.0.0/12
       network 192.168.0.0/16
     }
+    network-group ADDR_MODEM {
+      network {{ networks.modem.ipv4_network }}
+    }
     network-group ADDR_MGMT {
       network {{ networks.mgmt.ipv4_network }}
       network {{ networks.mgmt_backup.ipv4_network }}
@@ -254,6 +257,39 @@ firewall {
         }
     }
     {% endfor %}
+  }
+
+  name MODEM_OUT {
+    default-action reject
+      rule 1 {
+        action accept
+        description "Responses to allowed connections"
+        state {
+          established enable
+          related enable
+        }
+      }
+    rule 2 {
+      action drop
+      description "Invalid packets"
+      state {
+        invalid enable
+      }
+    }
+    rule 100 {
+      action accept
+      description "mgmt -> modem"
+      source {
+        group {
+          network-group ADDR_MGMT
+        }
+      }
+      destination {
+        group {
+          network-group ADDR_MODEM
+        }
+      }
+    }
   }
 
   /* The default set of traffic permitted to the router. */
@@ -505,6 +541,11 @@ interfaces {
     duplex auto
     poe {
       output off
+    }
+    firewall {
+      out {
+        name MODEM_OUT
+      }
     }
     pppoe 0 {
       default-route auto
