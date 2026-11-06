@@ -3,16 +3,19 @@ projects.homelab.monitoring.dashboards.network
 ==============================================
 
 This module defines a Grafana dashboard of the router and switches: traffic,
-errors and status by interface, and the router's CPU, memory, load and storage.
-The metrics come from the SNMP exporter, through the jobs that
-`projects.homelab.monitoring.snmp_exporter` defines.
+errors and status by interface, the router's CPU, memory, load and storage, and the
+devices' logs. The metrics come from the SNMP exporter, through the jobs that
+`projects.homelab.monitoring.snmp_exporter` defines. The logs come from the syslog
+that VictoriaLogs receives, told apart by the address that sent them.
 """
 
+from ipaddress import IPv4Network
 from typing import Any
 
 from infralib import DeploymentContext
 
 from ..snmp_exporter import JOB_PREFIX, ROUTER_NAME
+from ..victorialogs import router_syslog_source, switch_syslog_source
 from .common import (
     DATASOURCE,
     Dashboard,
@@ -21,6 +24,7 @@ from .common import (
     fixed_color,
     legend_var,
     legend_vars,
+    logs,
     row,
     stat,
     table,
@@ -72,6 +76,7 @@ def network_dashboard(dctx: DeploymentContext) -> Dashboard:
     """
     Returns the network dashboard.
     """
+    networking = dctx.config.homelab.network
     panels = [
         row("Overview", y=0),
         *_overview_stats(y=1),
@@ -107,6 +112,23 @@ def network_dashboard(dctx: DeploymentContext) -> Dashboard:
             fill_opacity=0,
         ),
         _router_storage({"h": 8, "w": 12, "x": 12, "y": 41}),
+        row("Logs", y=49),
+        logs(
+            "Router logs",
+            "The router's syslog, at notice and above.",
+            _syslog_query(router_syslog_source(networking)),
+            {"h": 12, "w": 12, "x": 0, "y": 50},
+        ),
+        logs(
+            "Switch logs",
+            "The switches' syslog, at notice and above, each line led by the "
+            "switch's host name.",
+            _syslog_query(
+                switch_syslog_source(networking),
+                '| format "<hostname>: <_msg>" as _msg',
+            ),
+            {"h": 12, "w": 12, "x": 12, "y": 50},
+        ),
     ]
     for i, panel in enumerate(panels, start=1):
         panel["id"] = i
@@ -116,9 +138,9 @@ def network_dashboard(dctx: DeploymentContext) -> Dashboard:
         "title": "Network",
         "description": (
             "Traffic, errors and status of the router's and switches' interfaces, "
-            "and the router's resources."
+            "the router's resources, and the devices' logs."
         ),
-        "tags": ["network", "snmp"],
+        "tags": ["network", "snmp", "syslog"],
         "editable": True,
         "graphTooltip": 1,
         "schemaVersion": 39,
@@ -161,6 +183,14 @@ def _variable(name: str, label: str, query: str) -> dict[str, Any]:
         "allValue": ".+",
         "current": {"selected": True, "text": ["All"], "value": ["$__all"]},
     }
+
+
+def _syslog_query(source: IPv4Network, pipes: str = "") -> str:
+    """
+    Returns a LogsQL query of the syslog sent from source. VictoriaLogs records the
+    sender of each message as remote_ip.
+    """
+    return f'remote_ip:ipv4_range("{source}") {pipes}'.strip()
 
 
 def _rate(metric: str, selector: str) -> str:

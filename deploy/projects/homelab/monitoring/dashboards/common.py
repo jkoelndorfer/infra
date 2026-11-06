@@ -35,6 +35,14 @@ LOGS_DATASOURCE_UID = "victorialogs"
 The UID of the provisioned VictoriaLogs data source.
 """
 
+LOGS_DATASOURCE = {
+    "type": "victoriametrics-logs-datasource",
+    "uid": LOGS_DATASOURCE_UID,
+}
+"""
+A reference to the provisioned VictoriaLogs data source, for panels and queries.
+"""
+
 
 def legend_var(label: str) -> str:
     """
@@ -272,5 +280,45 @@ def table(
             "showHeader": True,
             "cellHeight": "sm",
             "sortBy": [{"displayName": sort_by, "desc": False}],
+        },
+    }
+
+
+def logs(
+    title: str,
+    description: str,
+    query: str,
+    grid_pos: dict[str, int],
+) -> dict[str, Any]:
+    """
+    Returns a panel of the logs that a LogsQL query [1] matches, newest first. Grafana
+    colors each line by its level field.
+
+    [1]: https://docs.victoriametrics.com/victorialogs/logsql/
+    """
+    return {
+        "type": "logs",
+        "title": title,
+        "description": description,
+        "datasource": dict(LOGS_DATASOURCE),
+        "gridPos": grid_pos,
+        "targets": [
+            {
+                "datasource": dict(LOGS_DATASOURCE),
+                "editorMode": "code",
+                "expr": query,
+                "queryType": "instant",
+                "refId": "A",
+            },
+        ],
+        "options": {
+            "showTime": True,
+            "showLabels": False,
+            "showCommonLabels": False,
+            "wrapLogMessage": True,
+            "prettifyLogMessage": False,
+            "enableLogDetails": True,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending",
         },
     }

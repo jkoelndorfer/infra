@@ -28,6 +28,7 @@ import pulumi_kubernetes as k8s
 from pulumi_kubernetes.core.v1 import ContainerPortArgs
 
 from infralib import DeploymentContext
+from infralib.config.homelab import HomelabNetworking
 
 from ..kubernetes import (
     HomelabBackingVolumeID,
@@ -136,6 +137,22 @@ class VictoriaLogsResult:
     """
     The job that scrapes VictoriaLogs' own metrics.
     """
+
+
+def router_syslog_source(networking: HomelabNetworking) -> IPv4Network:
+    """
+    Returns the address that the router sends its own syslog from: its address on
+    infra, which the Kubernetes host is attached to.
+    """
+    return IPv4Network(networking.networks.infra.router_interface.ip)
+
+
+def switch_syslog_source(networking: HomelabNetworking) -> IPv4Network:
+    """
+    Returns the network that the switches send syslog from: net_infra, where they
+    are managed.
+    """
+    return networking.networks.net_infra.ipv4_network
 
 
 def provision_victorialogs(

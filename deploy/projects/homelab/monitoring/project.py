@@ -9,8 +9,6 @@ exporters collect metrics from the Kubernetes host, and the health of its disks.
 Fluent Bit collects the logs of every pod.
 """
 
-from ipaddress import IPv4Network
-
 from pulumi import ResourceOptions
 import pulumi_kubernetes as k8s
 
@@ -43,6 +41,8 @@ from .victorialogs import (
     VictoriaLogsArgs,
     VictoriaLogsSyslogArgs,
     provision_victorialogs,
+    router_syslog_source,
+    switch_syslog_source,
 )
 
 
@@ -170,14 +170,11 @@ class HomelabMonitoringProject(InfrastructureProject):
             return None
 
         networking = self.dctx.config.homelab.network
-        networks = networking.networks
         return VictoriaLogsSyslogArgs(
             host_port=networking.ports.syslog,
             sources=[
-                networks.net_infra.ipv4_network,
-                # The router sends its own logs from its address on infra, which
-                # the Kubernetes host is attached to.
-                IPv4Network(networks.infra.router_interface.ip),
+                switch_syslog_source(networking),
+                router_syslog_source(networking),
             ],
         )
 
