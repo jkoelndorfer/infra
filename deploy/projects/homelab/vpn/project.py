@@ -7,6 +7,17 @@ WireGuard VPN endpoint and a web interface for managing its peers.
 
 wg-easy's configuration is documented at [1] and [2].
 
+NOTE: wg-easy also keeps the clients' MTU in its database, and no INIT_* variable
+sets it. Set Admin Panel > Config > MTU to 1280. It applies only to new clients, so
+also set each existing client's MTU.
+
+1280 is IPv6's minimum MTU, so nearly every network carries the tunnel's packets.
+wg-easy's default of 1420 assumes a path of at least 1480 bytes. The WAN's PPPoE
+link, at 1492, fits that, but the networks that roaming clients connect from often
+do not. Mobile carriers that use 464XLAT, and hotel or tethered Wi-Fi, are examples.
+On those networks the tunnel connects, but large transfers and TLS handshakes stall.
+The smaller MTU costs less than 1% of throughput.
+
 [1]: https://wg-easy.github.io/wg-easy/latest/advanced/config/unattended-setup/
 [2]: https://wg-easy.github.io/wg-easy/latest/advanced/config/optional-config/
 """
