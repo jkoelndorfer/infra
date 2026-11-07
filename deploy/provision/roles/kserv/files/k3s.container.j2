@@ -1,0 +1,40 @@
+# k3s.container -- managed by pyinfra (provision/roles/kserv).
+#
+# Quadlet generates k3s.service from this file.
+
+[Unit]
+Description=k3s
+Wants=network-online.target
+After=network-online.target
+# Without data0, k3s would fail or, worse, start an empty cluster on the root
+# filesystem.
+RequiresMountsFor={{ data0 }}
+
+[Container]
+ContainerName=k3s
+Image=docker.io/rancher/k3s:v1.36.1-k3s1
+Environment=K3S_NODE_NAME={{ node_name }}
+Environment=TZ=America/Chicago
+Exec=server \
+  --token-file {{ data0 }}/k3s/token \
+  --data-dir {{ data0 }}/k3s/data \
+  --write-kubeconfig {{ data0 }}/k3s/kubeconfig \
+  --cluster-cidr {{ cluster_cidr }} \
+  --service-cidr {{ service_cidr }} \
+  --cluster-dns {{ cluster_dns }} \
+  --default-local-storage-path {{ data0 }}/k3s/storage \
+  --disable=traefik
+PodmanArgs=--privileged
+Network=host
+Volume=/var/log/containers:/var/log/containers
+Volume=/var/log/pods:/var/log/pods
+Volume={{ data0 }}/k3s:{{ data0 }}/k3s
+Volume={{ data0 }}/services:{{ data0 }}/services
+
+[Service]
+Restart=always
+# Leaves time to pull the image after an upgrade.
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target

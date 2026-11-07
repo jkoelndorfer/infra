@@ -1,0 +1,5 @@
+# sshd_config -- managed by pyinfra (provision/roles/kserv).
+#
+# Configuration lives in sshd_config.d. sshd keeps the first value it reads for
+# most options, so files there that sort earlier take precedence.
+Include /etc/ssh/sshd_config.d/*.conf

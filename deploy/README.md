@@ -43,6 +43,11 @@ Without `--dry`, pyinfra shows the detected changes and asks before applying the
 Avoid `--diff` where output is kept or shared, because it prints the contents of
 changed files, including the router's PPPoE and dynamic DNS passwords.
 
+The kserv role applies a changed file when it deploys it, and some of those
+actions disrupt the host: a changed `k3s.container` restarts k3s and every pod,
+and a changed `crypttab` or `mkinitcpio.conf` rebuilds the initramfs. Run with
+`--dry` first, or limit a run to one host with `--limit`.
+
 ## Architecture
 
 This deployment code uses Pulumi to provision infrastructure. Pulumi's

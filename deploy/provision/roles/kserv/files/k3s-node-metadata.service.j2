@@ -1,0 +1,25 @@
+# k3s-node-metadata.service -- managed by pyinfra (provision/roles/kserv).
+#
+# Sets the node's backing volume label and annotation, which projects use to find
+# where to provision persistent volumes. k3s has no flag for annotations, and
+# --node-label only applies when the node first registers, so this sets both each
+# time k3s starts.
+
+[Unit]
+Description=Set k3s node metadata
+After=k3s.service
+PartOf=k3s.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# The API server and the node's registration lag behind the container starting, so
+# this waits for both. Waiting here, rather than restarting on failure, keeps a
+# start from failing while k3s comes up.
+ExecStart=/usr/bin/sh -c 'until /usr/bin/podman exec k3s kubectl --kubeconfig {{ kubeconfig }} get node {{ node_name }} >/dev/null 2>&1; do sleep 5; done'
+ExecStart=/usr/bin/podman exec k3s kubectl --kubeconfig {{ kubeconfig }} label --overwrite node {{ node_name }} has.data0.volume=true
+ExecStart=/usr/bin/podman exec k3s kubectl --kubeconfig {{ kubeconfig }} annotate --overwrite node {{ node_name }} path.data0.volume={{ volume_path }}
+TimeoutStartSec=600
+
+[Install]
+WantedBy=k3s.service

@@ -1,0 +1,9 @@
+# Configuration for encrypted block devices.
+# See crypttab(5) for details.
+
+# NOTE: Do not list your root (/) partition here, it must be set up
+#       beforehand by the initramfs (/etc/mkinitcpio.conf).
+
+# <name>       <device>                                     <password>                  <options>
+root-luks      /dev/disk/by-partlabel/root                  /kserv/key:LABEL=kservkey   keyfile-timeout=20,discard,no-read-workqueue,no-write-workqueue,x-initrd.attach
+data0-luks     /dev/md/data0-raid1                          /kserv/key:LABEL=kservkey   keyfile-timeout=3,discard,no-read-workqueue,no-write-workqueue

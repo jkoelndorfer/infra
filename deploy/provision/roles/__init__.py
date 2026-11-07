@@ -12,9 +12,11 @@ from infralib import InfrastructureConfiguration
 from infralib.error import InvalidConfigurationError
 
 from .edgerouter import provision as provision_edgerouter
+from .kserv import provision as provision_kserv
 
 _ROLES: dict[str, Callable[[InfrastructureConfiguration], None]] = {
     "edgerouter": provision_edgerouter,
+    "kserv": provision_kserv,
 }
 
 
