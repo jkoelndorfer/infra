@@ -6,7 +6,8 @@ This module contains the InfrastructureProject for homelab monitoring: VictoriaM
 stores metrics, VictoriaLogs stores logs, and Grafana visualizes both. The SNMP
 exporter collects metrics from the router and switches. The node and smartctl
 exporters collect metrics from the Kubernetes host, and the health of its disks.
-Fluent Bit collects the logs of every pod.
+VictoriaMetrics also scrapes wg-easy, which homelab.vpn provisions, for the VPN's
+peers. Fluent Bit collects the logs of every pod.
 """
 
 from pulumi import ResourceOptions
@@ -21,6 +22,7 @@ from infralib import (
 
 from ..kubernetes import namespace
 from ..traefik import HomelabTraefikProject
+from ..vpn import HomelabVPNProject
 from .fluent_bit import FluentBitArgs, provision_fluent_bit
 from .grafana import GrafanaArgs, provision_grafana
 from .node_exporter import NodeExporterArgs, provision_node_exporter
@@ -44,6 +46,7 @@ from .victorialogs import (
     router_syslog_source,
     switch_syslog_source,
 )
+from .vpn_metrics import vpn_scrape_job
 
 
 class HomelabMonitoringProject(InfrastructureProject):
@@ -52,7 +55,8 @@ class HomelabMonitoringProject(InfrastructureProject):
 
     @classmethod
     def dependencies(cls, target: DeploymentTarget) -> list[InfrastructureStack]:
-        return [HomelabTraefikProject.stack(DeploymentTarget(Environment.PROD, None))]
+        prod = DeploymentTarget(Environment.PROD, None)
+        return [HomelabTraefikProject.stack(prod), HomelabVPNProject.stack(prod)]
 
     @classmethod
     def deployment_targets(cls) -> list[DeploymentTarget]:
@@ -117,6 +121,7 @@ class HomelabMonitoringProject(InfrastructureProject):
                     smartctl_exporter.scrape_job,
                     vl.scrape_job,
                     fluent_bit.scrape_job,
+                    vpn_scrape_job(self.dctx),
                 ],
             ),
             self.default_ropts,

@@ -18,12 +18,14 @@ from .host import host_dashboard
 from .network import network_dashboard
 from .pod_logs import pod_logs_dashboard
 from .traefik import traefik_dashboard
+from .vpn import vpn_dashboard
 
 DASHBOARDS: dict[str, DashboardFactory] = {
     "host.json": host_dashboard,
     "network.json": network_dashboard,
     "pod-logs.json": pod_logs_dashboard,
     "traefik.json": traefik_dashboard,
+    "vpn.json": vpn_dashboard,
 }
 """
 Each dashboard's function, keyed by the name of the file Grafana provisions it from.

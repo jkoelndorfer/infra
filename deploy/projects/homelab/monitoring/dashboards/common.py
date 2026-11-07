@@ -210,7 +210,7 @@ def color_text() -> dict[str, Any]:
     return {"id": "custom.cellOptions", "value": {"type": "color-text"}}
 
 
-def value_mappings(mappings: dict[int, tuple[str, str]]) -> dict[str, Any]:
+def value_mappings[K: int | str](mappings: dict[K, tuple[str, str]]) -> dict[str, Any]:
     """
     Returns a property that shows each value as text in a color, from a mapping of
     value to (text, color).
