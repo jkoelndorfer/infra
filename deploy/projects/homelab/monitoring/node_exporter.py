@@ -236,6 +236,6 @@ def provision_node_exporter(
             # A name reads better than an address in dashboards.
             {"target_label": "instance", "replacement": HOST_NAME},
         ],
-        basic_auth=ScrapeBasicAuth(username=SCRAPE_USER, password=password.result),
+        auth=ScrapeBasicAuth(username=SCRAPE_USER, password=password.result),
     )
     return NodeExporterResult(daemon_set=daemon_set, scrape_job=scrape_job)

@@ -70,6 +70,16 @@ class ScrapeBasicAuth:
 
 
 @dataclass
+class ScrapeBearerAuth:
+    """
+    A bearer token that a scrape job sends to its targets, in the Authorization
+    header.
+    """
+
+    token: Output[str]
+
+
+@dataclass
 class ScrapeJob:
     """
     A set of Prometheus-format endpoints that VictoriaMetrics scrapes.
@@ -112,7 +122,7 @@ class ScrapeJob:
     [1]: https://docs.victoriametrics.com/victoriametrics/relabeling/
     """
 
-    basic_auth: ScrapeBasicAuth | None = None
+    auth: ScrapeBasicAuth | ScrapeBearerAuth | None = None
     """
     Credentials sent with each scrape, for targets that require authentication.
     """
@@ -268,17 +278,17 @@ def _scrape_auth_secret_volumes(
     opts: ResourceOptions,
 ) -> list[HomelabContainerSecretVolumeArgs]:
     """
-    Provisions a secret that holds the password of each scrape job that has basic
-    authentication, keyed by job name, and returns the volume that mounts it. Jobs
-    read their password from the mounted file, so that it stays out of the scrape
+    Provisions a secret that holds the password or token of each scrape job that
+    authenticates, keyed by job name, and returns the volume that mounts it. Jobs
+    read their credential from the mounted file, so that it stays out of the scrape
     configuration's ConfigMap.
     """
-    passwords = {
-        job.name: job.basic_auth.password
+    credentials = {
+        job.name: _scrape_credential(job.auth)
         for job in args.scrape_jobs
-        if job.basic_auth is not None
+        if job.auth is not None
     }
-    if not passwords:
+    if not credentials:
         return []
 
     secret = k8s.core.v1.Secret(
@@ -287,7 +297,7 @@ def _scrape_auth_secret_volumes(
             namespace=args.namespace,
             name=f"{SERVICE_NAME}-scrape-auth",
         ),
-        string_data=passwords,
+        string_data=credentials,
         opts=opts,
     )
     return [
@@ -300,6 +310,14 @@ def _scrape_auth_secret_volumes(
             ),
         ),
     ]
+
+
+def _scrape_credential(auth: ScrapeBasicAuth | ScrapeBearerAuth) -> Output[str]:
+    match auth:
+        case ScrapeBasicAuth():
+            return auth.password
+        case ScrapeBearerAuth():
+            return auth.token
 
 
 def _scrape_config(args: VictoriaMetricsArgs) -> dict[str, Any]:
@@ -332,9 +350,16 @@ def _scrape_job_config(job: ScrapeJob) -> dict[str, Any]:
         config["relabel_configs"] = job.relabel_configs
     if job.metric_relabel_configs:
         config["metric_relabel_configs"] = job.metric_relabel_configs
-    if job.basic_auth is not None:
-        config["basic_auth"] = {
-            "username": job.basic_auth.username,
-            "password_file": str(SCRAPE_AUTH_DIRECTORY / job.name),
-        }
+    credential_file = str(SCRAPE_AUTH_DIRECTORY / job.name)
+    match job.auth:
+        case ScrapeBasicAuth():
+            config["basic_auth"] = {
+                "username": job.auth.username,
+                "password_file": credential_file,
+            }
+        case ScrapeBearerAuth():
+            config["authorization"] = {
+                "type": "Bearer",
+                "credentials_file": credential_file,
+            }
     return config
