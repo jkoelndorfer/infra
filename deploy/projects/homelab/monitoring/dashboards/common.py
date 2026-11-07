@@ -311,6 +311,76 @@ def logs_target(
     return result
 
 
+def logs_table(
+    title: str,
+    description: str,
+    query: str,
+    columns: dict[str, str],
+    numeric: list[str],
+    grid_pos: dict[str, int],
+    overrides: list[dict[str, Any]],
+    sort_by: str,
+) -> dict[str, Any]:
+    """
+    Returns a table of the rows that a LogsQL query [1] returns, such as the result
+    of a stats pipe. columns maps each field to show, in order, to its column name.
+    The data source returns every field as text, so the fields in numeric are
+    converted to numbers, which sort and format as such. Rows are sorted by sort_by,
+    in descending order.
+
+    [1]: https://docs.victoriametrics.com/victorialogs/logsql/
+    """
+    return {
+        "type": "table",
+        "title": title,
+        "description": description,
+        "datasource": dict(LOGS_DATASOURCE),
+        "gridPos": grid_pos,
+        "targets": [logs_target(query, "instant")],
+        # The data source returns each row's fields, other than its time and
+        # message, as a JSON object in the labels field.
+        "transformations": [
+            {
+                "id": "extractFields",
+                "options": {
+                    "source": "labels",
+                    "format": "json",
+                    "replace": False,
+                    "keepTime": False,
+                },
+            },
+            {
+                "id": "convertFieldType",
+                "options": {
+                    "conversions": [
+                        {"targetField": f, "destinationType": "number"} for f in numeric
+                    ],
+                    "fields": {},
+                },
+            },
+            {
+                "id": "organize",
+                "options": {
+                    "includeByName": {f: True for f in columns},
+                    "indexByName": {f: i for i, f in enumerate(columns)},
+                    "renameByName": columns,
+                },
+            },
+        ],
+        "fieldConfig": {
+            "defaults": {
+                "custom": {"align": "auto", "cellOptions": {"type": "auto"}},
+            },
+            "overrides": overrides,
+        },
+        "options": {
+            "showHeader": True,
+            "cellHeight": "sm",
+            "sortBy": [{"displayName": sort_by, "desc": True}],
+        },
+    }
+
+
 def logs(
     title: str,
     description: str,

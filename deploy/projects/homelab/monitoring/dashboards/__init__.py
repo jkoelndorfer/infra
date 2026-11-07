@@ -13,6 +13,7 @@ import json
 
 from infralib import DeploymentContext
 
+from .blocky import blocky_dashboard
 from .common import DATASOURCE_UID, LOGS_DATASOURCE_UID, Dashboard, DashboardFactory
 from .host import host_dashboard
 from .network import network_dashboard
@@ -21,6 +22,7 @@ from .traefik import traefik_dashboard
 from .vpn import vpn_dashboard
 
 DASHBOARDS: dict[str, DashboardFactory] = {
+    "blocky.json": blocky_dashboard,
     "host.json": host_dashboard,
     "network.json": network_dashboard,
     "pod-logs.json": pod_logs_dashboard,

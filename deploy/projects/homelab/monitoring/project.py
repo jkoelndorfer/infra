@@ -7,7 +7,8 @@ stores metrics, VictoriaLogs stores logs, and Grafana visualizes both. The SNMP
 exporter collects metrics from the router and switches. The node and smartctl
 exporters collect metrics from the Kubernetes host, and the health of its disks.
 VictoriaMetrics also scrapes wg-easy, which homelab.vpn provisions, for the VPN's
-peers. Fluent Bit collects the logs of every pod.
+peers, and Blocky, which homelab.blocky provisions, for DNS queries. Fluent Bit
+collects the logs of every pod.
 """
 
 from pulumi import ResourceOptions
@@ -20,9 +21,11 @@ from infralib import (
     InfrastructureStack,
 )
 
+from ..blocky import HomelabBlockyProject
 from ..kubernetes import namespace
 from ..traefik import HomelabTraefikProject
 from ..vpn import HomelabVPNProject
+from .blocky_metrics import blocky_scrape_job
 from .fluent_bit import FluentBitArgs, provision_fluent_bit
 from .grafana import GrafanaArgs, provision_grafana
 from .node_exporter import NodeExporterArgs, provision_node_exporter
@@ -56,7 +59,11 @@ class HomelabMonitoringProject(InfrastructureProject):
     @classmethod
     def dependencies(cls, target: DeploymentTarget) -> list[InfrastructureStack]:
         prod = DeploymentTarget(Environment.PROD, None)
-        return [HomelabTraefikProject.stack(prod), HomelabVPNProject.stack(prod)]
+        return [
+            HomelabBlockyProject.stack(prod),
+            HomelabTraefikProject.stack(prod),
+            HomelabVPNProject.stack(prod),
+        ]
 
     @classmethod
     def deployment_targets(cls) -> list[DeploymentTarget]:
@@ -122,6 +129,7 @@ class HomelabMonitoringProject(InfrastructureProject):
                     vl.scrape_job,
                     fluent_bit.scrape_job,
                     vpn_scrape_job(self.dctx),
+                    blocky_scrape_job(self.dctx),
                 ],
             ),
             self.default_ropts,
