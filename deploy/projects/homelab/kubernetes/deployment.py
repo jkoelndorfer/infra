@@ -187,7 +187,7 @@ class HomelabKubernetesDeployment(
         self._provision_https_ingress_service()
 
     @property
-    def _http_service_name(self) -> str:
+    def http_service_name(self) -> str:
         """
         The name of the Kubernetes service providing HTTP for this deployment.
         """
@@ -338,7 +338,7 @@ class HomelabKubernetesDeployment(
             f"{self.name}_service",
             metadata=k8s.meta.v1.ObjectMetaArgs(
                 namespace=self.args.namespace,
-                name=self._http_service_name,
+                name=self.http_service_name,
             ),
             spec=k8s.core.v1.ServiceSpecArgs(
                 type=k8s.core.v1.ServiceSpecType.CLUSTER_IP,
@@ -366,7 +366,7 @@ class HomelabKubernetesDeployment(
         )
 
         homelab_service = HomelabService(
-            self._http_service_name,
+            self.http_service_name,
             self.args.https_ingress.container_port,
             hostname,
             homelab_domain,
