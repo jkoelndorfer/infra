@@ -16,11 +16,13 @@ from infralib import DeploymentContext
 from .common import DATASOURCE_UID, LOGS_DATASOURCE_UID, Dashboard, DashboardFactory
 from .host import host_dashboard
 from .network import network_dashboard
+from .pod_logs import pod_logs_dashboard
 from .traefik import traefik_dashboard
 
 DASHBOARDS: dict[str, DashboardFactory] = {
     "host.json": host_dashboard,
     "network.json": network_dashboard,
+    "pod-logs.json": pod_logs_dashboard,
     "traefik.json": traefik_dashboard,
 }
 """

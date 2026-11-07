@@ -75,11 +75,11 @@ The most that Fluent Bit buffers on the host while VictoriaLogs is unavailable. 
 drops the oldest buffered logs beyond this.
 """
 
-STREAM_FIELDS = [
-    "kubernetes.namespace_name",
-    "kubernetes.pod_name",
-    "kubernetes.container_name",
-]
+NAMESPACE_FIELD = "kubernetes.namespace_name"
+POD_FIELD = "kubernetes.pod_name"
+CONTAINER_FIELD = "kubernetes.container_name"
+
+STREAM_FIELDS = [NAMESPACE_FIELD, POD_FIELD, CONTAINER_FIELD]
 """
 The fields that identify a log stream in VictoriaLogs, which flattens Fluent Bit's
 nested kubernetes record into dotted field names.

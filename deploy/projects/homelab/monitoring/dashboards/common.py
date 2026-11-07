@@ -144,16 +144,17 @@ def timeseries(
     overrides: list[dict[str, Any]] | None = None,
     stacked: bool = True,
     fill_opacity: int = 25,
+    datasource: dict[str, str] = DATASOURCE,
 ) -> dict[str, Any]:
     """
     Returns a graph of the series that targets return, from zero, with a legend of
-    each one's mean and maximum.
+    each one's mean and maximum. The targets query datasource.
     """
     return {
         "type": "timeseries",
         "title": title,
         "description": description,
-        "datasource": dict(DATASOURCE),
+        "datasource": dict(datasource),
         "gridPos": grid_pos,
         "targets": targets,
         "fieldConfig": {
@@ -284,6 +285,32 @@ def table(
     }
 
 
+def logs_target(
+    query: str,
+    query_type: str,
+    ref_id: str = "A",
+    legend: str | None = None,
+) -> dict[str, Any]:
+    """
+    Returns a LogsQL query [1] of the VictoriaLogs data source. An instant query
+    returns log lines. A statsRange query returns the series of a query that ends in
+    a stats pipe, at a step that Grafana picks from the time range, each series named
+    by legend.
+
+    [1]: https://docs.victoriametrics.com/victorialogs/logsql/
+    """
+    result: dict[str, Any] = {
+        "datasource": dict(LOGS_DATASOURCE),
+        "editorMode": "code",
+        "expr": query,
+        "queryType": query_type,
+        "refId": ref_id,
+    }
+    if legend is not None:
+        result["legendFormat"] = legend
+    return result
+
+
 def logs(
     title: str,
     description: str,
@@ -302,15 +329,7 @@ def logs(
         "description": description,
         "datasource": dict(LOGS_DATASOURCE),
         "gridPos": grid_pos,
-        "targets": [
-            {
-                "datasource": dict(LOGS_DATASOURCE),
-                "editorMode": "code",
-                "expr": query,
-                "queryType": "instant",
-                "refId": "A",
-            },
-        ],
+        "targets": [logs_target(query, "instant")],
         "options": {
             "showTime": True,
             "showLabels": False,
