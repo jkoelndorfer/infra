@@ -751,11 +751,18 @@ class HomelabNetworking:
         The address of the Kubernetes host, from its infra DHCP assignment. Pods reach
         the rest of the network from this address.
         """
+        return self.kubernetes_host_assignment.ip
+
+    @property
+    def kubernetes_host_assignment(self) -> HomelabDHCPAssignment:
+        """
+        The Kubernetes host's infra DHCP assignment.
+        """
         dhcp = self.networks.infra.dhcp
         assignments = [] if dhcp is None else dhcp.assignments
         for assignment in assignments:
             if assignment.name == _KUBERNETES_HOST:
-                return assignment.ip
+                return assignment
         raise InvalidConfigurationError(
             f"no infra DHCP assignment for the Kubernetes host {_KUBERNETES_HOST!r}"
         )

@@ -1139,6 +1139,7 @@ class TestHomelabNetworking:
         networking = HomelabNetworking.from_dict(networking_dict)
 
         assert networking.kubernetes_host == IPv4Address("10.0.2.5")
+        assert networking.kubernetes_host_assignment.mac == "00:00:5e:00:53:02"
 
     @pytest.mark.parametrize("dhcp", [None, {"assignments": []}])
     def test_kubernetes_host_must_be_assigned(
@@ -1152,6 +1153,8 @@ class TestHomelabNetworking:
 
         with pytest.raises(InvalidConfigurationError, match="'kserv'"):
             networking.kubernetes_host
+        with pytest.raises(InvalidConfigurationError, match="'kserv'"):
+            networking.kubernetes_host_assignment
 
 
 class TestHomelab:
