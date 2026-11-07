@@ -253,6 +253,9 @@ Python 3.14 with `mypy --strict`, including tests. Match the surrounding code:
 The repository is colocated jj and git, so `HEAD` is normally detached.
 Ensure you know which commit the user would like to base work on.
 
+When your work is complete, ensure that your work is on a git branch or
+jj bookmark so that it can be fetched.
+
 Commit subjects are `<scope>: <Imperative summary>`, for example
 `deploy/homelab: Implement homelab.backup project` or
 `pulumi provider: Add support for instantiating Kubernetes client`.
