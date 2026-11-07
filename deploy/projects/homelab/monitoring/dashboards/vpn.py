@@ -161,8 +161,7 @@ def _overview_stats(y: int) -> list[dict[str, Any]]:
         stat(
             "Metrics",
             "Whether VictoriaMetrics could scrape wg-easy's metrics. If it is down, "
-            "check that Prometheus metrics are enabled in wg-easy, with homelab.vpn's "
-            "metrics password.",
+            "check that Prometheus metrics are enabled in wg-easy, with no password.",
             f"min(up{{{_JOB}}})",
             "none",
             x=18,
