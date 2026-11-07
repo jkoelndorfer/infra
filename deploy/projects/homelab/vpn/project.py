@@ -8,18 +8,23 @@ WireGuard VPN endpoint and a web interface for managing its peers.
 wg-easy's configuration is documented at [1] and [2], and its Prometheus metrics at
 [3].
 
+The metrics are served without authentication, on the web interface's port. Traefik
+refuses requests for them, so only in-cluster scrapers that the metrics network
+policy admits can read them.
+
 NOTE: wg-easy keeps its metrics settings in its database, so they cannot be set
 here. To let homelab.monitoring scrape the metrics, enable Prometheus in the web
-interface, under Admin Panel > General, and set its password to this stack's
-metrics_password output.
+interface, under Admin Panel > General, and leave its password empty.
 
 [1]: https://wg-easy.github.io/wg-easy/latest/advanced/config/unattended-setup/
 [2]: https://wg-easy.github.io/wg-easy/latest/advanced/config/optional-config/
 [3]: https://wg-easy.github.io/wg-easy/latest/advanced/metrics/prometheus/
 """
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import PurePosixPath
+from typing import Any, cast
 
 from pulumi import export, Output, ResourceOptions
 import pulumi_kubernetes as k8s
@@ -52,13 +57,18 @@ from ..kubernetes import (
     HomelabKubernetesDeploymentArgs,
     namespace,
 )
-from ..traefik import HomelabTraefikProject
+from ..traefik import (
+    HomelabTraefikProject,
+    TraefikIngressRouteSpecRoute,
+    TraefikMiddlewareRef,
+    TraefikRouteBuilder,
+)
 
 
 @dataclass
 class VPNMetricsEndpoint:
     """
-    Where wg-easy serves its Prometheus metrics, and how to authenticate to it.
+    Where wg-easy serves its Prometheus metrics.
     """
 
     namespace: str
@@ -74,11 +84,6 @@ class VPNMetricsEndpoint:
     path: str
     """
     The HTTP path that the metrics are scraped at.
-    """
-
-    token: Output[str]
-    """
-    The bearer token that the metrics endpoint requires.
     """
 
 
@@ -117,6 +122,10 @@ class HomelabVPNProject(InfrastructureProject):
 
     container_http_port = 51821
     metrics_path = "/metrics/prometheus"
+    metrics_path_prefix = "/metrics"
+    """
+    The prefix of every metrics endpoint, which Traefik refuses requests for.
+    """
 
     # The labels of the pods that scrape the metrics, and of their namespaces. These
     # are homelab.monitoring's VictoriaMetrics pods, in each of its environments.
@@ -155,7 +164,6 @@ class HomelabVPNProject(InfrastructureProject):
             namespace=svc["namespace"],
             target=f"{svc['name']}.{svc['namespace']}.svc:{svc['port']}",
             path=cls.metrics_path,
-            token=Output.secret(outputs["metrics_password"].value),
         )
 
     def pulumi_program(self) -> None:
@@ -223,6 +231,22 @@ class HomelabVPNProject(InfrastructureProject):
             ),
         ]
 
+        # An allow list that no client of Traefik is on, so Traefik answers each
+        # request with 403 Forbidden [1].
+        #
+        # [1]: https://doc.traefik.io/traefik/reference/routing-configuration/http/middlewares/ipallowlist/
+        self.metrics_deny_middleware = k8s.apiextensions.CustomResource(
+            "metrics_deny_middleware",
+            api_version="traefik.io/v1alpha1",
+            kind="Middleware",
+            metadata=k8s.meta.v1.ObjectMetaArgs(
+                namespace=self.ns_name,
+                name="metrics-deny",
+            ),
+            spec={"ipAllowList": {"sourceRange": ["127.0.0.1/32"]}},
+            opts=self.default_ropts,
+        )
+
         self.deployment = HomelabKubernetesDeployment(
             name="deployment",
             args=HomelabKubernetesDeploymentArgs(
@@ -230,6 +254,7 @@ class HomelabVPNProject(InfrastructureProject):
                 name=self.service_name,
                 https_ingress=HomelabHTTPSDeploymentIngressArgs(
                     container_port=self.container_http_port,
+                    traefik_route_transform=self._traefik_route_transform,
                 ),
                 image=self.image,
                 command=self.command,
@@ -313,18 +338,9 @@ class HomelabVPNProject(InfrastructureProject):
             opts=self.default_ropts,
         )
 
-        metrics_password = random.RandomPassword(
-            "metrics_password",
-            length=32,
-            lower=True,
-            upper=True,
-            numeric=True,
-            special=False,
-            opts=ResourceOptions(provider=self.dctx.provider_factory.random_provider()),
-        )
-
         # The deployment's Traefik-only policy would otherwise keep the scrapers from
-        # reaching the web interface's port, which also serves the metrics.
+        # reaching the web interface's port, which also serves the metrics. Nothing
+        # else may reach the metrics, because they are not authenticated.
         k8s.networking.v1.NetworkPolicy(
             "metrics",
             metadata=k8s.meta.v1.ObjectMetaArgs(
@@ -357,7 +373,6 @@ class HomelabVPNProject(InfrastructureProject):
 
         export("admin_username", self.admin_username)
         export("admin_password", admin_password.result)
-        export("metrics_password", metrics_password.result)
         export(
             "metrics_service",
             {
@@ -366,3 +381,32 @@ class HomelabVPNProject(InfrastructureProject):
                 "port": self.container_http_port,
             },
         )
+
+    def _traefik_route_transform(
+        self,
+        builder: TraefikRouteBuilder,
+        default_routes: Sequence[TraefikIngressRouteSpecRoute],
+    ) -> list[TraefikIngressRouteSpecRoute]:
+        """
+        Returns the default routes, and a route that refuses requests for the
+        metrics. Its priority puts it ahead of the default routes.
+        """
+        metadata = cast(
+            Output[dict[str, Any]], getattr(self.metrics_deny_middleware, "metadata")
+        )
+        return [
+            *default_routes,
+            builder.route(
+                match=(
+                    f"{builder.default_host_match} "
+                    f"&& PathPrefix(`{self.metrics_path_prefix}`)"
+                ),
+                priority=100,
+                middlewares=[
+                    TraefikMiddlewareRef(
+                        namespace=metadata["namespace"],
+                        name=metadata["name"],
+                    ),
+                ],
+            ),
+        ]

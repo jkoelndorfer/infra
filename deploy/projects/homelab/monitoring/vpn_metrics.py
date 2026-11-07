@@ -10,13 +10,15 @@ seconds since its latest handshake, labeled by the peer's name and address. It a
 reports how many peers are configured, enabled and connected. A peer counts as
 connected if its latest handshake was less than CONNECTED_HANDSHAKE_SECONDS ago.
 
+The metrics are not authenticated. homelab.vpn admits only VictoriaMetrics to them.
+
 [1]: https://wg-easy.github.io/wg-easy/latest/advanced/metrics/prometheus/
 """
 
 from infralib import DeploymentContext
 
 from ..vpn import HomelabVPNProject
-from .victoriametrics import ScrapeBearerAuth, ScrapeJob
+from .victoriametrics import ScrapeJob
 
 JOB_NAME = "vpn"
 
@@ -36,5 +38,4 @@ def vpn_scrape_job(dctx: DeploymentContext) -> ScrapeJob:
         name=JOB_NAME,
         targets=[endpoint.target],
         metrics_path=endpoint.path,
-        auth=ScrapeBearerAuth(token=endpoint.token),
     )
