@@ -1016,15 +1016,18 @@ system {
   syslog {
     global {
       facility all {
-        level info
+        level notice
       }
-      facility protocols {
-        level debug
+      facility auth {
+        level info
       }
     }
     /* The standard syslog port, so no port is given. */
     host {{ syslog }} {
       facility all {
+        level notice
+      }
+      facility auth {
         level info
       }
     }
