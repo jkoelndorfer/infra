@@ -2,11 +2,16 @@
 projects.homelab.monitoring.dashboards.host
 ===========================================
 
-This module defines a Grafana dashboard of the Kubernetes host: its CPU, memory,
-hardware temperatures, filesystems, disk I/O and network, the state of its software RAID arrays, and the
-health of its disks. The metrics come from the node and smartctl exporters, through
-the jobs that `projects.homelab.monitoring.node_exporter` and
+This module defines a Grafana dashboard of a host: its CPU, memory, hardware
+temperatures, filesystems, disk I/O and network, the state of its software RAID
+arrays, and the health of its disks. The metrics come from the node and smartctl
+exporters, through the jobs that `projects.homelab.monitoring.node_exporter` and
 `projects.homelab.monitoring.smartctl_exporter` define.
+
+A variable selects the host, by its instance label. The Kubernetes host is scraped,
+and hosts outside the cluster, such as desktops, push their node exporter's metrics
+under the same job, named by their hostname. Only the Kubernetes host runs the
+smartctl exporter, so the other hosts' disk health panels are empty.
 """
 
 from typing import Any
@@ -17,6 +22,7 @@ from ..node_exporter import HOST_NAME
 from ..node_exporter import JOB_NAME as NODE_JOB
 from ..smartctl_exporter import JOB_NAME as SMARTCTL_JOB
 from .common import (
+    DATASOURCE,
     Dashboard,
     color_text,
     column,
@@ -35,8 +41,13 @@ UID = "homelab-host"
 
 _RATE_INTERVAL = "$__rate_interval"
 
-_NODE = f'job="{NODE_JOB}"'
-_SMART = f'job="{SMARTCTL_JOB}"'
+_HOST_VARIABLE = "host"
+
+# Each panel shows one host, because several queries add up or divide across all
+# the series that a selector matches.
+_INSTANCE = f'instance="${_HOST_VARIABLE}"'
+_NODE = f'job="{NODE_JOB}",{_INSTANCE}'
+_SMART = f'job="{SMARTCTL_JOB}",{_INSTANCE}'
 
 # Memory-backed filesystems hold nothing that outlives a reboot.
 _FILESYSTEMS = f'{_NODE},fstype!~"tmpfs|ramfs"'
@@ -204,8 +215,8 @@ def host_dashboard(dctx: DeploymentContext) -> Dashboard:
         "uid": UID,
         "title": "Host",
         "description": (
-            f"Resources, storage, RAID arrays, disk health and network of the "
-            f"Kubernetes host, {HOST_NAME}."
+            "Resources, storage, RAID arrays, disk health and network of a host. "
+            f"Disk health is reported only for the Kubernetes host, {HOST_NAME}."
         ),
         "tags": ["host", "node-exporter", "smartctl"],
         "editable": True,
@@ -214,10 +225,31 @@ def host_dashboard(dctx: DeploymentContext) -> Dashboard:
         "time": {"from": "now-6h", "to": "now"},
         "refresh": "1m",
         "timezone": "browser",
-        "templating": {"list": []},
+        "templating": {"list": [_host_variable()]},
         "annotations": {"list": []},
         "links": [],
         "panels": panels,
+    }
+
+
+def _host_variable() -> dict[str, Any]:
+    """
+    Returns the variable that selects a host, from the hosts that report the node
+    exporter's metrics. It shows the Kubernetes host by default.
+    """
+    query = f'label_values(node_uname_info{{job="{NODE_JOB}"}}, instance)'
+    return {
+        "name": _HOST_VARIABLE,
+        "label": "Host",
+        "type": "query",
+        "datasource": dict(DATASOURCE),
+        "query": {"query": query, "refId": _HOST_VARIABLE},
+        "definition": query,
+        "refresh": 2,
+        "sort": 1,
+        "multi": False,
+        "includeAll": False,
+        "current": {"selected": True, "text": HOST_NAME, "value": HOST_NAME},
     }
 
 

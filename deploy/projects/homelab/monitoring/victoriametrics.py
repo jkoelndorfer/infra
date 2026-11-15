@@ -5,12 +5,17 @@ projects.homelab.monitoring.victoriametrics
 This module provisions single-node VictoriaMetrics [1], which scrapes metrics
 targets and stores the results.
 
-VictoriaMetrics is not exposed through Traefik. It has no authentication of its
-own, and only in-cluster clients need it.
+VictoriaMetrics has no authentication of its own, so its API is not exposed
+through Traefik. Only its remote write endpoint [2] is, behind HTTP basic
+authentication, so that hosts outside the cluster, such as desktops, can push their
+metrics with an agent such as vmagent. A client that can push cannot read, or
+delete, what VictoriaMetrics stores.
 
 [1]: https://docs.victoriametrics.com/victoriametrics/single-server-victoriametrics/
+[2]: https://docs.victoriametrics.com/victoriametrics/integrations/prometheus/#remote-write
 """
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 import hashlib
 import json
@@ -19,9 +24,9 @@ from typing import Any
 
 from pulumi import Output, ResourceOptions
 import pulumi_kubernetes as k8s
+import pulumi_random as random
 from pulumi_kubernetes.core.v1 import (
     ConfigMapVolumeSourceArgs,
-    ContainerPortArgs,
     SecretVolumeSourceArgs,
 )
 
@@ -33,8 +38,18 @@ from ..kubernetes import (
     HomelabContainerSecretVolumeArgs,
     HomelabContainerVolumeArgs,
     HomelabContainerVolumeProvisionedSource,
+    HomelabHTTPSDeploymentIngressArgs,
     HomelabKubernetesDeployment,
     HomelabKubernetesDeploymentArgs,
+    decode_secret,
+    service_fqdn,
+)
+from ..traefik import (
+    TraefikHTTPBasicAuthMiddleware,
+    TraefikHTTPBasicAuthMiddlewareArgs,
+    TraefikHTTPBasicAuthSecretArgs,
+    TraefikIngressRouteSpecRoute,
+    TraefikRouteBuilder,
 )
 
 SERVICE_NAME = "victoriametrics"
@@ -57,6 +72,19 @@ SCRAPE_CONFIG_FILE_NAME = "scrape.yml"
 SCRAPE_AUTH_DIRECTORY = PurePosixPath("/scrape-auth")
 
 DEFAULT_METRICS_PATH = "/metrics"
+
+PUSH_HOSTNAME = "metrics"
+"""
+The hostname that hosts outside the cluster push their metrics to.
+"""
+
+PUSH_PATH = "/api/v1/write"
+"""
+The Prometheus remote write endpoint, the only path that Traefik routes to
+VictoriaMetrics.
+"""
+
+PUSH_USER = "push"
 
 
 @dataclass
@@ -129,6 +157,21 @@ class VictoriaMetricsArgs:
 
 
 @dataclass
+class VictoriaMetricsPushCredentials:
+    """
+    Where and how hosts outside the cluster push their metrics.
+    """
+
+    url: str
+    """
+    The URL of the remote write endpoint.
+    """
+
+    username: str
+    password: Output[str]
+
+
+@dataclass
 class VictoriaMetricsResult:
     """
     The result of provisioning VictoriaMetrics.
@@ -140,6 +183,8 @@ class VictoriaMetricsResult:
     """
     The in-cluster URL of the VictoriaMetrics HTTP API.
     """
+
+    push: VictoriaMetricsPushCredentials
 
 
 def multi_target_relabel_configs(exporter: str) -> list[dict[str, Any]]:
@@ -183,6 +228,39 @@ def provision_victoriametrics(
 
     secret_volumes = _scrape_auth_secret_volumes(args, opts)
 
+    push_auth = TraefikHTTPBasicAuthMiddleware(
+        "victoriametrics_push",
+        TraefikHTTPBasicAuthMiddlewareArgs(
+            namespace=args.namespace,
+            name=f"{SERVICE_NAME}-push",
+            secret=TraefikHTTPBasicAuthSecretArgs(
+                username=PUSH_USER,
+                password_args=random.RandomPasswordArgs(
+                    length=32,
+                    lower=True,
+                    upper=True,
+                    numeric=True,
+                    special=False,
+                ),
+            ),
+        ),
+        dctx,
+        opts=opts,
+    )
+
+    def push_routes(
+        builder: TraefikRouteBuilder,
+        default_routes: Sequence[TraefikIngressRouteSpecRoute],
+    ) -> list[TraefikIngressRouteSpecRoute]:
+        # Traefik answers every other path with 404, which keeps the rest of the
+        # API, including its query and delete endpoints, in the cluster.
+        return [
+            builder.route(
+                match=f"{builder.default_host_match} && Path(`{PUSH_PATH}`)",
+                middlewares=[push_auth.ref()],
+            ),
+        ]
+
     deployment = HomelabKubernetesDeployment(
         name="victoriametrics",
         args=HomelabKubernetesDeploymentArgs(
@@ -196,13 +274,7 @@ def provision_victoriametrics(
                 f"-retentionPeriod={RETENTION_PERIOD}",
                 f"-promscrape.config={CONFIG_DIRECTORY / SCRAPE_CONFIG_FILE_NAME}",
             ],
-            ports=[
-                ContainerPortArgs(
-                    container_port=HTTP_PORT,
-                    name="http",
-                    protocol="TCP",
-                ),
-            ],
+            # https_ingress declares the container's http port.
             privilege_drop_mode="pod-exec",
             volumes=[
                 HomelabContainerVolumeArgs(
@@ -228,6 +300,11 @@ def provision_victoriametrics(
                 ),
             ],
             secret_volumes=secret_volumes,
+            https_ingress=HomelabHTTPSDeploymentIngressArgs(
+                container_port=HTTP_PORT,
+                hostname=PUSH_HOSTNAME,
+                traefik_route_transform=push_routes,
+            ),
         ),
         dctx=dctx,
         opts=opts,
@@ -260,7 +337,14 @@ def provision_victoriametrics(
         args.namespace,
         f".svc:{HTTP_PORT}",
     )
-    return VictoriaMetricsResult(deployment=deployment, url=url)
+    push_secret = push_auth.secret
+    assert push_secret is not None
+    push = VictoriaMetricsPushCredentials(
+        url=f"https://{service_fqdn(dctx, PUSH_HOSTNAME)}{PUSH_PATH}",
+        username=PUSH_USER,
+        password=push_secret.data.apply(lambda d: decode_secret(d["password"])),
+    )
+    return VictoriaMetricsResult(deployment=deployment, url=url, push=push)
 
 
 def _scrape_auth_secret_volumes(

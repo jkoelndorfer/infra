@@ -7,11 +7,13 @@ stores metrics, VictoriaLogs stores logs, and Grafana visualizes both. The SNMP
 exporter collects metrics from the router and switches. The node and smartctl
 exporters collect metrics from the Kubernetes host, and the health of its disks.
 VictoriaMetrics also scrapes wg-easy, which homelab.vpn provisions, for the VPN's
-peers, and Blocky, which homelab.blocky provisions, for DNS queries. Fluent Bit
+peers, and Blocky, which homelab.blocky provisions, for DNS queries. Hosts outside
+the cluster, such as desktops, push their own metrics to VictoriaMetrics; the
+stack's push output has the URL and credentials that they push with. Fluent Bit
 collects the logs of every pod.
 """
 
-from pulumi import ResourceOptions
+from pulumi import export, Output, ResourceOptions
 import pulumi_kubernetes as k8s
 
 from infralib import (
@@ -133,6 +135,15 @@ class HomelabMonitoringProject(InfrastructureProject):
                 ],
             ),
             self.default_ropts,
+        )
+
+        export(
+            "push",
+            {
+                "url": vm.push.url,
+                "username": vm.push.username,
+                "password": Output.secret(vm.push.password),
+            },
         )
 
         grafana = provision_grafana(
