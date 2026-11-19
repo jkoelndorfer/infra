@@ -119,7 +119,6 @@ class HomelabHTTPSDeploymentIngressArgs:
 
     container_port: int
     hostname: str | None = None
-    san_hostnames: list[str] = field(default_factory=list)
     traefik_route_transform: TraefikRouteTransformer = default_route_transformer
 
 
@@ -333,6 +332,11 @@ class HomelabKubernetesDeployment(
 
         homelab_domain = service_domain(self.dctx)
         hostname = self.args.https_ingress.hostname or self.args.name
+        if "." in hostname:
+            raise ValueError(
+                f"hostname {hostname!r} has more than one label, so the "
+                f"wildcard certificate for {homelab_domain} does not cover it"
+            )
 
         k8s.core.v1.Service(
             f"{self.name}_service",
@@ -380,15 +384,7 @@ class HomelabKubernetesDeployment(
                 routes=self.args.https_ingress.traefik_route_transform(
                     route_builder, [route_builder.route()]
                 ),
-                tls_domains=[
-                    TraefikIngressRouteTLSDomain(
-                        main=homelab_service.fqdn,
-                        sans=[
-                            f"{h}.{homelab_service.domain}"
-                            for h in self.args.https_ingress.san_hostnames
-                        ],
-                    ),
-                ],
+                tls_domains=[TraefikIngressRouteTLSDomain.wildcard(homelab_domain)],
             ),
             self.dctx,
             opts=self.default_ropts,

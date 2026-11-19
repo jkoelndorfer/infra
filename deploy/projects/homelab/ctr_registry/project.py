@@ -104,7 +104,6 @@ class HomelabContainerRegistryProject(InfrastructureProject):
                 https_ingress=HomelabHTTPSDeploymentIngressArgs(
                     container_port=self.container_port,
                     hostname=self.registry_hostname("rw"),
-                    san_hostnames=[self.registry_hostname("ro")],
                     traefik_route_transform=self._traefik_route_transform,
                 ),
                 image=self.image,
