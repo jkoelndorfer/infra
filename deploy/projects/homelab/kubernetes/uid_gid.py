@@ -37,6 +37,7 @@ _service_ids = {
     "unifi-db": 12,
     "node-exporter": 13,
     "victorialogs": 14,
+    "silverbullet": 15,
 }
 
 
