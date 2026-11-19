@@ -102,6 +102,7 @@ def _computed_state(args: pulumi.runtime.MockResourceArgs) -> dict[str, Any]:
     if args.typ.startswith("random:"):
         state["result"] = f"mock-random-{args.name}"
         state["bcryptHash"] = f"mock-bcrypt-{args.name}"
+        state["hex"] = args.name.encode("utf-8").hex()
     if args.typ == "kubernetes:core/v1:Secret":
         state["data"] = {
             k: b64encode(str(v).encode("utf-8")).decode("ascii")

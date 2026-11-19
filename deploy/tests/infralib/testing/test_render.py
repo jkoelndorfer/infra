@@ -211,6 +211,8 @@ class RenderComputedProject(InfrastructureProject):
 
         password = random.RandomPassword("password", length=8, opts=random_opts)
         pulumi.export("password", password.result)
+        id_ = random.RandomId("id", byte_length=16, opts=random_opts)
+        pulumi.export("id_hex", id_.hex)
 
         zone = aws.route53.Zone("zone", name="example.com", opts=aws_opts)
         zone_data = aws.route53.get_zone_output(
@@ -370,6 +372,7 @@ def test_computed_values_are_available() -> None:
 
     assert b64decode(outputs["secret_data"]["username"]) == b"admin"
     assert outputs["password"] == "mock-random-password"
+    assert bytes.fromhex(outputs["id_hex"]) == b"id"
     assert outputs["release_name"] == "release"
     assert outputs["named_release_name"] == "explicit"
     assert outputs["zone_name"] == "example.com"
