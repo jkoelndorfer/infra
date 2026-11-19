@@ -45,6 +45,11 @@ SYNCTHING_DATA_VOLUME_PATH = "/data/syncthing"
 VAULTWARDEN_DATA_VOLUME_PATH = "/data/vaultwarden"
 
 CTR_IMAGE = "{{ workflow.parameters.ctrimage }}"
+CTR_IMAGE_PULL_POLICY = "Always"
+"""
+The pull policy for CTR_IMAGE. Its tag is reused for each new build, so a node
+would otherwise keep running whichever build it pulled first.
+"""
 
 BACKUP_MOUNT = {"name": "local-backup", "mountPath": BACKUP_VOLUME_PATH}
 SECRETS_MOUNT = {"name": "secrets", "mountPath": SECRET_VOLUME_PATH, "readOnly": True}
@@ -175,6 +180,7 @@ def _templates(
             "inputs": _inputs("name", "path"),
             "container": {
                 "image": CTR_IMAGE,
+                "imagePullPolicy": CTR_IMAGE_PULL_POLICY,
                 "command": _restic_command(
                     "{{ inputs.parameters.name }}",
                     "backup",
@@ -209,6 +215,7 @@ def _templates(
             "inputs": _inputs("kind", "namespace", "name", "replicas"),
             "container": {
                 "image": CTR_IMAGE,
+                "imagePullPolicy": CTR_IMAGE_PULL_POLICY,
                 "command": [
                     "bash",
                     "-c",
@@ -232,6 +239,7 @@ def _templates(
             "name": "restic-prune-repack",
             "container": {
                 "image": CTR_IMAGE,
+                "imagePullPolicy": CTR_IMAGE_PULL_POLICY,
                 "command": _restic_command(
                     "Prune/Repack",
                     "prune-repack",
@@ -252,6 +260,7 @@ def _templates(
             "name": "restic-check",
             "container": {
                 "image": CTR_IMAGE,
+                "imagePullPolicy": CTR_IMAGE_PULL_POLICY,
                 "command": _restic_command("Restic Check", "check"),
                 "env": env,
                 "volumeMounts": [BACKUP_MOUNT, SECRETS_MOUNT],
@@ -262,6 +271,7 @@ def _templates(
             "inputs": _inputs("source", "destination", "file_user", "file_group"),
             "container": {
                 "image": CTR_IMAGE,
+                "imagePullPolicy": CTR_IMAGE_PULL_POLICY,
                 "command": [
                     "bash",
                     "-c",
@@ -300,6 +310,7 @@ def _templates(
             "name": "rclone-to-s3",
             "container": {
                 "image": CTR_IMAGE,
+                "imagePullPolicy": CTR_IMAGE_PULL_POLICY,
                 "command": [
                     "/app/backup.py",
                     "--reporter",
@@ -323,6 +334,7 @@ def _templates(
             "name": "compare-latest-snapshot",
             "container": {
                 "image": CTR_IMAGE,
+                "imagePullPolicy": CTR_IMAGE_PULL_POLICY,
                 "command": _restic_command(
                     "Snapshot Comparison",
                     "compare-latest-snapshots",
