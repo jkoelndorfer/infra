@@ -169,6 +169,36 @@ def _templates(
     """
     env = _backup_container_env(bucket_name)
 
+    def restic_backup(name: str, *options: str) -> dict[str, Any]:
+        return {
+            "name": name,
+            "inputs": _inputs("name", "path"),
+            "container": {
+                "image": CTR_IMAGE,
+                "command": _restic_command(
+                    "{{ inputs.parameters.name }}",
+                    "backup",
+                    *options,
+                    "{{ inputs.parameters.path }}",
+                ),
+                "env": env,
+                "volumeMounts": [
+                    BACKUP_MOUNT,
+                    {
+                        "name": "syncthing-config",
+                        "mountPath": SYNCTHING_CONFIG_VOLUME_PATH,
+                        "readOnly": True,
+                    },
+                    {
+                        "name": "syncthing-data",
+                        "mountPath": SYNCTHING_DATA_VOLUME_PATH,
+                        "readOnly": True,
+                    },
+                    SECRETS_MOUNT,
+                ],
+            },
+        }
+
     return [
         {
             "name": "full-backup-run",
@@ -196,33 +226,8 @@ def _templates(
                 ),
             },
         },
-        {
-            "name": "restic-backup",
-            "inputs": _inputs("name", "path"),
-            "container": {
-                "image": CTR_IMAGE,
-                "command": _restic_command(
-                    "{{ inputs.parameters.name }}",
-                    "backup",
-                    "{{ inputs.parameters.path }}",
-                ),
-                "env": env,
-                "volumeMounts": [
-                    BACKUP_MOUNT,
-                    {
-                        "name": "syncthing-config",
-                        "mountPath": SYNCTHING_CONFIG_VOLUME_PATH,
-                        "readOnly": True,
-                    },
-                    {
-                        "name": "syncthing-data",
-                        "mountPath": SYNCTHING_DATA_VOLUME_PATH,
-                        "readOnly": True,
-                    },
-                    SECRETS_MOUNT,
-                ],
-            },
-        },
+        restic_backup("restic-backup"),
+        restic_backup("restic-backup-for-each", "--for-each"),
         {
             "name": "restic-prune-repack",
             "container": {
@@ -410,7 +415,7 @@ def _tasks(dctx: DeploymentContext) -> list[dict[str, Any]]:
         ),
         {
             "name": "restic-backup-syncthing-data",
-            "template": "restic-backup",
+            "template": "restic-backup-for-each",
             "arguments": _params(
                 {
                     "name": "Backup Syncthing Data",
@@ -421,7 +426,7 @@ def _tasks(dctx: DeploymentContext) -> list[dict[str, Any]]:
         },
         {
             "name": "restic-backup-config",
-            "template": "restic-backup",
+            "template": "restic-backup-for-each",
             "arguments": _params(
                 {
                     "name": "Backup Config",

@@ -130,6 +130,11 @@ class BackupApplication:
         restic_sub = restic.add_subparsers(help="restic operations")
 
         restic_backup = restic_sub.add_parser("backup", help="restic backup")
+        restic_backup.add_argument(
+            "--for-each",
+            action="store_true",
+            help="run one backup for each directory and regular file inside source",
+        )
         restic_backup.add_argument("source", help="source directory for restic backup")
         restic_backup.set_defaults(func=self.restic_backup)
 
@@ -257,7 +262,7 @@ class BackupApplication:
         return restic_service.backup(
             name=args.name,
             source=Path(args.source),
-            for_each=True,
+            for_each=args.for_each,
             skip_if_unchanged=True,
             exclude_files=[],
         )

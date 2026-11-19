@@ -287,3 +287,49 @@ class TestBackupApplicationIntegration:
                 str(restic_backup_source),
             ]
         )
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    "for_each",
+    [pytest.param(False, id="single"), pytest.param(True, id="for-each")],
+)
+def test_restic_backup_for_each(
+    backup_src_info: BackupSourceInfo,
+    restic_cache_dir: Path,
+    restic_password_file: Path,
+    restic_repository: Path,
+    for_each: bool,
+) -> None:
+    """
+    Tests that a restic backup runs one backup per child of the source only
+    when --for-each is passed.
+    """
+    app = BackupApplication()
+    args = app.argparser().parse_args(
+        [
+            "--name",
+            "Data Backup",
+            "--reporter",
+            "googlechat",
+            "restic",
+            "--repository",
+            str(restic_repository),
+            "--cache-dir",
+            str(restic_cache_dir),
+            "--password-file",
+            str(restic_password_file),
+            "backup",
+            *(["--for-each"] if for_each else []),
+            str(backup_src_info.path),
+        ]
+    )
+
+    report = app.restic_backup(args)
+    subreports = list(report.all_reports())[1:]
+
+    assert report.successful
+    if for_each:
+        assert len(subreports) == backup_src_info.total_top_level_backup_targets
+    else:
+        assert subreports == []
