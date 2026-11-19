@@ -37,6 +37,7 @@ from ..kubernetes.volume import (
     HomelabKubernetesPersistentVolumeArgs,
 )
 from .config import TraefikConfiguration as traefik_config
+from .route import TraefikIngressRouteTLSDomain
 
 
 def _metrics_service_name(release_name: str | None) -> str:
@@ -359,6 +360,18 @@ class HomelabTraefikProject(InfrastructureProject):
                         "tls": {
                             "enabled": True,
                             "certResolver": traefik_config.cert_resolver,
+                            # Request the wildcards up front so that they do
+                            # not depend on any route existing. This one
+                            # Traefik serves every environment's services.
+                            # Each environment gets its own entry so that it
+                            # matches the domain that environment's routes
+                            # request.
+                            "domains": [
+                                TraefikIngressRouteTLSDomain.wildcard(
+                                    homelab_domain.domain_for(DeploymentTarget(e, None))
+                                ).to_spec()
+                                for e in [Environment.PROD, Environment.DEV]
+                            ],
                         },
                     },
                 },

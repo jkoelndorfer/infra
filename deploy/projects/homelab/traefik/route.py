@@ -62,6 +62,17 @@ class TraefikIngressRouteTLSDomain:
     main: Input[str]
     sans: Input[Sequence[Input[str]]]
 
+    @classmethod
+    def wildcard(cls, domain: str) -> TraefikIngressRouteTLSDomain:
+        """
+        Returns a TLS domain that covers every hostname directly under the
+        given domain.
+
+        A wildcard keeps individual hostnames out of Certificate Transparency
+        logs. It matches exactly one label, so it does not cover `a.b.<domain>`.
+        """
+        return cls(main=f"*.{domain}", sans=[])
+
     def to_spec(self) -> dict[str, Any]:
         return {
             "main": self.main,
