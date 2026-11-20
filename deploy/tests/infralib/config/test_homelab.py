@@ -1156,6 +1156,51 @@ class TestHomelabNetworking:
         with pytest.raises(InvalidConfigurationError, match="'kserv'"):
             networking.kubernetes_host_assignment
 
+    def test_assignment_is_found_on_any_network(
+        self, networking_dict: dict[str, Any]
+    ) -> None:
+        """
+        Tests that an assignment is found by name, whichever network it is on.
+        """
+        named_network(networking_dict, "untrusted")["dhcp"] = {
+            "assignments": [
+                {"name": "printer", "mac": "00:00:5e:00:53:04", "ip": "10.0.14.7"},
+            ],
+        }
+        networking = HomelabNetworking.from_dict(networking_dict)
+
+        assert networking.assignment("printer").ip == IPv4Address("10.0.14.7")
+
+    def test_assignment_must_exist(self, networking_dict: dict[str, Any]) -> None:
+        """
+        Tests that a missing assignment gets a clear error.
+        """
+        networking = HomelabNetworking.from_dict(networking_dict)
+
+        with pytest.raises(InvalidConfigurationError, match="'printer'"):
+            networking.assignment("printer")
+
+    def test_assignment_name_must_be_unambiguous(
+        self, networking_dict: dict[str, Any]
+    ) -> None:
+        """
+        Tests that a name assigned on more than one network is rejected.
+        """
+        named_network(networking_dict, "infra")["dhcp"] = {
+            "assignments": [
+                {"name": "printer", "mac": "00:00:5e:00:53:04", "ip": "10.0.2.7"},
+            ],
+        }
+        named_network(networking_dict, "untrusted")["dhcp"] = {
+            "assignments": [
+                {"name": "printer", "mac": "00:00:5e:00:53:05", "ip": "10.0.14.7"},
+            ],
+        }
+        networking = HomelabNetworking.from_dict(networking_dict)
+
+        with pytest.raises(InvalidConfigurationError, match="more than one network"):
+            networking.assignment("printer")
+
 
 class TestHomelab:
     """

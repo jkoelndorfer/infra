@@ -770,6 +770,26 @@ class HomelabNetworking:
             f"no infra DHCP assignment for the Kubernetes host {_KUBERNETES_HOST!r}"
         )
 
+    def assignment(self, name: str) -> HomelabDHCPAssignment:
+        """
+        Returns the DHCP assignment with the given name, from whichever network it is
+        on, so that a device can be referred to without knowing its network.
+        """
+        found = [
+            assignment
+            for network in self.networks.by_name.values()
+            if network.dhcp is not None
+            for assignment in network.dhcp.assignments
+            if assignment.name == name
+        ]
+        if not found:
+            raise InvalidConfigurationError(f"no DHCP assignment named {name!r}")
+        if len(found) > 1:
+            raise InvalidConfigurationError(
+                f"DHCP assignment name {name!r} is used on more than one network"
+            )
+        return found[0]
+
     def _check_switch_port(
         self, switch: HomelabSwitch, port: HomelabSwitchPort
     ) -> None:
