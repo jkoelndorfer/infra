@@ -12,6 +12,7 @@ import pulumi_kubernetes as k8s
 
 from infralib import DeploymentContext
 
+from ..silverbullet import HomelabSilverBulletProject
 from ..syncthing import HomelabSyncthingProject
 from ..vaultwarden import HomelabVaultwardenProject
 from .volume import RefVolumeProvisionResult
@@ -42,6 +43,7 @@ RESTIC_PASSWORD_FILE = f"{SECRET_VOLUME_PATH}/{RESTIC_PASSWORD_FILENAME}"
 CONFIG_PATH = "/config"
 SYNCTHING_CONFIG_VOLUME_PATH = f"{CONFIG_PATH}/syncthing"
 SYNCTHING_DATA_VOLUME_PATH = "/data/syncthing"
+SILVERBULLET_DATA_VOLUME_PATH = "/data/silverbullet"
 VAULTWARDEN_DATA_VOLUME_PATH = "/data/vaultwarden"
 
 CTR_IMAGE = "{{ workflow.parameters.ctrimage }}"
@@ -200,6 +202,11 @@ def _templates(
                         "mountPath": SYNCTHING_DATA_VOLUME_PATH,
                         "readOnly": True,
                     },
+                    {
+                        "name": "silverbullet-data",
+                        "mountPath": SILVERBULLET_DATA_VOLUME_PATH,
+                        "readOnly": True,
+                    },
                     SECRETS_MOUNT,
                 ],
             },
@@ -351,6 +358,7 @@ def _tasks(dctx: DeploymentContext) -> list[dict[str, Any]]:
     """
     Returns the tasks of the backup workflow's DAG.
     """
+    silverbullet_pv = HomelabSilverBulletProject.data_pv(dctx, dctx.target)
     syncthing_pv = HomelabSyncthingProject.data_pv(dctx, dctx.target)
     vaultwarden_pv = HomelabVaultwardenProject.data_pv(dctx, dctx.target)
 
@@ -388,6 +396,17 @@ def _tasks(dctx: DeploymentContext) -> list[dict[str, Any]]:
             depends,
         )
 
+    def scale_silverbullet(
+        task_name: str, replicas: int, depends: str | None = None
+    ) -> dict[str, Any]:
+        return scale(
+            task_name,
+            silverbullet_pv.namespace,
+            HomelabSilverBulletProject.service_name,
+            replicas,
+            depends,
+        )
+
     def scale_vaultwarden(
         task_name: str, replicas: int, depends: str | None = None
     ) -> dict[str, Any]:
@@ -399,12 +418,15 @@ def _tasks(dctx: DeploymentContext) -> list[dict[str, Any]]:
             depends,
         )
 
+    syncthing_backups = ("restic-backup-config", "restic-backup-syncthing-data")
+    syncthing_backups_finished = _all_finished(*syncthing_backups)
     restic_backups_finished = _all_finished(
-        "restic-backup-config",
-        "restic-backup-syncthing-data",
+        *syncthing_backups,
+        "restic-backup-silverbullet-data",
     )
 
     return [
+        scale_silverbullet("scale-down-silverbullet", 0),
         scale_vaultwarden("scale-down-vaultwarden", 0),
         scale_syncthing("scale-down-syncthing", 0),
         {
@@ -424,6 +446,24 @@ def _tasks(dctx: DeploymentContext) -> list[dict[str, Any]]:
             "scale-up-vaultwarden",
             1,
             _finished("copy-vaultwarden-data-to-syncthing"),
+        ),
+        # SilverBullet is stopped so that its files, including its accounts and
+        # configuration, are backed up in a state consistent with each other.
+        {
+            "name": "restic-backup-silverbullet-data",
+            "template": "restic-backup",
+            "arguments": _params(
+                {
+                    "name": "Backup SilverBullet Data",
+                    "path": SILVERBULLET_DATA_VOLUME_PATH,
+                }
+            ),
+            "depends": "scale-down-silverbullet",
+        },
+        scale_silverbullet(
+            "scale-up-silverbullet",
+            1,
+            _finished("restic-backup-silverbullet-data"),
         ),
         {
             "name": "restic-backup-syncthing-data",
@@ -457,7 +497,7 @@ def _tasks(dctx: DeploymentContext) -> list[dict[str, Any]]:
             "template": "restic-check",
             "depends": _finished("restic-prune-repack"),
         },
-        scale_syncthing("scale-up-syncthing", 1, restic_backups_finished),
+        scale_syncthing("scale-up-syncthing", 1, syncthing_backups_finished),
         {
             "name": "rclone-to-s3",
             "template": "rclone-to-s3",
@@ -535,6 +575,10 @@ def provision_backup_workflow(
                     pvc_volume(
                         "syncthing-data",
                         ref_volumes.syncthing_data.pvc.name,
+                    ),
+                    pvc_volume(
+                        "silverbullet-data",
+                        ref_volumes.silverbullet_data.pvc.name,
                     ),
                     pvc_volume(
                         "vaultwarden-data",

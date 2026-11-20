@@ -27,16 +27,18 @@ create it.
 [5]: https://github.com/silverbulletmd/silverbullet/blob/2.12.1/docker-entrypoint.sh
 """
 
+from dataclasses import asdict
 from pathlib import PurePosixPath
 
 from infralib import (
+    DeploymentContext,
     DeploymentTarget,
     Environment,
     InfrastructureProject,
     InfrastructureStack,
 )
 
-from pulumi import ResourceOptions
+from pulumi import export, ResourceOptions
 from pulumi_kubernetes.core.v1 import EnvVarArgs
 
 from ..kubernetes import (
@@ -46,6 +48,7 @@ from ..kubernetes import (
     HomelabHTTPSDeploymentIngressArgs,
     HomelabKubernetesDeployment,
     HomelabKubernetesDeploymentArgs,
+    HomelabPersistentVolume,
     namespace,
 )
 from ..traefik import HomelabTraefikProject
@@ -69,6 +72,16 @@ class HomelabSilverBulletProject(InfrastructureProject):
     def deployment_targets(cls) -> list[DeploymentTarget]:
         return [DeploymentTarget(e, None) for e in [Environment.DEV, Environment.PROD]]
 
+    @classmethod
+    def data_pv(
+        cls,
+        dctx: DeploymentContext,
+        target: DeploymentTarget,
+    ) -> HomelabPersistentVolume:
+        outputs = dctx.outputs(cls.stack(target))
+        pv_dict = outputs["data_volume"].value["pv"]
+        return HomelabPersistentVolume.from_dict(pv_dict)
+
     def pulumi_program(self) -> None:
         k8s_provider = self.dctx.provider_factory.kubernetes_provider()
         self.default_ropts = ResourceOptions(provider=k8s_provider)
@@ -79,7 +92,7 @@ class HomelabSilverBulletProject(InfrastructureProject):
             opts=self.default_ropts,
         )
 
-        HomelabKubernetesDeployment(
+        deployment = HomelabKubernetesDeployment(
             name="deployment",
             args=HomelabKubernetesDeploymentArgs(
                 namespace=self.ns_name,
@@ -112,4 +125,13 @@ class HomelabSilverBulletProject(InfrastructureProject):
             ),
             dctx=self.dctx,
             opts=self.default_ropts,
+        )
+
+        data_v = deployment.volumes["data"]
+        export(
+            "data_volume",
+            {
+                "pv": data_v.persistent_volume.apply(lambda pv: asdict(pv)),
+                "pvc": data_v.persistent_volume_claim.apply(lambda pvc: asdict(pvc)),
+            },
         )
