@@ -38,6 +38,8 @@ _service_ids = {
     "node-exporter": 13,
     "victorialogs": 14,
     "silverbullet": 15,
+    "samba": 16,
+    "samba-scanuser": 17,
 }
 
 

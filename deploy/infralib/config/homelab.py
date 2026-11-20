@@ -686,6 +686,9 @@ class HomelabPorts:
     # HTTPS, served by the ingress controller.
     https: int = 443
 
+    # SMB, served by Samba for file shares, such as the one the printer scans to.
+    smb: int = 445
+
     # The Syncthing sync protocol.
     syncthing: int = 22000
 
