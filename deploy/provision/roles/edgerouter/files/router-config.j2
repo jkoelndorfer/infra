@@ -7,6 +7,8 @@
 {% set internal_dns = kserv %}
 {% set unifi = kserv %}
 {% set syslog = kserv %}
+{% set samba = kserv %}
+{% set office_printer = network.assignment("office-laserjet-pro").ip %}
 {% set wireguard = kserv %}
 firewall {
   all-ping enable
@@ -274,6 +276,33 @@ firewall {
       destination {
         address {{ wireguard }}
         port {{ ports.wireguard_trusted }}
+      }
+    }
+    rule 190 {
+      action accept
+      description "trusted+ -> infra SMB"
+      protocol tcp
+      source {
+        group {
+          network-group ADDR_TRUSTED_PLUS
+        }
+      }
+      destination {
+        address {{ samba }}
+        port {{ ports.smb }}
+      }
+    }
+    /* The printer saves walk-up scans to Samba. */
+    rule 191 {
+      action accept
+      description "office-laserjet-pro -> infra SMB"
+      protocol tcp
+      source {
+        address {{ office_printer }}
+      }
+      destination {
+        address {{ samba }}
+        port {{ ports.smb }}
       }
     }
     {% for i in network.port_forwards %}
