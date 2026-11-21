@@ -15,6 +15,7 @@ from .deployment import (
     HomelabKubernetesDeployment,
 )
 from .imagepull import ImagePullCredential, ImagePullSecretProvider
+from .network_policy import trusted_plus_peers
 from .refvolume import (
     HomelabKubernetesReferencePersistentVolume,
     HomelabKubernetesReferencePersistentVolumeArgs,
@@ -58,5 +59,6 @@ __all__ = [
     "namespace",
     "service_domain",
     "service_fqdn",
+    "trusted_plus_peers",
     "uid_gid",
 ]
