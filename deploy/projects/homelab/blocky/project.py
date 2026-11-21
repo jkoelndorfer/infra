@@ -82,6 +82,12 @@ class HomelabBlockyProject(InfrastructureProject):
 
     container_dns_port = 5353
     container_http_port = 4000
+
+    # The networks that DNS queries are admitted from: the private address space of
+    # RFC 1918 [1], which keeps the resolver from answering the internet.
+    #
+    # [1]: https://datatracker.ietf.org/doc/html/rfc1918#section-3
+    dns_client_networks = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
     metrics_path = "/metrics"
 
     # The labels of the pods that scrape the metrics, and of their namespaces. These
@@ -222,8 +228,8 @@ class HomelabBlockyProject(InfrastructureProject):
 
     def _provision_ingress_policies(self) -> None:
         """
-        Provisions the policies that admit DNS queries from anywhere, and only the
-        scrapers to the HTTP port. Selecting the pod isolates it, so these are all
+        Provisions the policies that admit DNS queries from private addresses, and
+        only the scrapers to the HTTP port. Selecting the pod isolates it, so these are all
         the ingress it accepts.
         """
         # Queries arrive through the host port, which forwards them to the pod's
@@ -241,10 +247,9 @@ class HomelabBlockyProject(InfrastructureProject):
                     k8s.networking.v1.NetworkPolicyIngressRuleArgs(
                         from_=[
                             k8s.networking.v1.NetworkPolicyPeerArgs(
-                                ip_block=k8s.networking.v1.IPBlockArgs(
-                                    cidr="0.0.0.0/0"
-                                ),
+                                ip_block=k8s.networking.v1.IPBlockArgs(cidr=cidr),
                             )
+                            for cidr in self.dns_client_networks
                         ],
                         ports=[
                             k8s.networking.v1.NetworkPolicyPortArgs(
