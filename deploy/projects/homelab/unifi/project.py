@@ -178,7 +178,10 @@ class HomelabUnifiProject(InfrastructureProject):
         )
 
         # The deployment's Traefik-only policy isolates the pod, which would
-        # otherwise drop traffic from devices arriving through the host ports.
+        # otherwise drop traffic from devices arriving through the host ports. The
+        # host ports keep the devices' addresses, and the devices are managed on
+        # net_infra.
+        net_infra = self.dctx.config.homelab.network.networks.net_infra
         k8s.networking.v1.NetworkPolicy(
             "unifi_devices",
             metadata=k8s.meta.v1.ObjectMetaArgs(
@@ -191,9 +194,8 @@ class HomelabUnifiProject(InfrastructureProject):
                     k8s.networking.v1.NetworkPolicyIngressRuleArgs(
                         from_=[
                             k8s.networking.v1.NetworkPolicyPeerArgs(
-                                # TODO: Implement IP constraints.
                                 ip_block=k8s.networking.v1.IPBlockArgs(
-                                    cidr="0.0.0.0/0"
+                                    cidr=str(net_infra.ipv4_network)
                                 ),
                             )
                         ],
