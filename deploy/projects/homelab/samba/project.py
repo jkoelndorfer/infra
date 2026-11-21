@@ -42,6 +42,7 @@ from ..kubernetes import (
     HomelabKubernetesDeployment,
     HomelabKubernetesDeploymentArgs,
     namespace,
+    trusted_plus_peers,
     uid_gid,
 )
 from .scans import provision_scan_share
@@ -57,6 +58,9 @@ class HomelabSambaProject(InfrastructureProject):
     service_name = "samba"
 
     image = "dockurr/samba:4.23.10"
+
+    # The DHCP assignment of the printer that saves walk-up scans to the scan share.
+    printer_assignment = "office-laserjet-pro"
 
     config_directory = PurePosixPath("/etc/samba")
 
@@ -162,8 +166,10 @@ class HomelabSambaProject(InfrastructureProject):
 
         # Selecting the pod isolates it, so this is all the ingress it accepts.
         # Clients arrive through the host port, which forwards them to the pod's
-        # port with their source address intact; the router's firewall decides
-        # which networks may reach it.
+        # port with their source address intact. These are the clients the router
+        # admits: trusted+ and the printer.
+        networking = self.dctx.config.homelab.network
+        printer = networking.assignment(self.printer_assignment)
         k8s.networking.v1.NetworkPolicy(
             "smb",
             metadata=k8s.meta.v1.ObjectMetaArgs(
@@ -176,11 +182,12 @@ class HomelabSambaProject(InfrastructureProject):
                 ingress=[
                     k8s.networking.v1.NetworkPolicyIngressRuleArgs(
                         from_=[
+                            *trusted_plus_peers(networking),
                             k8s.networking.v1.NetworkPolicyPeerArgs(
                                 ip_block=k8s.networking.v1.IPBlockArgs(
-                                    cidr="0.0.0.0/0"
+                                    cidr=f"{printer.ip}/32"
                                 ),
-                            )
+                            ),
                         ],
                         ports=[
                             k8s.networking.v1.NetworkPolicyPortArgs(

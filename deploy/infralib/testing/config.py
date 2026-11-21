@@ -163,7 +163,18 @@ def dummy_infrastructure_configuration() -> InfrastructureConfiguration:
                     "net_infra", IPv4Network("10.0.20.0/24"), vlan_id=20
                 ),
                 untrusted=HomelabNetwork(
-                    "untrusted", IPv4Network("10.0.14.0/24"), vlan_id=14
+                    "untrusted",
+                    IPv4Network("10.0.14.0/24"),
+                    vlan_id=14,
+                    dhcp=HomelabDHCP(
+                        assignments=[
+                            HomelabDHCPAssignment(
+                                name="office-laserjet-pro",
+                                mac="00:00:5e:00:53:03",
+                                ip=IPv4Address("10.0.14.5"),
+                            ),
+                        ],
+                    ),
                 ),
             ),
             switches=[
