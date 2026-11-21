@@ -29,6 +29,7 @@ from ..kubernetes import (
     HomelabHTTPSDeploymentIngressArgs,
     HomelabPersistentVolume,
     namespace,
+    trusted_plus_peers,
 )
 from ..traefik import HomelabTraefikProject
 
@@ -143,6 +144,9 @@ class HomelabSyncthingProject(InfrastructureProject):
             opts=self.default_ropts,
         )
 
+        # The deployment's Traefik-only policy isolates the pod, which would otherwise
+        # drop sync traffic arriving through the host port. The host port keeps the
+        # client's address. Syncthing syncs over TCP, and over QUIC on UDP.
         k8s.networking.v1.NetworkPolicy(
             "syncthing_sync",
             metadata=k8s.meta.v1.ObjectMetaArgs(
@@ -153,18 +157,13 @@ class HomelabSyncthingProject(InfrastructureProject):
                 pod_selector=self.deployment.label_selector,
                 ingress=[
                     k8s.networking.v1.NetworkPolicyIngressRuleArgs(
-                        from_=[
-                            k8s.networking.v1.NetworkPolicyPeerArgs(
-                                # TODO: Implement IP constraints.
-                                ip_block=k8s.networking.v1.IPBlockArgs(
-                                    cidr="0.0.0.0/0"
-                                ),
-                            )
-                        ],
+                        from_=trusted_plus_peers(self.dctx.config.homelab.network),
                         ports=[
                             k8s.networking.v1.NetworkPolicyPortArgs(
                                 port=self.container_sync_port,
-                            ),
+                                protocol=protocol,
+                            )
+                            for protocol in ["TCP", "UDP"]
                         ],
                     ),
                 ],
