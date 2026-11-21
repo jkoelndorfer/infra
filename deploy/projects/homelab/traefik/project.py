@@ -25,6 +25,7 @@ from infralib import (
 )
 
 from ...dns import DNSZonesProject
+from ..kubernetes.network_policy import trusted_plus_peers
 from ..kubernetes.resources import (
     helm_release,
     namespace,
@@ -70,6 +71,15 @@ class HomelabTraefikProject(InfrastructureProject):
     The port that Traefik serves Prometheus metrics on, through its metrics
     entrypoint and the chart's metrics service.
     """
+
+    # The labels of the pods that scrape the metrics, and of their namespaces. These
+    # are homelab.monitoring's VictoriaMetrics pods, in each of its environments.
+    # They are spelled out because homelab.monitoring depends on this project.
+    metrics_scraper_namespace_labels = {"local/name": "monitoring"}
+    metrics_scraper_pod_labels = {"service-name": "victoriametrics"}
+
+    # The label the chart gives Traefik's pods.
+    pod_labels = {"app.kubernetes.io/name": "traefik"}
 
     @classmethod
     def dependencies(cls, target: DeploymentTarget) -> list[InfrastructureStack]:
@@ -124,6 +134,7 @@ class HomelabTraefikProject(InfrastructureProject):
             values=self._traefik_chart_values(),
             opts=self.default_ropts,
         )
+        self._provision_ingress_policies()
 
         # The chart names the metrics service after the release.
         export(
@@ -243,6 +254,77 @@ class HomelabTraefikProject(InfrastructureProject):
                 access_modes=["ReadWriteOnce"],
             ),
             dctx=self.dctx,
+            opts=self.default_ropts,
+        )
+
+    def _provision_ingress_policies(self) -> None:
+        """
+        Provisions the policies that admit trusted+ clients to the entrypoints, and
+        only the scrapers to the metrics. Selecting Traefik's pods isolates them, so
+        these are all the ingress they accept.
+        """
+        pod_selector = k8s.meta.v1.LabelSelectorArgs(match_labels=self.pod_labels)
+
+        # The chart names each container port after its entrypoint.
+        k8s.networking.v1.NetworkPolicy(
+            "entrypoints",
+            metadata=k8s.meta.v1.ObjectMetaArgs(
+                namespace=self.ns_name,
+                name="entrypoints",
+            ),
+            spec=k8s.networking.v1.NetworkPolicySpecArgs(
+                pod_selector=pod_selector,
+                policy_types=["Ingress"],
+                ingress=[
+                    k8s.networking.v1.NetworkPolicyIngressRuleArgs(
+                        from_=trusted_plus_peers(self.dctx.config.homelab.network),
+                        ports=[
+                            k8s.networking.v1.NetworkPolicyPortArgs(
+                                port=entrypoint,
+                                protocol="TCP",
+                            )
+                            for entrypoint in [
+                                traefik_config.insecure_entrypoint,
+                                traefik_config.secure_entrypoint,
+                            ]
+                        ],
+                    ),
+                ],
+            ),
+            opts=self.default_ropts,
+        )
+
+        # The metrics are not authenticated.
+        k8s.networking.v1.NetworkPolicy(
+            "metrics",
+            metadata=k8s.meta.v1.ObjectMetaArgs(
+                namespace=self.ns_name,
+                name="metrics",
+            ),
+            spec=k8s.networking.v1.NetworkPolicySpecArgs(
+                pod_selector=pod_selector,
+                policy_types=["Ingress"],
+                ingress=[
+                    k8s.networking.v1.NetworkPolicyIngressRuleArgs(
+                        from_=[
+                            k8s.networking.v1.NetworkPolicyPeerArgs(
+                                namespace_selector=k8s.meta.v1.LabelSelectorArgs(
+                                    match_labels=self.metrics_scraper_namespace_labels,
+                                ),
+                                pod_selector=k8s.meta.v1.LabelSelectorArgs(
+                                    match_labels=self.metrics_scraper_pod_labels,
+                                ),
+                            )
+                        ],
+                        ports=[
+                            k8s.networking.v1.NetworkPolicyPortArgs(
+                                port=self.metrics_port,
+                                protocol="TCP",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
             opts=self.default_ropts,
         )
 
@@ -374,6 +456,15 @@ class HomelabTraefikProject(InfrastructureProject):
                             ],
                         },
                     },
+                },
+            },
+            # Clients arrive through ServiceLB, which keeps their addresses for the
+            # entrypoints policy only if traffic stays on the node it arrived at [1].
+            #
+            # [1]: https://docs.k3s.io/networking/networking-services
+            "service": {
+                "spec": {
+                    "externalTrafficPolicy": "Local",
                 },
             },
             "providers": {
