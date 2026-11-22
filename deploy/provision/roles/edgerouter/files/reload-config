@@ -9,4 +9,7 @@ function vyos() {
 vyos begin
 vyos load /config/config.pyinfra
 vyos commit
+# commit only changes the running configuration; save writes it to config.boot
+# so it survives a reboot.
+vyos save
 vyos end
