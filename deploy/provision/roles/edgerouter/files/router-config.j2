@@ -575,6 +575,15 @@ interfaces {
     speed auto
   }
   ethernet eth1 {
+    /*
+     * This interface doesn't have anything plugged into it day-to-day.
+     *
+     * Its purpose is to provide a backup option for accessing homelab services
+     * in case of a misconfiguration.
+     *
+     * For that reason, this interface is explicitly not firewalled.
+     *
+     */
     address {{ networks.mgmt_backup.router_interface }}
     description "Management recovery"
     duplex auto
