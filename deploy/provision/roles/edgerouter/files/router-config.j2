@@ -57,6 +57,12 @@ firewall {
     network-group ADDR_TRUSTED_PLUS {
       network {{ networks.mgmt.ipv4_network }}
       network {{ networks.mgmt_backup.ipv4_network }}
+
+      /*
+       * infra is in trusted+ because VPN clients are NATed to the Kubernetes
+       * node IP. wg-easy's built-in egress firewalling can manage network-level
+       * access.
+       */
       network {{ networks.infra.ipv4_network }}
       network {{ networks.trusted.ipv4_network }}
     }
