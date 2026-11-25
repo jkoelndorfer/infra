@@ -10,7 +10,7 @@
 # This script is intended to be executed inside the "backup debug"
 # container, where the referenced environment variables are set.
 #
-# See terragrunt/units/backup/module/backup-debug.tf.
+# See deploy/projects/homelab/backup/debug.py.
 
 exec restic \
 	--repo "$BACKUP_LOCAL_RESTIC_REPOSITORY" \

@@ -113,8 +113,9 @@ def backup_container_env(bucket_name: Input[str]) -> list[k8s.core.v1.EnvVarArgs
     """
     Returns the environment shared by containers that perform backups.
     """
-    # Other than RESTIC_HOST and TZ, these are mostly present for reference
-    # if we ever exec into the backup container.
+    # Other than RESTIC_HOST and TZ, these are unused by the workflow. They
+    # are read by the wrapper scripts in the image, such as lrestic, which
+    # are used from the backup debug deployment.
     literals: dict[str, Input[str]] = {
         "RESTIC_HOST": RESTIC_HOST,
         "BACKUP_S3_BUCKET": bucket_name,

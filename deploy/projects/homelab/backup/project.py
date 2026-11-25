@@ -25,6 +25,7 @@ from ..silverbullet import HomelabSilverBulletProject
 from ..syncthing import HomelabSyncthingProject
 from ..vaultwarden import HomelabVaultwardenProject
 
+from .debug import provision_backup_debug_deployment
 from .kserv import provision_kserv_backup
 from .kubernetes import provision_kubernetes_sa
 from .s3 import provision_backup_bucket
@@ -107,7 +108,7 @@ class HomelabBackupProject(InfrastructureProject):
             aws_opts=self.aws_ropts,
             k8s_opts=self.k8s_ropts,
         )
-        provision_archive_volume(
+        archive_volume = provision_archive_volume(
             dctx=self.dctx,
             namespace=ns_name,
             backing_volume=self.backing_volume,
@@ -137,6 +138,17 @@ class HomelabBackupProject(InfrastructureProject):
             service_account=service_account,
             bucket_name=bucket.bucket,
             local_backup_claim_name=local_backup_volume.pvc.name,
+            ref_volumes=ref_volume_provisioning_result,
+            k8s_opts=self.k8s_ropts,
+        )
+        provision_backup_debug_deployment(
+            namespace_name=ns_name,
+            image=self._backup_image,
+            image_pull_secret=image_pull_secret,
+            bucket_name=bucket.bucket,
+            bucket_region=bucket.region,
+            local_backup_claim_name=local_backup_volume.pvc.name,
+            archive_claim_name=archive_volume.pvc.name,
             ref_volumes=ref_volume_provisioning_result,
             k8s_opts=self.k8s_ropts,
         )

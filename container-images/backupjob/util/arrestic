@@ -1,8 +1,8 @@
 #!/bin/bash
 
-###############################
-# rrestic -- "archive restic" #
-###############################
+################################
+# arrestic -- "archive restic" #
+################################
 #
 # This script invokes restic with implicit parameters for interacting
 # with the remote copy of the restic archive repository, hosted on S3.
@@ -10,7 +10,7 @@
 # This script is intended to be executed inside the "backup debug"
 # container, where the referenced environment variables are set.
 #
-# See terragrunt/units/backup/module/backup-debug.tf.
+# See deploy/projects/homelab/backup/debug.py.
 
 exec restic \
 	--repo "$ARCHIVE_S3_RESTIC_REPOSITORY" \
