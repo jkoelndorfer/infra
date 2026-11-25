@@ -57,14 +57,19 @@ BACKUP_MOUNT = {"name": "local-backup", "mountPath": BACKUP_VOLUME_PATH}
 SECRETS_MOUNT = {"name": "secrets", "mountPath": SECRET_VOLUME_PATH, "readOnly": True}
 
 
-def _secret_env(name: str, secret_name: str, key: str) -> dict[str, Any]:
+def _secret_env(name: str, secret_name: str, key: str) -> k8s.core.v1.EnvVarArgs:
     """
     Returns a container environment variable sourced from a secret.
     """
-    return {
-        "name": name,
-        "valueFrom": {"secretKeyRef": {"name": secret_name, "key": key}},
-    }
+    return k8s.core.v1.EnvVarArgs(
+        name=name,
+        value_from=k8s.core.v1.EnvVarSourceArgs(
+            secret_key_ref=k8s.core.v1.SecretKeySelectorArgs(
+                name=secret_name,
+                key=key,
+            ),
+        ),
+    )
 
 
 def _env(env: dict[str, Input[str]]) -> list[dict[str, Input[str]]]:
@@ -104,30 +109,29 @@ def _all_finished(*tasks: str) -> str:
     return " && ".join(f"( {_finished(t)} )" for t in tasks)
 
 
-def _backup_container_env(bucket_name: Input[str]) -> list[dict[str, Any]]:
+def backup_container_env(bucket_name: Input[str]) -> list[k8s.core.v1.EnvVarArgs]:
     """
     Returns the environment shared by containers that perform backups.
     """
+    # Other than RESTIC_HOST and TZ, these are mostly present for reference
+    # if we ever exec into the backup container.
+    literals: dict[str, Input[str]] = {
+        "RESTIC_HOST": RESTIC_HOST,
+        "BACKUP_S3_BUCKET": bucket_name,
+        "BACKUP_S3_ROOT": Output.concat("s3://", bucket_name),
+        "BACKUP_S3_RCLONE_REPOSITORY": _s3_rclone_repository(bucket_name),
+        "BACKUP_S3_RESTIC_REPOSITORY": _s3_restic_repository(bucket_name),
+        "BACKUP_S3_RESTIC_CACHE_DIR": S3_RESTIC_CACHE_DIR,
+        "BACKUP_LOCAL_RESTIC_REPOSITORY": LOCAL_RESTIC_REPOSITORY,
+        "BACKUP_LOCAL_RESTIC_CACHE_DIR": LOCAL_RESTIC_CACHE_DIR,
+        "BACKUP_RESTIC_PASSWORD_FILE": RESTIC_PASSWORD_FILE,
+        "TZ": TIMEZONE,
+    }
     return [
         _secret_env("GOOGLE_CHAT_WEBHOOK_URL", "google-chat-webhook", "url"),
         _secret_env("AWS_ACCESS_KEY_ID", "aws-backup", "aws_access_key_id"),
         _secret_env("AWS_SECRET_ACCESS_KEY", "aws-backup", "aws_secret_access_key"),
-        # Other than RESTIC_HOST and TZ, these are mostly present for reference
-        # if we ever exec into the backup container.
-        *_env(
-            {
-                "RESTIC_HOST": RESTIC_HOST,
-                "BACKUP_S3_BUCKET": bucket_name,
-                "BACKUP_S3_ROOT": Output.concat("s3://", bucket_name),
-                "BACKUP_S3_RCLONE_REPOSITORY": _s3_rclone_repository(bucket_name),
-                "BACKUP_S3_RESTIC_REPOSITORY": _s3_restic_repository(bucket_name),
-                "BACKUP_S3_RESTIC_CACHE_DIR": S3_RESTIC_CACHE_DIR,
-                "BACKUP_LOCAL_RESTIC_REPOSITORY": LOCAL_RESTIC_REPOSITORY,
-                "BACKUP_LOCAL_RESTIC_CACHE_DIR": LOCAL_RESTIC_CACHE_DIR,
-                "BACKUP_RESTIC_PASSWORD_FILE": RESTIC_PASSWORD_FILE,
-                "TZ": TIMEZONE,
-            }
-        ),
+        *[k8s.core.v1.EnvVarArgs(name=k, value=v) for k, v in literals.items()],
     ]
 
 
@@ -174,7 +178,7 @@ def _templates(
     """
     Returns the templates of the backup workflow.
     """
-    env = _backup_container_env(bucket_name)
+    env = backup_container_env(bucket_name)
 
     def restic_backup(name: str, *options: str) -> dict[str, Any]:
         return {
