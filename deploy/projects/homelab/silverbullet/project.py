@@ -61,8 +61,7 @@ class HomelabSilverBulletProject(InfrastructureProject):
     data_directory = PurePosixPath("/data")
     service_name = "silverbullet"
 
-    # The slim variant leaves out Chromium, which only the Runtime API uses.
-    image = "ghcr.io/silverbulletmd/silverbullet:2.12.1-slim"
+    image = "ghcr.io/silverbulletmd/silverbullet:3.0.0"
 
     @classmethod
     def dependencies(cls, target: DeploymentTarget) -> list[InfrastructureStack]:
