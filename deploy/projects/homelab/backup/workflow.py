@@ -12,6 +12,7 @@ import pulumi_kubernetes as k8s
 
 from infralib import DeploymentContext
 
+from ..forgejo import HomelabForgejoProject
 from ..silverbullet import HomelabSilverBulletProject
 from ..syncthing import HomelabSyncthingProject
 from ..vaultwarden import HomelabVaultwardenProject
@@ -43,6 +44,7 @@ RESTIC_PASSWORD_FILE = f"{SECRET_VOLUME_PATH}/{RESTIC_PASSWORD_FILENAME}"
 CONFIG_PATH = "/config"
 SYNCTHING_CONFIG_VOLUME_PATH = f"{CONFIG_PATH}/syncthing"
 SYNCTHING_DATA_VOLUME_PATH = "/data/syncthing"
+FORGEJO_DATA_VOLUME_PATH = "/data/forgejo"
 SILVERBULLET_DATA_VOLUME_PATH = "/data/silverbullet"
 VAULTWARDEN_DATA_VOLUME_PATH = "/data/vaultwarden"
 
@@ -208,6 +210,11 @@ def _templates(
                         "readOnly": True,
                     },
                     {
+                        "name": "forgejo-data",
+                        "mountPath": FORGEJO_DATA_VOLUME_PATH,
+                        "readOnly": True,
+                    },
+                    {
                         "name": "silverbullet-data",
                         "mountPath": SILVERBULLET_DATA_VOLUME_PATH,
                         "readOnly": True,
@@ -363,6 +370,7 @@ def _tasks(dctx: DeploymentContext) -> list[dict[str, Any]]:
     """
     Returns the tasks of the backup workflow's DAG.
     """
+    forgejo_pv = HomelabForgejoProject.data_pv(dctx, dctx.target)
     silverbullet_pv = HomelabSilverBulletProject.data_pv(dctx, dctx.target)
     syncthing_pv = HomelabSyncthingProject.data_pv(dctx, dctx.target)
     vaultwarden_pv = HomelabVaultwardenProject.data_pv(dctx, dctx.target)
@@ -401,6 +409,17 @@ def _tasks(dctx: DeploymentContext) -> list[dict[str, Any]]:
             depends,
         )
 
+    def scale_forgejo(
+        task_name: str, replicas: int, depends: str | None = None
+    ) -> dict[str, Any]:
+        return scale(
+            task_name,
+            forgejo_pv.namespace,
+            HomelabForgejoProject.service_name,
+            replicas,
+            depends,
+        )
+
     def scale_silverbullet(
         task_name: str, replicas: int, depends: str | None = None
     ) -> dict[str, Any]:
@@ -427,10 +446,12 @@ def _tasks(dctx: DeploymentContext) -> list[dict[str, Any]]:
     syncthing_backups_finished = _all_finished(*syncthing_backups)
     restic_backups_finished = _all_finished(
         *syncthing_backups,
+        "restic-backup-forgejo-data",
         "restic-backup-silverbullet-data",
     )
 
     return [
+        scale_forgejo("scale-down-forgejo", 0),
         scale_silverbullet("scale-down-silverbullet", 0),
         scale_vaultwarden("scale-down-vaultwarden", 0),
         scale_syncthing("scale-down-syncthing", 0),
@@ -451,6 +472,24 @@ def _tasks(dctx: DeploymentContext) -> list[dict[str, Any]]:
             "scale-up-vaultwarden",
             1,
             _finished("copy-vaultwarden-data-to-syncthing"),
+        ),
+        # Forgejo is stopped so that its SQLite database, repositories, and
+        # other files are backed up in a state consistent with each other.
+        {
+            "name": "restic-backup-forgejo-data",
+            "template": "restic-backup",
+            "arguments": _params(
+                {
+                    "name": "Backup Forgejo Data",
+                    "path": FORGEJO_DATA_VOLUME_PATH,
+                }
+            ),
+            "depends": "scale-down-forgejo",
+        },
+        scale_forgejo(
+            "scale-up-forgejo",
+            1,
+            _finished("restic-backup-forgejo-data"),
         ),
         # SilverBullet is stopped so that its files, including its accounts and
         # configuration, are backed up in a state consistent with each other.
@@ -580,6 +619,10 @@ def provision_backup_workflow(
                     pvc_volume(
                         "syncthing-data",
                         ref_volumes.syncthing_data.pvc.name,
+                    ),
+                    pvc_volume(
+                        "forgejo-data",
+                        ref_volumes.forgejo_data.pvc.name,
                     ),
                     pvc_volume(
                         "silverbullet-data",

@@ -14,6 +14,7 @@ from .volume import RefVolumeProvisionResult
 from .workflow import (
     BACKUP_VOLUME_PATH,
     CACHES_DIR,
+    FORGEJO_DATA_VOLUME_PATH,
     RESTIC_PASSWORD_FILENAME,
     SECRET_VOLUME_PATH,
     SILVERBULLET_DATA_VOLUME_PATH,
@@ -116,6 +117,7 @@ def provision_backup_debug_deployment(
                     mount("local-backup", BACKUP_VOLUME_PATH, False),
                     mount("syncthing-config", SYNCTHING_CONFIG_VOLUME_PATH, True),
                     mount("syncthing-data", SYNCTHING_DATA_VOLUME_PATH, True),
+                    mount("forgejo-data", FORGEJO_DATA_VOLUME_PATH, True),
                     mount("silverbullet-data", SILVERBULLET_DATA_VOLUME_PATH, True),
                     mount("vaultwarden-data", VAULTWARDEN_DATA_VOLUME_PATH, True),
                     mount("secrets", SECRET_VOLUME_PATH, True),
@@ -128,6 +130,7 @@ def provision_backup_debug_deployment(
             pvc_volume("local-backup", local_backup_claim_name),
             pvc_volume("syncthing-config", ref_volumes.syncthing_config.pvc.name),
             pvc_volume("syncthing-data", ref_volumes.syncthing_data.pvc.name),
+            pvc_volume("forgejo-data", ref_volumes.forgejo_data.pvc.name),
             pvc_volume("silverbullet-data", ref_volumes.silverbullet_data.pvc.name),
             pvc_volume("vaultwarden-data", ref_volumes.vaultwarden_data.pvc.name),
             k8s.core.v1.VolumeArgs(

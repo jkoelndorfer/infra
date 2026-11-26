@@ -25,6 +25,7 @@ from ..kubernetes import (
     HomelabKubernetesReferencePersistentVolume,
     HomelabKubernetesReferencePersistentVolumeArgs,
 )
+from ..forgejo import HomelabForgejoProject
 from ..silverbullet import HomelabSilverBulletProject
 from ..syncthing import HomelabSyncthingProject
 from ..vaultwarden import HomelabVaultwardenProject
@@ -36,6 +37,7 @@ class RefVolumeProvisionResult:
     Result of provisioning backup reference persistent volumes.
     """
 
+    forgejo_data: HomelabKubernetesReferencePersistentVolume
     silverbullet_data: HomelabKubernetesReferencePersistentVolume
     vaultwarden_data: HomelabKubernetesReferencePersistentVolume
     syncthing_data: HomelabKubernetesReferencePersistentVolume
@@ -127,6 +129,12 @@ def provision_ref_volumes(
             k8s_opts,
         )
 
+    forgejo_data = v(
+        "forgejo_data",
+        HomelabForgejoProject.data_pv(dctx, dctx.target).name,
+        access_mode_ro,
+    )
+
     silverbullet_data = v(
         "silverbullet_data",
         HomelabSilverBulletProject.data_pv(dctx, dctx.target).name,
@@ -152,6 +160,7 @@ def provision_ref_volumes(
     )
 
     return RefVolumeProvisionResult(
+        forgejo_data,
         silverbullet_data,
         vaultwarden_data,
         syncthing_data,

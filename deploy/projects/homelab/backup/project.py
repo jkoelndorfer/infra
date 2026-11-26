@@ -20,6 +20,7 @@ from ..ctr_registry import (
     HomelabContainerRegistryProject,
     HomelabContainerRegistryImagePullSecretProvider,
 )
+from ..forgejo import HomelabForgejoProject
 from ..kubernetes import HomelabBackingVolumeID, namespace
 from ..silverbullet import HomelabSilverBulletProject
 from ..syncthing import HomelabSyncthingProject
@@ -49,6 +50,7 @@ class HomelabBackupProject(InfrastructureProject):
             AWSAccountsProject.stack(target),
             HomelabArgoWorkflowsProject.stack(prod),
             HomelabContainerRegistryProject.stack(prod),
+            HomelabForgejoProject.stack(target),
             HomelabSilverBulletProject.stack(target),
             HomelabSyncthingProject.stack(target),
             HomelabVaultwardenProject.stack(target),
