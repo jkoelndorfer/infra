@@ -40,6 +40,7 @@ _service_ids = {
     "silverbullet": 15,
     "samba": 16,
     "samba-scanuser": 17,
+    "forgejo": 18,
 }
 
 
