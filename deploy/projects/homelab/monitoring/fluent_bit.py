@@ -370,6 +370,9 @@ def _config(victorialogs_host: str, victorialogs_port: int) -> dict[str, Any]:
                     "json_date_key": "date",
                     "json_date_format": "iso8601",
                     "compress": "gzip",
+                    # The output logs every request that succeeds at info level,
+                    # which is noise. Its failures are warnings and errors.
+                    "log_level": "warn",
                     # Retries until VictoriaLogs accepts the logs, which the
                     # buffer's limit bounds.
                     "retry_limit": "no_limits",
